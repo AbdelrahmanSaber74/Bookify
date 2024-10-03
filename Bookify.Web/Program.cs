@@ -1,3 +1,5 @@
+﻿using Bookify.Web.Extensions;
+
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -13,6 +15,7 @@ builder.Services.AddControllersWithViews();
 
 
 // Register all services
+builder.Services.AddApplicationServices(); // استدعاء خدمات الامتداد هنا
 
 var app = builder.Build();
 
