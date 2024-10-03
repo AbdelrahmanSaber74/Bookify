@@ -1,6 +1,4 @@
-using Bookify.Web.Models;
-using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
+
 
 namespace Bookify.Web.Controllers
 {
@@ -20,7 +18,8 @@ namespace Bookify.Web.Controllers
 
 		public IActionResult Privacy()
 		{
-			return View();
+
+            return View();
 		}
 
 		[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
