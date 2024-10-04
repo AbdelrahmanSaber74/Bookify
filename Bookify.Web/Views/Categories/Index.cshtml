@@ -1,4 +1,5 @@
 ﻿@model IEnumerable<Category>
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
 
 @{
     ViewData["Title"] = "Categories";
@@ -74,7 +75,7 @@
                                     </span>
                                 </td>
                                 <td>@category.CreatedOn</td>
-                                <td>@category.LastUpdatedOn</td>
+                                <td class="js-updated-on">@category.LastUpdatedOn</td>
                                 <td>
                                     <!-- Dropdown button -->
                                     <button type="button" class="btn btn-sm btn-icon btn-color-primary btn-active-light-primary" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
@@ -128,11 +129,14 @@
     </div>
 </div>
 
+<input type="hidden" name="__RequestVerificationToken" value="@antiforgery.GetAndStoreTokens(Context).RequestToken" />
+
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).on('click', '.js-toggle-status', function () {
-            var categoryId = $(this).data('id');
+            var btn = $(this); // Store the button reference
+            var categoryId = btn.data('id');
 
             $.ajax({
                 url: '/Categories/ToggleStatus',
@@ -140,21 +144,25 @@
                 data: {
                     Id: categoryId
                 },
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() // Handle anti-forgery token
+                },
                 success: function (response) {
                     if (response.success) {
                         // Update the status badge
-                        var statusCell = $('a.js-toggle-status[data-id="' + categoryId + '"]').closest('tr').find('td:eq(1)'); // Adjust index based on your table structure
+                        var statusCell = btn.closest('tr').find('td:eq(1)'); // Adjust index based on your table structure
                         var currentStatus = statusCell.find('.badge').text().trim();
 
+                        // Toggle status
                         if (currentStatus === 'Available') {
                             statusCell.html('<span class="badge badge-light-danger">Deleted</span>');
                         } else {
                             statusCell.html('<span class="badge badge-light-success">Available</span>');
                         }
 
-                        // Update the LastUpdatedOn timestamp
-                        var timestampCell = $('a.js-toggle-status[data-id="' + categoryId + '"]').closest('tr').find('td:eq(2)'); // Adjust the index based on your table structure
-                        timestampCell.text(response.lastUpdatedOn); // Update with the new timestamp
+                        // Update LastUpdatedOn field
+                        btn.closest('tr').find('.js-updated-on').html(response.lastUpdatedOn);
+
                     } else {
                         alert("Error toggling status: " + response.message);
                     }
