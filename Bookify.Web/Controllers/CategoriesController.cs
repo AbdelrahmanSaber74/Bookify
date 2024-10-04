@@ -38,6 +38,7 @@ namespace Bookify.Web.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddCategory(CategoryDTO categoryDto)
         {
             if (!ModelState.IsValid)
@@ -57,6 +58,7 @@ namespace Bookify.Web.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateCategory(CategoryDTO categoryDto)
         {
             if (!ModelState.IsValid)
@@ -88,6 +90,28 @@ namespace Bookify.Web.Controllers
 
             await _categoriesRepo.DeleteCategoryAsync(id);
             return RedirectToAction(nameof(Index));
+        }
+
+        public async Task<IActionResult> ToggleStatus(int Id)
+        {
+          
+
+            var existingCategory = await _categoriesRepo.GetCategoryByIdAsync(Id);
+            if (existingCategory == null)
+            {
+                return NotFound();
+            }
+
+            existingCategory.IsDeleted = !existingCategory.IsDeleted;
+            existingCategory.LastUpdatedOn = DateTime.Now;
+
+            await _categoriesRepo.UpdateCategoryAsync(existingCategory);
+            return Json(new
+            {
+                success = true,
+                lastUpdatedOn = existingCategory.LastUpdatedOn.ToString() 
+            });
+            // return RedirectToAction(nameof(Index));
         }
 
         private CategoryDTO MapToDto(Category category)
