@@ -1,4 +1,4 @@
-﻿@model IEnumerable<CategoryDTO>
+﻿@model IEnumerable<CategoryViewModel>
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
 
 @{
@@ -35,6 +35,8 @@
 </div>
 
 <div class="card-body">
+
+
     @if (!Model.Any())
     {
         <div class="alert alert-dismissible bg-light-warning border border-warning border-dashed d-flex flex-column flex-sm-row w-100 p-5 mb-10">
@@ -54,6 +56,7 @@
     {
         <div class="table-responsive bg-white p-10">
             <table class="table table-row-dashed table-row-gray-300 gy-7">
+
                 <thead>
                     <tr class="fw-bold fs-6 text-gray-800">
                         <th>Name</th>

@@ -1,11 +1,11 @@
 // GlobalUsings.cs
+global using AutoMapper;
+global using Bookify.Web.Core.Const;
+global using Bookify.Web.Core.Models;
 global using Bookify.Web.Core.ViewModels;
-global using Microsoft.AspNetCore.Mvc;
-global using System.Diagnostics;
-global using System.ComponentModel.DataAnnotations;
 global using Bookify.Web.Data;
 global using Microsoft.AspNetCore.Identity;
+global using Microsoft.AspNetCore.Mvc;
 global using Microsoft.EntityFrameworkCore;
-global using Bookify.Web.Core.Models;
-global using Bookify.Web.DTO;
-global using AutoMapper;
+global using System.ComponentModel.DataAnnotations;
+global using System.Diagnostics;

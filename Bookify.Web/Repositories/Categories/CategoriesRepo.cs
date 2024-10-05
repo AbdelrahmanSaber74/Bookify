@@ -25,7 +25,7 @@ namespace Bookify.Web.Repositories.Categories
                 _context.Categories.Remove(category);
                 await SaveChangesAsync();
             }
-            
+
         }
 
         public async Task<IEnumerable<Category>> GetAllCategoriesAsync()

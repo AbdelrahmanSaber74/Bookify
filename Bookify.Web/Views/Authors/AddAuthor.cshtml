@@ -1,4 +1,4 @@
-﻿@model AuthorDTO
+﻿@model AuthorViewModel
 
 @{
     ViewData["Title"] = "Add Author";
@@ -27,7 +27,7 @@
                     </div>
 
                     <div class="mb-5">
-                        <label asp-for="IsDeleted" class="form-label">Is Deleted</label>
+                        <label asp-for="IsDeleted" class="form-label"></label>
                         <select asp-for="IsDeleted" class="form-select" required>
                             <option selected disabled value="">Select an option</option>
                             <option value="false">Available</option>

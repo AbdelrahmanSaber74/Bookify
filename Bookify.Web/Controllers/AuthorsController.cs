@@ -17,8 +17,8 @@ namespace Bookify.Web.Controllers
         public async Task<IActionResult> Index()
         {
             var authors = await _authorRepo.GetAllAuthorsAsync();
-            var authorDtos = _mapper.Map<IEnumerable<AuthorDTO>>(authors);
-            return View(authorDtos);
+            var authorViewModels = _mapper.Map<IEnumerable<AuthorViewModel>>(authors);
+            return View(authorViewModels);
         }
 
         // GET: Authors/Create
@@ -30,14 +30,14 @@ namespace Bookify.Web.Controllers
         // POST: Authors/Add
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddAuthor(AuthorDTO authorDTO)
+        public async Task<IActionResult> AddAuthor(AuthorViewModel model)
         {
             if (!ModelState.IsValid)
             {
-                return View("AddAuthor", authorDTO);
+                return View("AddAuthor", model);
             }
 
-            var newAuthor = _mapper.Map<Author>(authorDTO);
+            var newAuthor = _mapper.Map<Author>(model);
             await _authorRepo.AddAuthorAsync(newAuthor);
 
             TempData["SuccessMessage"] = "Author added successfully!";
@@ -91,27 +91,27 @@ namespace Bookify.Web.Controllers
                 return NotFound();
             }
 
-            var authorDTO = _mapper.Map<AuthorDTO>(author);
-            return View("EditAuthor", authorDTO);
+            var authorViewModel = _mapper.Map<AuthorViewModel>(author);
+            return View("EditAuthor", authorViewModel);
         }
 
         // POST: Authors/Update
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateAuthor(AuthorDTO authorDTO)
+        public async Task<IActionResult> UpdateAuthor(AuthorViewModel model)
         {
             if (!ModelState.IsValid)
             {
-                return View("EditAuthor", authorDTO);
+                return View("EditAuthor", model);
             }
 
-            var existingAuthor = await _authorRepo.GetAuthorByIdAsync(authorDTO.Id);
+            var existingAuthor = await _authorRepo.GetAuthorByIdAsync(model.Id);
             if (existingAuthor == null)
             {
                 return NotFound();
             }
 
-            _mapper.Map(authorDTO, existingAuthor);
+            _mapper.Map(model, existingAuthor);
             existingAuthor.LastUpdatedOn = DateTime.Now;
 
             await _authorRepo.UpdateAuthorAsync(existingAuthor);
@@ -127,7 +127,7 @@ namespace Bookify.Web.Controllers
             var isNameTaken = await _authorRepo.AnyAsync(c => c.Name == name && c.Id != id);
             if (isNameTaken)
             {
-                return Json($"The author name '{name}' is already taken.");
+                return Json(string.Format(Errors.Duplicated, name));
             }
 
             return Json(true);

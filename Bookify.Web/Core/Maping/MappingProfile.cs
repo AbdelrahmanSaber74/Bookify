@@ -1,14 +1,14 @@
-﻿using AutoMapper;
-
-namespace Bookify.Web.Core.Maping
+﻿namespace Bookify.Web.Core.Maping
 {
     public class MappingProfile : Profile
     {
         public MappingProfile()
         {
-            CreateMap<Category, CategoryDTO>().ReverseMap();
+            // Maps between Category model and CategoryViewModel
+            CreateMap<Category, CategoryViewModel>().ReverseMap();
 
-            CreateMap<Author, AuthorDTO>().ReverseMap();
+            // Maps between Author model and AuthorViewModel
+            CreateMap<Author, AuthorViewModel>().ReverseMap();
         }
     }
 }

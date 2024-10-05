@@ -1,5 +1,4 @@
 ﻿using Bookify.Web.Repositories.Categories;
-using AutoMapper;
 
 namespace Bookify.Web.Controllers
 {
@@ -14,58 +13,64 @@ namespace Bookify.Web.Controllers
             _mapper = mapper;
         }
 
+        // GET: Categories
         public async Task<IActionResult> Index()
         {
             var categories = await _categoriesRepo.GetAllCategoriesAsync();
-            var categoryDtos = _mapper.Map<IEnumerable<CategoryDTO>>(categories);
-            return View(categoryDtos);
+            var categoryViewModels = _mapper.Map<IEnumerable<CategoryViewModel>>(categories);
+            return View(categoryViewModels);
         }
 
+        // GET: Categories/Create
         public IActionResult Create()
         {
             return View("AddCategory");
         }
 
+        // GET: Categories/Edit/{id}
         public async Task<IActionResult> Edit(int id)
         {
             var category = await _categoriesRepo.GetCategoryByIdAsync(id);
             if (category == null) return NotFound();
 
-            var categoryDto = _mapper.Map<CategoryDTO>(category);
-            return View("EditCategory", categoryDto);
+            var model = _mapper.Map<CategoryViewModel>(category);
+            return View("EditCategory", model);
         }
 
+        // POST: Categories/Add
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddCategory(CategoryDTO categoryDto)
+        public async Task<IActionResult> AddCategory(CategoryViewModel model)
         {
-            if (!ModelState.IsValid) return View(categoryDto);
+            if (!ModelState.IsValid) return View("AddCategory", model);
 
-            var newCategory = _mapper.Map<Category>(categoryDto);
+            var newCategory = _mapper.Map<Category>(model);
             await _categoriesRepo.AddCategoryAsync(newCategory);
 
             TempData["SuccessMessage"] = "Category added successfully!";
             return RedirectToAction(nameof(Index));
         }
 
+        // POST: Categories/Update
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateCategory(CategoryDTO categoryDto)
+        public async Task<IActionResult> UpdateCategory(CategoryViewModel model)
         {
-            if (!ModelState.IsValid) return View(categoryDto);
+            if (!ModelState.IsValid) return View("EditCategory", model);
 
-            var existingCategory = await _categoriesRepo.GetCategoryByIdAsync(categoryDto.Id);
+            var existingCategory = await _categoriesRepo.GetCategoryByIdAsync(model.Id);
             if (existingCategory == null) return NotFound();
 
-            var updatedCategory = _mapper.Map(categoryDto, existingCategory);
-            updatedCategory.LastUpdatedOn = DateTime.Now;
+            _mapper.Map(model, existingCategory);
+            existingCategory.LastUpdatedOn = DateTime.Now;
 
-            await _categoriesRepo.UpdateCategoryAsync(updatedCategory);
+            await _categoriesRepo.UpdateCategoryAsync(existingCategory);
 
             TempData["SuccessMessage"] = "Category updated successfully!";
             return RedirectToAction(nameof(Index));
         }
 
+        // POST: Categories/Delete/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
@@ -77,6 +82,7 @@ namespace Bookify.Web.Controllers
             return Json(new { success = true });
         }
 
+        // POST: Categories/ToggleStatus/{id}
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleStatus(int id)
@@ -96,11 +102,12 @@ namespace Bookify.Web.Controllers
             });
         }
 
+        // Check if category name is unique
         [AcceptVerbs("Get", "Post")]
         public async Task<IActionResult> IsCategoryNameUnique(string name, int id)
         {
             var isNameTaken = await _categoriesRepo.AnyAsync(c => c.Name == name && c.Id != id);
-            if (isNameTaken) return Json($"The category name '{name}' is already taken.");
+            if (isNameTaken) return Json(string.Format(Errors.Duplicated, name));
 
             return Json(true);
         }

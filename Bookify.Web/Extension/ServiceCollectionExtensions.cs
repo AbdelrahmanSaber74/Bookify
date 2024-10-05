@@ -1,7 +1,5 @@
-﻿using Bookify.Web.Repositories.Categories;
-using Microsoft.Extensions.DependencyInjection;
-using AutoMapper;
-using Bookify.Web.Repositories.Authors;
+﻿using Bookify.Web.Repositories.Authors;
+using Bookify.Web.Repositories.Categories;
 
 namespace Bookify.Web.Extensions
 {
