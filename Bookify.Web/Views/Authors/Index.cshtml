@@ -1,0 +1,132 @@
+﻿@model IEnumerable<AuthorDTO>
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
+
+@{
+    ViewData["Title"] = "Authors";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/assets/plugins/datatables/datatables.bundle.css" />
+}
+
+<div class="alert bg-light-primary border border-primary border-3 border-dashed d-flex justify-content-between w-100 p-5 mb-10">
+    <div class="d-flex align-items-center">
+        <div class="symbol symbol-40px me-4">
+            <div class="symbol-label fs-2 fw-semibold text-success">
+                <span class="svg-icon svg-icon-2 svg-icon-primary">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 17.25V21h3.75l10.72-10.72-3.75-3.75L3 17.25zm0-2.85L14.85 4.5c.39-.39 1.02-.39 1.41 0l3.75 3.75c.39.39.39 1.02 0 1.41L5.25 18.25H3v-3.75z" fill="currentColor" />
+                        <path d="M2 21h20v2H2v-2z" fill="currentColor" />
+                    </svg>
+                </span>
+            </div>
+        </div>
+        <div class="d-flex flex-column pe-0 pe-sm-10">
+            <h5 class="mb-1">Authors</h5>
+        </div>
+    </div>
+    <div>
+        <a asp-controller="Authors" asp-action="Create" class="btn btn-sm btn-primary js-render-modal"
+           data-title="Add Author">
+            <i class="bi bi-plus-square-dotted"></i> Add
+        </a>
+
+    </div>
+</div>
+
+<div class="card-body">
+    @if (!Model.Any())
+    {
+        <div class="alert alert-dismissible bg-light-warning border border-warning border-dashed d-flex flex-column flex-sm-row w-100 p-5 mb-10">
+            <span class="svg-icon svg-icon-2hx svg-icon-warning me-4 mb-5 mb-sm-0">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect opacity="0.3" x="2" y="2" width="20" height="20" rx="10" fill="currentColor" />
+                    <rect x="11" y="14" width="7" height="2" rx="1" transform="rotate(-90 11 14)" fill="currentColor" />
+                    <rect x="11" y="17" width="2" height="2" rx="1" transform="rotate(-90 11 17)" fill="currentColor" />
+                </svg>
+            </span>
+            <div class="d-flex flex-column pe-0 pe-sm-10 align-self-center">
+                <h5 class="mb-1">No Authors found!</h5>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive bg-white p-10">
+            <table class="table table-row-dashed table-row-gray-300 gy-7">
+                <thead>
+                    <tr class="fw-bold fs-6 text-gray-800">
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Created On</th>
+                        <th>Last Updated On</th>
+                        <th class="action-column">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var Author in Model)
+                    {
+                        <tr>
+                            <td>@Author.Name</td>
+                            <td>
+                                <span class="badge badge-light-@(Author.IsDeleted ? "danger" : "success")">
+                                    @(Author.IsDeleted ? "Deleted" : "Available")
+                                </span>
+                            </td>
+                            <td>@Author.CreatedOn</td>
+                            <td class="js-updated-on">@Author.LastUpdatedOn</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-icon btn-color-primary btn-active-light-primary" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
+                                    <span class="svg-icon svg-icon-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 24 24">
+                                            <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                                <rect x="5" y="5" width="5" height="5" rx="1" fill="currentColor"></rect>
+                                                <rect x="14" y="5" width="5" height="5" rx="1" fill="currentColor" opacity="0.3"></rect>
+                                                <rect x="5" y="14" width="5" height="5" rx="1" fill="currentColor" opacity="0.3"></rect>
+                                                <rect x="14" y="14" width="5" height="5" rx="1" fill="currentColor" opacity="0.3"></rect>
+                                            </g>
+                                        </svg>
+                                    </span>
+                                </button>
+
+                                <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg-light-primary fw-semibold w-200px py-3" data-kt-menu="true">
+                                    <div class="menu-item px-3">
+                                        <a asp-controller="Authors" asp-action="Edit" asp-route-id="@Author.Id" class="menu-link px-3">
+                                            Edit
+                                        </a>
+                                    </div>
+                                    <div class="menu-item px-3">
+                                        <a href="javascript:void(0);" class="menu-link px-3 js-toggle-status" data-id="@Author.Id" data-url="/Authors/ToggleStatus">
+                                            Toggle Status
+                                        </a>
+                                    </div>
+                                    <div class="menu-item px-3">
+                                        <a href="javascript:void(0);" class="menu-link px-3 js-delete" data-id="@Author.Id" data-url="/Authors/Delete">
+                                            Delete
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<input type="hidden" name="__RequestVerificationToken" value="@antiforgery.GetAndStoreTokens(Context).RequestToken" />
+
+@section CustomScripts {
+    <script src="~/assets/plugins/datatables/datatables.bundle.js"></script>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Initialize the DataTable
+            initDataTable("Authors - Report");
+        });
+
+    </script>
+}

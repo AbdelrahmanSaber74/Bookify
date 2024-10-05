@@ -37,6 +37,23 @@
                         <span class="menu-title">Categories</span>
                     </a>
                     <!--end:Menu link-->
+                    <!--begin:Menu link-->
+                    <a class="menu-link @(MenuHelper.IsActive(ViewContext, "Authors", "Index") ? "active" : "")" asp-controller="Authors" asp-action="Index">
+                        <span class="menu-icon">
+                            <!--begin::Svg Icon | path: new_icon_path.svg-->
+                            <span class="svg-icon svg-icon-2">
+                                <!-- Replace the following SVG code with your new SVG -->
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M3 17.25V21h3.75l10.72-10.72-3.75-3.75L3 17.25zm0-2.85L14.85 4.5c.39-.39 1.02-.39 1.41 0l3.75 3.75c.39.39.39 1.02 0 1.41L5.25 18.25H3v-3.75z" fill="currentColor" />
+                                    <path d="M2 21h20v2H2v-2z" fill="currentColor" />
+                                </svg>
+                                <!--end::Svg Icon-->
+                            </span>
+                            <!--end::Svg Icon-->
+                        </span>
+                        <span class="menu-title">Authors</span>
+                    </a>
+                    <!--end:Menu link-->
                 </div>
                 <!--end:Menu item-->
             </div>

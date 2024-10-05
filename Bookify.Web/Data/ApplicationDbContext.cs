@@ -11,6 +11,7 @@ namespace Bookify.Web.Data
 		}
 
 		public DbSet<Category> Categories { get; set; }
+		public DbSet<Author> Authors { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -18,6 +19,12 @@ namespace Bookify.Web.Data
             builder.Entity<Category>().
 				HasIndex(c => c.Name)
 				.IsUnique();
+
+
+            // Create a unique index on the Name column in the Author table.
+            builder.Entity<Author>().
+                HasIndex(c => c.Name)
+                .IsUnique();
 
 
             base.OnModelCreating(builder);

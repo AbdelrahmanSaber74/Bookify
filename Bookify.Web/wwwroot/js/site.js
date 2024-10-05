@@ -180,7 +180,7 @@ $(document).on('click', '.js-toggle-status', function () {
 
                             // Update LastUpdatedOn field
                             row.find('.js-updated-on').html(response.lastUpdatedOn);
-                            showSuccessMessage("The category status has been toggled successfully!");
+                            showSuccessMessage("The item status has been toggled successfully!");
                         } else {
                             console.error(response.message);
                             showErrorMessage("An error occurred while toggling the category status.");

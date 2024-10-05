@@ -1,6 +1,7 @@
 ﻿using Bookify.Web.Repositories.Categories;
 using Microsoft.Extensions.DependencyInjection;
 using AutoMapper;
+using Bookify.Web.Repositories.Authors;
 
 namespace Bookify.Web.Extensions
 {
@@ -10,6 +11,8 @@ namespace Bookify.Web.Extensions
         {
             // Register services here
             services.AddScoped<ICategoriesRepo, CategoriesRepo>();
+
+            services.AddScoped<IAuthorRepo, AuthorRepo>();
 
 
 

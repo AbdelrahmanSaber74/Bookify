@@ -7,6 +7,8 @@ namespace Bookify.Web.Core.Maping
         public MappingProfile()
         {
             CreateMap<Category, CategoryDTO>().ReverseMap();
+
+            CreateMap<Author, AuthorDTO>().ReverseMap();
         }
     }
 }
