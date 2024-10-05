@@ -9,5 +9,6 @@ public class Author : BaseModel
     [StringLength(100, ErrorMessage = "Author Name cannot be longer than 100 characters")]
     public string Name { get; set; }
 
-
+    // Navigation property for Books
+    public ICollection<Book>? Books { get; set; }
 }
