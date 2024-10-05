@@ -1,4 +1,6 @@
-﻿namespace Bookify.Web.Repositories.Categories
+﻿using System.Linq.Expressions;
+
+namespace Bookify.Web.Repositories.Categories
 {
     public class CategoriesRepo : ICategoriesRepo
     {
@@ -41,6 +43,12 @@
         {
             _context.Categories.Update(category);
             await SaveChangesAsync();
+        }
+
+        // Implementation of AnyAsync method
+        public async Task<bool> AnyAsync(Expression<Func<Category, bool>> predicate)
+        {
+            return await _context.Categories.AnyAsync(predicate);
         }
 
         // Helper methods

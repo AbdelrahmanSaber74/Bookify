@@ -1,5 +1,6 @@
 ﻿namespace Bookify.Web.Core.Models;
 
+
 public class Category
 {
     public int Id { get; set; }

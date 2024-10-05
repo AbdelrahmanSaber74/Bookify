@@ -11,7 +11,13 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-4">
-                <form method="post" asp-controller="Categories" asp-action="AddCategory">
+                <form method="post" asp-controller="Categories" asp-action="AddCategory"
+                      data-ajax="true"
+                      data-ajax-method="POST"
+                      data-ajax-begin="onModalBegin()"
+                      data-ajax-complete="onModalComplete()"
+                      data-ajax-success="onModalSuccess"
+                      data-ajax-failure="onFailure">
                     <div class="mb-5">
                         <div class="form-floating mb-2">
                             <input type="text" class="form-control" placeholder="Name" asp-for="Name" required />
@@ -26,22 +32,36 @@
                             <option selected disabled value="">Select an option</option>
                             <option value="false">Available</option>
                             <option value="true">Deleted</option>
-
                         </select>
                         <span asp-validation-for="IsDeleted" class="text-danger"></span>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-sm">
+                    <button type="submit" class="btn btn-primary btn-sm" id="submitBtn">
                         <i class="bi bi-check2"></i>
+                        <span class="loading-indicator" style="display: none;">Loading...</span> <!-- Loading text -->
                         Save
                     </button>
+
                 </form>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display: none;">
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
 @section Scripts
 {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/site.js" asp-append-version="true"></script>
+}
+
+@section Styles
+{
+    <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
 }

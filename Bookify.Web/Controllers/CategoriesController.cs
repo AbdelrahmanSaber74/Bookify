@@ -1,23 +1,24 @@
-﻿using Bookify.Web.Core.Models;
-using Bookify.Web.DTO;
-using Bookify.Web.Repositories.Categories;
-using Microsoft.AspNetCore.Mvc;
+﻿using Bookify.Web.Repositories.Categories;
+using AutoMapper;
 
 namespace Bookify.Web.Controllers
 {
     public class CategoriesController : Controller
     {
         private readonly ICategoriesRepo _categoriesRepo;
+        private readonly IMapper _mapper;
 
-        public CategoriesController(ICategoriesRepo categoriesRepo)
+        public CategoriesController(ICategoriesRepo categoriesRepo, IMapper mapper)
         {
             _categoriesRepo = categoriesRepo;
+            _mapper = mapper;
         }
 
         public async Task<IActionResult> Index()
         {
             var categories = await _categoriesRepo.GetAllCategoriesAsync();
-            return View(categories);
+            var categoryDtos = _mapper.Map<IEnumerable<CategoryDTO>>(categories);
+            return View(categoryDtos);
         }
 
         public IActionResult Create()
@@ -28,12 +29,9 @@ namespace Bookify.Web.Controllers
         public async Task<IActionResult> Edit(int id)
         {
             var category = await _categoriesRepo.GetCategoryByIdAsync(id);
-            if (category == null)
-            {
-                return NotFound();
-            }
+            if (category == null) return NotFound();
 
-            var categoryDto = MapToDto(category);
+            var categoryDto = _mapper.Map<CategoryDTO>(category);
             return View("EditCategory", categoryDto);
         }
 
@@ -41,19 +39,12 @@ namespace Bookify.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddCategory(CategoryDTO categoryDto)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(categoryDto);
-            }
+            if (!ModelState.IsValid) return View(categoryDto);
 
-            var newCategory = new Category
-            {
-                Name = categoryDto.Name,
-                CreatedOn = DateTime.Now,
-                IsDeleted = categoryDto.IsDeleted,
-            };
-
+            var newCategory = _mapper.Map<Category>(categoryDto);
             await _categoriesRepo.AddCategoryAsync(newCategory);
+
+            TempData["SuccessMessage"] = "Category added successfully!";
             return RedirectToAction(nameof(Index));
         }
 
@@ -61,69 +52,57 @@ namespace Bookify.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateCategory(CategoryDTO categoryDto)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(categoryDto);
-            }
+            if (!ModelState.IsValid) return View(categoryDto);
 
             var existingCategory = await _categoriesRepo.GetCategoryByIdAsync(categoryDto.Id);
-            if (existingCategory == null)
-            {
-                return NotFound();
-            }
+            if (existingCategory == null) return NotFound();
 
-            existingCategory.Name = categoryDto.Name;
-            existingCategory.IsDeleted = categoryDto.IsDeleted;
-            existingCategory.LastUpdatedOn = DateTime.Now;
+            var updatedCategory = _mapper.Map(categoryDto, existingCategory);
+            updatedCategory.LastUpdatedOn = DateTime.Now;
 
-            await _categoriesRepo.UpdateCategoryAsync(existingCategory);
-            return RedirectToAction(nameof(Index));
-        }
+            await _categoriesRepo.UpdateCategoryAsync(updatedCategory);
 
-        public async Task<IActionResult> Delete(int id)
-        {
-            var existingCategory = await _categoriesRepo.GetCategoryByIdAsync(id);
-            if (existingCategory == null)
-            {
-                return NotFound();
-            }
-
-            await _categoriesRepo.DeleteCategoryAsync(id);
+            TempData["SuccessMessage"] = "Category updated successfully!";
             return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleStatus(int Id)
+        public async Task<IActionResult> Delete(int id)
         {
-          
+            var existingCategory = await _categoriesRepo.GetCategoryByIdAsync(id);
+            if (existingCategory == null) return Json(new { success = false, message = "Category not found." });
 
-            var existingCategory = await _categoriesRepo.GetCategoryByIdAsync(Id);
-            if (existingCategory == null)
-            {
-                return NotFound();
-            }
+            await _categoriesRepo.DeleteCategoryAsync(id);
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleStatus(int id)
+        {
+            var existingCategory = await _categoriesRepo.GetCategoryByIdAsync(id);
+            if (existingCategory == null) return NotFound();
 
             existingCategory.IsDeleted = !existingCategory.IsDeleted;
             existingCategory.LastUpdatedOn = DateTime.Now;
 
             await _categoriesRepo.UpdateCategoryAsync(existingCategory);
+
             return Json(new
             {
                 success = true,
-                lastUpdatedOn = existingCategory.LastUpdatedOn.ToString() 
+                lastUpdatedOn = existingCategory.LastUpdatedOn.ToString()
             });
-            // return RedirectToAction(nameof(Index));
         }
 
-        private CategoryDTO MapToDto(Category category)
+        [AcceptVerbs("Get", "Post")]
+        public async Task<IActionResult> IsCategoryNameUnique(string name, int id)
         {
-            return new CategoryDTO
-            {
-                Id = category.Id,
-                Name = category.Name,
-                IsDeleted = category.IsDeleted,
-            };
+            var isNameTaken = await _categoriesRepo.AnyAsync(c => c.Name == name && c.Id != id);
+            if (isNameTaken) return Json($"The category name '{name}' is already taken.");
+
+            return Json(true);
         }
     }
 }

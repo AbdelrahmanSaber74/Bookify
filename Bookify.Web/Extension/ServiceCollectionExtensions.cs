@@ -1,6 +1,6 @@
 ﻿using Bookify.Web.Repositories.Categories;
-using Microsoft.CodeAnalysis.Host;
 using Microsoft.Extensions.DependencyInjection;
+using AutoMapper;
 
 namespace Bookify.Web.Extensions
 {
@@ -10,6 +10,12 @@ namespace Bookify.Web.Extensions
         {
             // Register services here
             services.AddScoped<ICategoriesRepo, CategoriesRepo>();
+
+
+
+
+            // Register AutoMapper in the DI container and load mappings from the current application domain's assemblies
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             return services;
         }

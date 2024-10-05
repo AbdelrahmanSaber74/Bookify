@@ -14,6 +14,10 @@ namespace Bookify.Web.Data
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            // Create a unique index on the Name column in the Category table.
+            builder.Entity<Category>().
+				HasIndex(c => c.Name)
+				.IsUnique();
 
 
             base.OnModelCreating(builder);
