@@ -52,13 +52,23 @@
             return await _context.Books.Include(b => b.Author).ToListAsync();
         }
 
-    
+
+        public async Task<int> GetLatestBookIdAsync()
+        {
+            int lastBook = await _context.Books
+                .OrderByDescending(b => b.Id)
+                .Select(b => b.Id)
+                .FirstOrDefaultAsync();
+
+            return lastBook  ; 
+        }
+
         // Private method to save changes to the database
         private async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync(); // Save changes to the database
         }
 
-      
+     
     }
 }

@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Bookify.Web.Core.ViewModels
 {
@@ -21,6 +20,7 @@ namespace Bookify.Web.Core.ViewModels
         [Display(Name = "Publish Date")]
         public DateTime PublishDate { get; set; } = DateTime.Now;
 
+        //[Remote(action: "ValidateImage", controller: "Books", AdditionalFields = nameof(Id), ErrorMessage = "Invalid image file.")]
         public IFormFile? ImageUrl { get; set; }
 
         // Hall property
@@ -37,6 +37,6 @@ namespace Bookify.Web.Core.ViewModels
         // Many-to-Many relationship with Book
         public List<SelectListItem>? Authors { get; set; }
         public List<SelectListItem>? Categories { get; set; } // For categories
-        public List<int>? SelectedCategoryIds { get; set; } = new List<int>(); // For multiple selections
+        public List<int> SelectedCategoryIds { get; set; } = new List<int>(); // For multiple selections
     }
 }

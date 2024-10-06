@@ -7,6 +7,7 @@
         Task<Book> GetBookByIdAsync(int id);
         Task AddBookAsync(Book book);
         Task UpdateBookAsync(Book book);
+        Task<int> GetLatestBookIdAsync(); 
         Task DeleteBookAsync(int id);
         Task<bool> AnyBookAsync(Expression<Func<Book, bool>> predicate);
     }

@@ -11,8 +11,8 @@
         }
         public async Task AddAsync(BookCategory bookCategory)
         {
-            await _context.BookCategories.AddAsync(bookCategory); 
-            await _context.SaveChangesAsync(); 
+            await _context.BookCategories.AddAsync(bookCategory);
+            await _context.SaveChangesAsync();
         }
 
 
