@@ -1,6 +1,4 @@
-﻿using System.Linq.Expressions;
-
-namespace Bookify.Web.Repositories.Categories
+﻿namespace Bookify.Web.Repositories.Categories
 {
     public class CategoriesRepo : ICategoriesRepo
     {
@@ -60,6 +58,11 @@ namespace Bookify.Web.Repositories.Categories
         private async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<Category>> GetAvailableCategoriesAsync()
+        {
+            return await _context.Categories.Where(a => !a.IsDeleted).OrderBy(a => a.Name).ToListAsync();
         }
     }
 }

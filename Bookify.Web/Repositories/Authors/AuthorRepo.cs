@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Bookify.Web.Repositories.Authors
 {
@@ -45,6 +45,11 @@ namespace Bookify.Web.Repositories.Authors
         public async Task<Author> GetAuthorByIdAsync(int id)
         {
             return await FindAuthorByIdAsync(id);
+        }
+
+        public async Task<IEnumerable<Author>> GetAvailableAuthorsAsync()
+        {
+            return await _context.Authors.Where(a => !a.IsDeleted).OrderBy(a => a.Name).ToListAsync();
         }
 
         public async Task UpdateAuthorAsync(Author author)
