@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using Bookify.Web.Core.Models;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 
 namespace Bookify.Web.Controllers
 {
@@ -45,6 +47,7 @@ namespace Bookify.Web.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddBook(BookViewModel model)
         {
+
             // Validate the model state
             if (!ModelState.IsValid)
             {
@@ -57,14 +60,14 @@ namespace Bookify.Web.Controllers
             int lastBookId = await _bookRepo.GetLatestBookIdAsync();
 
             // Handle the image upload if provided
-            if (model.ImageUrl != null)
+            if (model.Image != null)
             {
-                var saveImageResult = await SaveImageAsync(model.ImageUrl, model, lastBookId + 1);
+                var saveImageResult = await SaveImageAsync(model.Image, model, lastBookId + 1);
 
                 // Check if the image was saved successfully
                 if (saveImageResult is OkObjectResult okResult)
                 {
-                    newBook.ImageUrl = okResult.Value.ToString(); // Set the ImageUrl to the saved file path
+                    newBook.ImageUrl = okResult.Value.ToString(); // Set the Image to the saved file path
                 }
                 else
                 {
@@ -82,22 +85,89 @@ namespace Bookify.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        public async Task<IActionResult> Edit(int id)
+        {
+            // Retrieve the existing book using the provided ID
+            var book = await _bookRepo.GetBookByIdAsync(id);
+
+            if (book == null)
+            {
+                return NotFound();
+            }
+
+
+            //Map the book entity to the view model
+            var bookView = _mapper.Map<BookViewModel>(book);
+
+            bookView.Authors = _mapper.Map<IEnumerable<SelectListItem>>(await _authorRepo.GetAvailableAuthorsAsync()).ToList();
+            bookView.Categories = _mapper.Map<IEnumerable<SelectListItem>>(await _categoriesRepo.GetAvailableCategoriesAsync()).ToList();
+            bookView.SelectedCategoryIds = await _bookCategoryRepo.GetCategoryIdsByBookIdAsync(book.Id);
+
+
+            return View("EditBook", bookView);
+
+        }
+
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditBook(BookViewModel model)
+        public async Task<IActionResult> UpdateBook(BookViewModel model)
         {
-            if (!ModelState.IsValid)
+            // Fetch the existing book entity from the repository
+            var existingBook = await _bookRepo.GetBookByIdAsync(model.Id);
+
+            // If the book does not exist, return 404
+            if (existingBook == null)
             {
-                var viewModel = await PopulateViewModelAsync();
-                return View(viewModel);
+                return NotFound();
             }
 
-            // Save logic here
+            // If the model is not valid, re-render the form with the necessary data
+            if (!ModelState.IsValid)
+            {
+                await PopulateSelectListsAsync(model); // Populating the Authors and Categories lists
+                return View("EditBook", model); // Return the invalid form with validation messages
+            }
 
-            return Json(model);
+
+            // Map the updated values from the view model to the existing entity
+            _mapper.Map(model, existingBook);
+
+            // Handle the image upload if an image is provided  
+            if (model.Image != null)
+            {
+                var saveImageResult = await SaveImageAsync(model.Image, model, model.Id);
+
+
+                // Check if the image was saved successfully
+                if (saveImageResult is OkObjectResult okResult)
+                {
+                    existingBook.ImageUrl = okResult.Value.ToString();
+                }
+                else
+                {
+                    await PopulateSelectListsAsync(model); // Ensure dropdowns are populated
+                    ModelState.AddModelError(string.Empty, "Failed to save the image. Please try again.");
+                    return View("EditBook", model);
+                }
+            }
+
+            existingBook.LastUpdatedOn = DateTime.Now;
+
+            // Persist the changes in the database
+            await _bookRepo.UpdateBookAsync(existingBook);
+            await UpdateBookCategoriesAsync(model.SelectedCategoryIds, existingBook.Id);
+
+            // Store a success message in TempData and redirect to the Index page
+            TempData["SuccessMessage"] = "Book updated successfully!";
+            return RedirectToAction(nameof(Index));
         }
 
+
+
+
+        // For Add
         private async Task<BookViewModel> PopulateViewModelAsync()
         {
             var authors = await _authorRepo.GetAvailableAuthorsAsync();
@@ -111,13 +181,30 @@ namespace Bookify.Web.Controllers
         }
 
 
-        public async Task<IActionResult> SaveImageAsync(IFormFile file, BookViewModel model, int bookId)
+        //For Eidt
+        private async Task<BookViewModel> PopulateSelectListsAsync(BookViewModel model)
+        {
+            // Fetch authors and categories from the repositories
+            var authors = await _authorRepo.GetAvailableAuthorsAsync();
+            var categories = await _categoriesRepo.GetAvailableCategoriesAsync();
+
+            // Map the authors and categories to SelectListItems and assign to the model
+            model.Authors = _mapper.Map<IEnumerable<SelectListItem>>(authors).ToList();
+            model.Categories = _mapper.Map<IEnumerable<SelectListItem>>(categories).ToList();
+
+            // Return the updated model
+            return model;
+        }
+
+
+
+        private async Task<IActionResult> SaveImageAsync(IFormFile file, BookViewModel model, int bookId)
         {
 
             // Check if a file has been provided
             if (file == null || file.Length == 0)
             {
-                ModelState.AddModelError(nameof(model.ImageUrl), Errors.NoFileProvided);
+                ModelState.AddModelError(nameof(model.Image), Errors.NoFileProvided);
                 return await ReturnAddBookViewWithErrorsAsync();
             }
 
@@ -125,7 +212,7 @@ namespace Bookify.Web.Controllers
             const int maxFileSize = 5 * 1024 * 1024; // 5 MB
             if (file.Length > maxFileSize)
             {
-                ModelState.AddModelError(nameof(model.ImageUrl), string.Format(Errors.FileSizeExceeded, maxFileSize / (1024 * 1024)));
+                ModelState.AddModelError(nameof(model.Image), string.Format(Errors.FileSizeExceeded, maxFileSize / (1024 * 1024)));
                 return await ReturnAddBookViewWithErrorsAsync();
             }
 
@@ -133,7 +220,7 @@ namespace Bookify.Web.Controllers
             var allowedFileTypes = new[] { "image/jpeg", "image/png", "image/gif" }; // Allowed file types
             if (!allowedFileTypes.Contains(file.ContentType))
             {
-                ModelState.AddModelError(nameof(model.ImageUrl), string.Format(Errors.InvalidFileType, string.Join(", ", allowedFileTypes)));
+                ModelState.AddModelError(nameof(model.Image), string.Format(Errors.InvalidFileType, string.Join(", ", allowedFileTypes)));
                 return await ReturnAddBookViewWithErrorsAsync();
             }
 
@@ -166,11 +253,11 @@ namespace Bookify.Web.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                ModelState.AddModelError(nameof(model.ImageUrl), Errors.PermissionDenied);
+                ModelState.AddModelError(nameof(model.Image), Errors.PermissionDenied);
             }
             catch (Exception)
             {
-                ModelState.AddModelError(nameof(model.ImageUrl), Errors.SaveError);
+                ModelState.AddModelError(nameof(model.Image), Errors.SaveError);
             }
 
             return await ReturnAddBookViewWithErrorsAsync();
@@ -184,23 +271,57 @@ namespace Bookify.Web.Controllers
             return View("AddBook", viewModel);
         }
 
+
+
         // Adds categories to the book
         private async Task AddBookCategoriesAsync(IEnumerable<int> selectedCategoryIds, int bookId)
         {
             foreach (var categoryId in selectedCategoryIds)
             {
-                var bookCategory = new BookCategory
+                // Check if the relationship already exists
+                var existing = await _bookCategoryRepo.GetBookCategoryByIdsAsync(bookId, categoryId);
+                if (existing == null)
                 {
-                    CategoryId = categoryId,
-                    BookId = bookId
-                };
-                await _bookCategoryRepo.AddAsync(bookCategory);
+                    var bookCategory = new BookCategory
+                    {
+                        CategoryId = categoryId,
+                        BookId = bookId
+                    };
+                    await _bookCategoryRepo.AddAsync(bookCategory);
+                }
             }
         }
 
 
+        private async Task UpdateBookCategoriesAsync(List<int> selectedCategoryIds, int bookId)
+        {
+            // Retrieve all existing BookCategories for the given bookId
+            var existingBookCategories = await _bookCategoryRepo.GetCategoryIdsByBookIdAsync(bookId);
+
+            // Remove categories that are no longer selected
+            foreach (var categoryId in existingBookCategories)
+            {
+                if (!selectedCategoryIds.Contains(categoryId))
+                {
+                    // Assuming you have a method to get the full BookCategory by categoryId and bookId
+                    var bookCategoryToRemove = await _bookCategoryRepo.GetBookCategoryByIdsAsync(bookId, categoryId);
+                    if (bookCategoryToRemove != null)
+                    {
+                        await _bookCategoryRepo.RemoveAsync(bookCategoryToRemove);
+                    }
+                }
+            }
+
+
+
+            await AddBookCategoriesAsync(selectedCategoryIds, bookId);
+
+        }
+
+
+
         //[HttpGet]
-        //public async Task<IActionResult> ValidateImage(IFormFile? imageUrl)
+        //public async Task<IActionResult> ValidateImage(IFormFile? Image)
         //{
         //    if (!ModelState.IsValid)
         //    {
@@ -209,21 +330,21 @@ namespace Bookify.Web.Controllers
         //    }
 
         //    // Check if a file has been provided
-        //    if (imageUrl == null || imageUrl.Length == 0)
+        //    if (Image == null || Image.Length == 0)
         //    {
         //        return Json(new { success = false, message = Errors.NoFileProvided });
         //    }
 
         //    // Define maximum file size (e.g., 5 MB)
         //    const int maxFileSize = 5 * 1024 * 1024; // 5 MB
-        //    if (imageUrl.Length > maxFileSize)
+        //    if (Image.Length > maxFileSize)
         //    {
         //        return Json(new { success = false, message = string.Format(Errors.FileSizeExceeded, maxFileSize / (1024 * 1024)) });
         //    }
 
         //    // Define allowed file types
         //    var allowedFileTypes = new[] { "image/jpeg", "image/png", "image/gif" }; // Allowed file types
-        //    if (!allowedFileTypes.Contains(imageUrl.ContentType))
+        //    if (!allowedFileTypes.Contains(Image.ContentType))
         //    {
         //        return Json(new { success = false, message = string.Format(Errors.InvalidFileType, string.Join(", ", allowedFileTypes)) });
         //    }

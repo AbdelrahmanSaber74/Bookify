@@ -1,7 +1,7 @@
 ﻿@model BookViewModel
 
 @{
-    ViewData["Title"] = "Add Book";
+    ViewData["Title"] = "Edit Book";
 }
 
 
@@ -18,7 +18,7 @@
             </div>
         </div>
         <div class="d-flex flex-column pe-0 pe-sm-10">
-            <h5 class="mb-1">Add Book</h5>
+            <h5 class="mb-1">Edit Book</h5>
         </div>
     </div>
 </div>
@@ -28,7 +28,7 @@
     <div class="card-body">
         <div class="row">
             <div class="col-md-6">
-                <form method="post" asp-controller="Books" asp-action="AddBook" enctype="multipart/form-data"
+                <form method="post" asp-controller="Books" asp-action="UpdateBook" enctype="multipart/form-data"
                       data-ajax="true"
                       data-ajax-method="POST"
                       data-ajax-begin="onModalBegin()"
@@ -36,6 +36,9 @@
                       data-ajax-success="onModalSuccess"
                       data-ajax-failure="onFailure">
 
+                      <div>
+                          <input hidden asp-for="Id"></input>
+                      </div>
 
                     <!-- Title -->
                     <div class="mb-5">
@@ -77,11 +80,20 @@
                         <span asp-validation-for="PublishDate" class="text-danger"></span>
                     </div>
 
-                    <!-- Image URL -->
+                    <div>
+                        <!-- Image preview (initially showing the model's image or a placeholder) -->
+                        <img id="imagePreview"
+                             src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/default/Bookavatar.jpg" : $"/{Model.ImageUrl}")"
+                             class="img-thumbnail"
+                             alt="Image Preview"
+                             style="max-width: 200px;" />
+                    </div>
+
+                    <!-- Image Upload Input -->
                     <div class="mb-5">
                         <div class="form-floating mb-2">
-                            <input type="file" class="form-control" placeholder="Image" asp-for="Image" />
-                            <label asp-for="Image"></label>
+                            <input asp-for="Image" type="file" class="form-control" id="imageInput" accept="image/*" />
+                            <label asp-for="Image">Choose an Image</label>
                         </div>
                         <span asp-validation-for="Image" class="text-danger"></span>
                     </div>
@@ -95,7 +107,6 @@
                         <span asp-validation-for="Hall" class="text-danger"></span>
                     </div>
 
-                    <!-- Availability -->
                     <!-- Availability -->
                     <div class="mb-5 form-check">
                         <input type="checkbox" class="form-check-input" asp-for="IsAvailableForRental" id="availabilityCheckbox" />
@@ -139,21 +150,35 @@
     </div>
 </div>
 
-<!-- Loading Overlay -->
-<div id="loadingOverlay" style="display: none;">
-    <div class="spinner-border" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
-</div>
 
-@section Scripts
-{
-    <partial name="_ValidationScriptsPartial" />
-    <script src="~/js/site.js" asp-append-version="true"></script>
-
-}
 
 @section Styles
 {
     <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
+}
+
+
+@section Scripts {
+
+
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- JavaScript to update the image preview -->
+    <script>
+        document.getElementById('imageInput').addEventListener('change', function (event) {
+            var input = event.target;
+
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    document.getElementById('imagePreview').src = e.target.result; // Update the image preview
+                };
+
+                // Read the image file as a data URL
+                reader.readAsDataURL(input.files[0]);
+            }
+        });
+    </script>
 }

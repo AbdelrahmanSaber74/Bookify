@@ -1,4 +1,6 @@
-﻿namespace Bookify.Web.Repositories.BooksCategories
+﻿using Bookify.Web.Core.Models;
+
+namespace Bookify.Web.Repositories.BooksCategories
 {
     public class BookCategoryRepo : IBookCategoryRepo
     {
@@ -20,5 +22,35 @@
         {
             return await _context.BookCategories.ToListAsync(); // Get all categories
         }
+
+
+        public async Task<List<int>> GetCategoryIdsByBookIdAsync(int bookId)
+        {
+            return await _context.BookCategories
+                .Where(bc => bc.BookId == bookId)
+                .Select(bc => bc.CategoryId)
+                .ToListAsync();
+        }
+
+
+
+
+        public async Task<BookCategory> GetBookCategoryByIdsAsync(int bookId, int categoryId)
+        {
+            return await _context.BookCategories
+                .FirstOrDefaultAsync(bc => bc.BookId == bookId && bc.CategoryId == categoryId);
+        }
+
+        public async Task RemoveAsync(BookCategory bookCategory)
+        {
+            if (bookCategory != null)
+            {
+                _context.BookCategories.Remove(bookCategory);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+
+
     }
 }

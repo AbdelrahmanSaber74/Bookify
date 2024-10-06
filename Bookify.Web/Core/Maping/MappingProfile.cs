@@ -20,8 +20,10 @@ namespace Bookify.Web.Core.Maping
 
             // Maps between Book model and BookViewModel
             CreateMap<Book, BookViewModel>()
-                .ForMember(dest => dest.ImageUrl, opt => opt.Ignore()) // Ignore ImageUrl in the mapping
-                .ReverseMap(); // Reverse the mapping to go from BookViewModel to Book
+                .ForMember(dest => dest.Image, opt => opt.Ignore())
+                .ReverseMap();
+
+
 
             // Maps from BookViewModel to BookCategory
             // Ignoring BookId as it will be set manually when creating BookCategory
