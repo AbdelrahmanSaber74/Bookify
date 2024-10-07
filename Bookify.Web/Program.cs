@@ -13,6 +13,11 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
 
+builder.Services.AddControllers()
+        .AddNewtonsoftJson(options =>
+        {
+            options.SerializerSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
+        });
 
 // Register all services
 builder.Services.AddApplicationServices(); // استدعاء خدمات الامتداد هنا

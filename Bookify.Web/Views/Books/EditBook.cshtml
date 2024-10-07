@@ -80,14 +80,16 @@
                         <span asp-validation-for="PublishDate" class="text-danger"></span>
                     </div>
 
-                    <div>
-                        <!-- Image preview (initially showing the model's image or a placeholder) -->
-                        <img id="imagePreview"
-                             src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/default/Bookavatar.jpg" : $"/{Model.ImageUrl}")"
-                             class="img-thumbnail"
-                             alt="Image Preview"
-                             style="max-width: 200px;" />
-                    </div>
+                  
+                        <div>
+                            <!-- Image preview (initially showing the model's image or a placeholder) -->
+                            <img id="imagePreview"
+                                 src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/default/Bookavatar.jpg" : $"/{Model.ImageUrl.TrimStart('/')}")"
+                                 class="img-thumbnail"
+                                 alt="Image Preview"
+                                 style="max-width: 200px;" />
+                        </div>
+
 
                     <!-- Image Upload Input -->
                     <div class="mb-5">
@@ -97,6 +99,13 @@
                         </div>
                         <span asp-validation-for="Image" class="text-danger"></span>
                     </div>
+
+
+                    <!-- ImageUrl - Hidden Input -->
+                    <div >
+                            <input hidden asp-for="ImageUrl" type="text">
+                    </div>
+
 
                     <!-- Hall -->
                     <div class="mb-5">
