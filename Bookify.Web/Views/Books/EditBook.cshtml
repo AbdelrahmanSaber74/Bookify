@@ -4,7 +4,6 @@
     ViewData["Title"] = "Edit Book";
 }
 
-
 <div class="alert bg-light-primary border border-primary border-3 border-dashed d-flex justify-content-between w-100 p-5 mb-10">
     <div class="d-flex align-items-center">
         <div class="symbol symbol-40px me-4">
@@ -40,6 +39,52 @@
                           <input hidden asp-for="Id"></input>
                       </div>
 
+                    <!-- ImageUrl - Hidden Input -->
+                    <div>
+                        <input hidden asp-for="ImageUrl" type="text">
+                    </div>
+
+
+
+                    <!-- Image URL -->
+                    <!--begin::Image input-->
+                    <div class="image-input image-input-empty mb-10" data-kt-image-input="true" style="background-image: url('@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/default/image-placeholder.jpg" : $"/{Model.ImageUrl}")')">
+                    <!--begin::Image preview wrapper-->
+                        <div class="image-input-wrapper w-125px h-200px"></div>
+                        <!--end::Image preview wrapper-->
+                        <!--begin::Edit button-->
+                        <label class="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-40px h-25px bg-body shadow"
+                               data-kt-image-input-action="change"
+                               data-bs-dismiss="click">
+                            <i class="bi bi-pencil-fill fs-7"></i>
+
+                            <!--begin::Inputs-->
+                            <input type="file" asp-for="Image" accept=".png, .jpg, .jpeg" />
+                            <input type="hidden" asp-for="ImageUrl" />
+                            <!--end::Inputs-->
+                        </label>
+                        <!--end::Edit button-->
+                        <!--begin::Cancel button-->
+                        <span class="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-25px h-25px bg-body shadow"
+                              data-kt-image-input-action="cancel"
+                              data-bs-dismiss="click">
+                            <i class="bi bi-x fs-2"></i>
+                        </span>
+                        <!--end::Cancel button-->
+                        <!--begin::Remove button-->
+                        <span class="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-25px h-25px bg-body shadow"
+                              data-kt-image-input-action="remove"
+                              data-bs-dismiss="click">
+                            <i class="bi bi-x fs-2"></i>
+                        </span>
+                        <!--end::Remove button-->
+                    </div>
+                    <span asp-validation-for="Image" class="text-danger d-block"></span>
+                    <!--end::Image input-->
+
+
+
+
                     <!-- Title -->
                     <div class="mb-5">
                         <div class="form-floating mb-2">
@@ -52,11 +97,10 @@
                     <!-- Author -->
                     <div class="mb-5">
                         <div class="form-floating mb-2">
-                            <select class="form-select" asp-for="AuthorId" required asp-items="@Model.Authors">
+                            <select class="form-select js-select2" asp-for="AuthorId" required asp-items="@Model.Authors">
                                 <option disabled selected value="">Select Author</option>
 
                             </select>
-                            <label asp-for="AuthorId"></label>
                         </div>
                         <span asp-validation-for="AuthorId" class="text-danger"></span>
                     </div>
@@ -74,39 +118,13 @@
                     <!-- Publisher Date-->
                     <div class="mb-5">
                         <div class="form-floating mb-2">
-                            <input type="date" class="form-control" placeholder="PublishDate" asp-for="PublishDate" />
+                            <input type="text" class="form-control js-rangepicker" placeholder="PublishDate" asp-for="PublishDate" />
                             <label asp-for="PublishDate"></label>
                         </div>
                         <span asp-validation-for="PublishDate" class="text-danger"></span>
                     </div>
 
-                  
-                        <div>
-                            <!-- Image preview (initially showing the model's image or a placeholder) -->
-                            <img id="imagePreview"
-                                 src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/default/Bookavatar.jpg" : $"/{Model.ImageUrl.TrimStart('/')}")"
-                                 class="img-thumbnail"
-                                 alt="Image Preview"
-                                 style="max-width: 200px;" />
-                        </div>
-
-
-                    <!-- Image Upload Input -->
-                    <div class="mb-5">
-                        <div class="form-floating mb-2">
-                            <input asp-for="Image" type="file" class="form-control" id="imageInput" accept="image/*" />
-                            <label asp-for="Image">Choose an Image</label>
-                        </div>
-                        <span asp-validation-for="Image" class="text-danger"></span>
-                    </div>
-
-
-                    <!-- ImageUrl - Hidden Input -->
-                    <div >
-                            <input hidden asp-for="ImageUrl" type="text">
-                    </div>
-
-
+               
                     <!-- Hall -->
                     <div class="mb-5">
                         <div class="form-floating mb-2">
@@ -116,27 +134,27 @@
                         <span asp-validation-for="Hall" class="text-danger"></span>
                     </div>
 
+                
                     <!-- Availability -->
-                    <div class="mb-5 form-check">
-                        <input type="checkbox" class="form-check-input" asp-for="IsAvailableForRental" id="availabilityCheckbox" />
-                        <label class="form-check-label" asp-for="IsAvailableForRental"></label>
-                        <span asp-validation-for="IsAvailableForRental" class="text-danger"></span>
+                    <div class="mb-5">
+                        <div class="col mb-2">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" asp-for="IsAvailableForRental">
+                                <label class="form-check-label" asp-for="IsAvailableForRental"></label>
+                            </div>
+                        </div>
                     </div>
-
 
                     <!-- Categories -->
-                    <div class="mb-5">
-                        <label asp-for="Categories" class="form-label"></label>
-                        <select asp-for="SelectedCategoryIds" class="form-select" multiple="multiple" required>
-                            @foreach (var category in Model.Categories)
-                            {
-                                <option value="@category.Value">@category.Text</option>
-                            }
-                        </select>
-                        <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span>
-                    </div>
-
-
+                        <div class="mb-5">
+                            <div class="m-2">
+                                <label asp-for="Categories" class="form-label"></label>
+                                <select asp-for="SelectedCategoryIds" class="form-select js-select2" multiple="multiple" required asp-items="@Model.Categories">
+                                </select>
+                            </div>
+                            <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span>
+                        </div>
+                   
 
                     <!-- Description -->
                     <div class="mb-5">
@@ -160,34 +178,27 @@
 </div>
 
 
-
-@section Styles
+@section Scripts
 {
-    <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
-}
-
-
-@section Scripts {
-
 
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/site.js" asp-append-version="true"></script>
 
-    <!-- JavaScript to update the image preview -->
-    <script>
-        document.getElementById('imageInput').addEventListener('change', function (event) {
-            var input = event.target;
+}
 
-            if (input.files && input.files[0]) {
-                var reader = new FileReader();
+@section CustomScripts
+{
+    <script src="~/lib/select2/js/select2.js"></script>
+    <script src="~/lib/select2/js/select2.min.js"></script>
 
-                reader.onload = function (e) {
-                    document.getElementById('imagePreview').src = e.target.result; // Update the image preview
-                };
 
-                // Read the image file as a data URL
-                reader.readAsDataURL(input.files[0]);
-            }
-        });
-    </script>
+    <script src="~/lib/bootstrap-daterangepicker/moment.min.js"></script>
+    <script src="~/lib/bootstrap-daterangepicker/daterangepicker.min.js"></script>
+}
+
+
+@section Styles
+{
+    <link href="~/lib/select2/css/select2.css" rel="stylesheet" />
+    <link href="~/lib/select2/css/select2.min.css" rel="stylesheet" />
 }

@@ -1,4 +1,6 @@
-﻿namespace Bookify.Web.Repositories.Books
+﻿using Bookify.Web.Core.Models;
+
+namespace Bookify.Web.Repositories.Books
 {
     public class BookRepo : IBookRepo
     {
@@ -72,6 +74,15 @@
             await _context.SaveChangesAsync(); // Save changes to the database
         }
 
-     
+
+        public async Task<Book> GetBookByTitleAndAuthor(string title, int authorId)
+        {
+            return await _context.Books
+                .Where(b => b.Title == title && b.AuthorId == authorId)
+                .FirstOrDefaultAsync();
+        }
+
+
+
     }
 }

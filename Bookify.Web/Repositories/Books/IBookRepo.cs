@@ -11,5 +11,8 @@ namespace Bookify.Web.Repositories.Books
         Task<int> GetLatestBookIdAsync();
         Task DeleteBookAsync(int id);
         Task<bool> AnyBookAsync(Expression<Func<Book, bool>> predicate);
+
+        Task<Book> GetBookByTitleAndAuthor (string title, int authorId);
+
     }
 }

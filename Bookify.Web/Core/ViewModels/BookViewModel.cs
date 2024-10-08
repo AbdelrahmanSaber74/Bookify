@@ -7,9 +7,11 @@ namespace Bookify.Web.Core.ViewModels
         public int Id { get; set; }
 
         [MaxLength(500, ErrorMessage = Errors.MaxLength)]
+        [Remote(action: "IsTitleAuthorUnique", controller: "Books", AdditionalFields = nameof(AuthorId) + "," + nameof(Id), ErrorMessage = Errors.Duplicated)]
         public string Title { get; set; }
 
         [Display(Name = "Author")]
+        [Remote(action: "IsTitleAuthorUnique", controller: "Books", AdditionalFields = nameof(Title) + "," + nameof(Id), ErrorMessage = Errors.Duplicated)]
         public int AuthorId { get; set; }
         public Author? Author { get; set; }
 

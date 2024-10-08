@@ -17,6 +17,8 @@ builder.Services.AddControllers()
         .AddNewtonsoftJson(options =>
         {
             options.SerializerSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
+            options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+
         });
 
 // Register all services

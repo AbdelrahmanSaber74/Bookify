@@ -1,4 +1,6 @@
-﻿public class BooksController : Controller
+﻿using Microsoft.EntityFrameworkCore;
+
+public class BooksController : Controller
 {
     private readonly IBookRepo _bookRepo;
     private readonly IMapper _mapper;
@@ -126,6 +128,25 @@
 
         TempData["SuccessMessage"] = "Book updated successfully!";
         return RedirectToAction(nameof(Index));
+    }
+
+
+    [AcceptVerbs("Get", "Post")]
+    public async Task<IActionResult> IsTitleAuthorUnique(BookViewModel model)
+    {
+        var existingBook = await _bookRepo.GetBookByTitleAndAuthor(model.Title, model.AuthorId);
+
+        // If the book is null, or it's the current book being updated, it's valid
+        if (existingBook == null || existingBook.Id == model.Id)
+        {
+            return Json(true);
+        }
+
+        // Otherwise, return an error message indicating the combination is duplicated
+        var errorMessage = string.Format(Errors.DuplicatedBook);
+        return Json(errorMessage);
+
+
     }
 
     // Private methods for handling business logic

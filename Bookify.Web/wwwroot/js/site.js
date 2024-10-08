@@ -53,6 +53,24 @@ $(document).ready(function () {
     if (warningMessage) {
         showWarningMessage(warningMessage);
     }
+
+    // Handle Select2 package use for select and option
+    $(".js-select2").select2({
+        allowClear: true
+    });
+
+    // Handle rangepicker package use for date calendar
+    $(".js-rangepicker").daterangepicker({
+        dateFormat: "Y-m-d",
+        singleDatePicker: true,
+        autoApply: true,
+        "drops": "up",
+        "showDropdowns": true,
+
+    });
+
+
+
 });
 
 // Initialize DataTable with export buttons and functionality
@@ -297,3 +315,5 @@ function onModalSuccess(row) {
 function onModalComplete() {
     hideLoading(); // Call to hide loading when the modal is complete
 }
+
+
