@@ -1,6 +1,4 @@
-﻿using Bookify.Web.Extensions;
-
-var builder = WebApplication.CreateBuilder(args);
+﻿var builder = WebApplication.CreateBuilder(args);
 
 
 // Add services to the container.
@@ -23,6 +21,7 @@ builder.Services.AddControllers()
 
 // Register all services
 builder.Services.AddApplicationServices(); // استدعاء خدمات الامتداد هنا
+builder.Services.AddExpressiveAnnotations(); 
 
 var app = builder.Build();
 

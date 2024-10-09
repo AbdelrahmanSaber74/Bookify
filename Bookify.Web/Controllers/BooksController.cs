@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-
-public class BooksController : Controller
+﻿public class BooksController : Controller
 {
     private readonly IBookRepo _bookRepo;
     private readonly IMapper _mapper;
@@ -262,6 +260,19 @@ public class BooksController : Controller
             {
                 await file.CopyToAsync(stream);
             }
+
+            // Resize and create a thumbnail
+            var thumbnailPath = Path.Combine(_webHostEnvironment.WebRootPath, "images", "books", bookId.ToString(), "thumbnails", imageName);
+
+            var thumbnailDirectory = Path.GetDirectoryName(thumbnailPath);
+            if (!Directory.Exists(thumbnailDirectory))
+            {
+                Directory.CreateDirectory(thumbnailDirectory);
+            }
+
+            // Resize the original image and save it as a thumbnail (150x150 size)
+            ImageHelper.ResizeImage(filePath, thumbnailPath, 150, 150);
+
 
             var relativePath = Path.Combine("images", "books", bookId.ToString(), imageName).Replace("\\", "/");
             return Ok(relativePath);

@@ -1,8 +1,8 @@
 ﻿@model CategoryViewModel
 
-    @{
-        ViewData["Title"] = "Edit Category";
-    }
+@{
+    ViewData["Title"] = "Edit Category";
+}
 
 
 <div class="alert bg-light-primary border border-primary border-3 border-dashed d-flex justify-content-between w-100 p-5 mb-10">
@@ -25,17 +25,17 @@
 
 <div class="card shadow-sm">
     <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
+        <div class="row">
+            <div class="col-md-4">
                 <form method="post" asp-controller="Categories" asp-action="UpdateCategory">
-                        <input type="hidden" asp-for="Id" /> <!-- Hidden field for category Id -->
-                        <div class="mb-3">
-                            <div class="form-floating mb-2">
-                                <input type="text" class="form-control" placeholder="Category Name" asp-for="Name" required />
-                                <label asp-for="Name"></label>
-                            </div>
-                            <span asp-validation-for="Name" class="text-danger"></span>
+                    <input type="hidden" asp-for="Id" /> <!-- Hidden field for category Id -->
+                    <div class="mb-3">
+                        <div class="form-floating mb-2">
+                            <input type="text" class="form-control" placeholder="Category Name" asp-for="Name" required />
+                            <label asp-for="Name"></label>
                         </div>
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
 
 
                     <div class="mb-5">
@@ -50,17 +50,26 @@
                     </div>
 
 
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="bi bi-check2"></i>
-                            Save
-                        </button>
-                    </form>
-                </div>
+                    <!-- Submit Button -->
+                    <div class="card-footer">
+                        <div class="ml-n25">
+
+                            <button type="submit" class="btn btn-primary btn-sm " id="submitBtn">
+                                <i class="bi bi-check2"></i>
+                                <span class="loading-indicator" style="display: none;">Loading...</span>
+                                Save
+                            </button>
+                            <a class="btn btn-light text-primary ms-3" asp-action="Index">Cancel</a>
+                        </div>
+                    </div>
+
+                </form>
             </div>
         </div>
     </div>
+</div>
 
-    @section Scripts
+@section Scripts
     {
-        <partial name="_ValidationScriptsPartial" />
-    }
+    <partial name="_ValidationScriptsPartial" />
+}

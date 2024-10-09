@@ -1,5 +1,4 @@
-﻿using Bookify.Web.Repositories.Categories;
-
+﻿
 namespace Bookify.Web.Controllers
 {
     public class CategoriesController : Controller

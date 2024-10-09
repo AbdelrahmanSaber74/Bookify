@@ -52,11 +52,21 @@
                         <span asp-validation-for="IsDeleted" class="text-danger"></span>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-sm" id="submitBtn">
-                        <i class="bi bi-check2"></i>
-                        <span class="loading-indicator" style="display: none;">Loading...</span> <!-- Loading text -->
-                        Save
-                    </button>
+
+                    <!-- Submit Button -->
+                    <div class="card-footer">
+                        <div class="ml-n25">
+                            <button type="submit" class="btn btn-primary btn-sm" id="submitBtn" onclick="handleSubmit()">
+                                <i class="bi bi-check2"></i>
+                                <span class="button-text">Save</span>
+                                <span class="loading-indicator" style="display: none;">
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    Please wait...
+                                </span>
+                            </button>
+                            <a class="btn btn-light text-primary ms-3" asp-action="Index">Cancel</a>
+                        </div>
+                    </div>
 
                 </form>
             </div>
@@ -73,6 +83,25 @@
 
 @section Scripts
 {
+
+    <script>
+
+
+        <script>
+            function handleSubmit() {
+                // Get the submit button
+                const submitBtn = document.getElementById('submitBtn');
+
+                // Disable the button to prevent multiple clicks
+                submitBtn.disabled = true;
+
+                // Hide the "Save" text and show the loading indicator
+                document.querySelector('.button-text').style.display = 'none';
+                document.querySelector('.loading-indicator').style.display = 'inline-block';
+            }
+    </script>
+
+
     <partial name="_ValidationScriptsPartial" />
     <script src="~/js/site.js" asp-append-version="true"></script>
 }

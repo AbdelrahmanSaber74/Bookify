@@ -7,6 +7,7 @@ namespace Bookify.Web.Core.Const
         public const string MaxMinLength = "The {0} must be at least {1} and at max {2} characters long.";
         public const string Duplicated = "Another record with the same {0} already exists!";
         public const string DuplicatedBook = "Book with the same title is already exists with the same author!";
+        public const string NotAllowFutureDates = "Date cannot be in the future!";
 
         // Add image-related error messages
         public const string NoFileProvided = "No file provided.";

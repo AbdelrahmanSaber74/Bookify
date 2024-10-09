@@ -58,6 +58,9 @@ $(document).ready(function () {
     $(".js-select2").select2({
         allowClear: true
     });
+    $('.js-select2').on('select2:select', function (e) {
+        $('form').validate().element('#' + $(this).attr('id'));
+    });
 
     // Handle rangepicker package use for date calendar
     $(".js-rangepicker").daterangepicker({
@@ -66,6 +69,7 @@ $(document).ready(function () {
         autoApply: true,
         "drops": "up",
         "showDropdowns": true,
+        "maxDate": new Date(),
 
     });
 

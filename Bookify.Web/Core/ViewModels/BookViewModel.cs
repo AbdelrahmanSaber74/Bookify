@@ -1,3 +1,4 @@
+using UoN.ExpressiveAnnotations.NetCore.Attributes;
 
 namespace Bookify.Web.Core.ViewModels
 {
@@ -19,7 +20,7 @@ namespace Bookify.Web.Core.ViewModels
         public string Publisher { get; set; }
 
         [Required]
-        [Display(Name = "Publish Date")]
+        [AssertThat("PublishDate <= Today()", ErrorMessage = Errors.NotAllowFutureDates)]
         public DateTime PublishDate { get; set; } = DateTime.Now;
 
         //[Remote(action: "ValidateImage", controller: "Books", AdditionalFields = nameof(Id), ErrorMessage = "Invalid image file.")]

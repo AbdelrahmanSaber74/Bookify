@@ -49,10 +49,19 @@
                     </div>
 
 
-                    <button type="submit" class="btn btn-primary btn-sm">
-                        <i class="bi bi-check2"></i>
-                        Save
-                    </button>
+                    <!-- Submit Button -->
+                    <div class="card-footer">
+                        <div class="ml-n25">
+
+                            <button type="submit" class="btn btn-primary btn-sm " id="submitBtn">
+                                <i class="bi bi-check2"></i>
+                                <span class="loading-indicator" style="display: none;">Loading...</span>
+                                Save
+                            </button>
+                            <a class="btn btn-light text-primary ms-3" asp-action="Index">Cancel</a>
+                        </div>
+                    </div>
+
                 </form>
             </div>
         </div>

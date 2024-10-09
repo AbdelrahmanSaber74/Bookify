@@ -20,3 +20,7 @@ body {
 .form-floating .form-select {
     padding-top: 1.20rem !important;
 }
+
+.ml-n25 {
+    margin-left: -25px;
+}
