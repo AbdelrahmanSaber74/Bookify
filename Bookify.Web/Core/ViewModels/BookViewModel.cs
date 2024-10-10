@@ -15,6 +15,7 @@ namespace Bookify.Web.Core.ViewModels
         [Remote(action: "IsTitleAuthorUnique", controller: "Books", AdditionalFields = nameof(Title) + "," + nameof(Id), ErrorMessage = Errors.Duplicated)]
         public int AuthorId { get; set; }
         public Author? Author { get; set; }
+        public string? AuthorName { get; set; }
 
         [MaxLength(200, ErrorMessage = Errors.MaxLength)]
         public string Publisher { get; set; }
@@ -26,6 +27,7 @@ namespace Bookify.Web.Core.ViewModels
         //[Remote(action: "ValidateImage", controller: "Books", AdditionalFields = nameof(Id), ErrorMessage = "Invalid image file.")]
         public IFormFile? Image { get; set; }
         public string? ImageUrl { get; set; }
+        public string? ImageThumbnailUrl { get; set; }
 
         // Hall property
         [MaxLength(50, ErrorMessage = Errors.MaxLength)]
@@ -42,6 +44,7 @@ namespace Bookify.Web.Core.ViewModels
 
         // Many-to-Many relationship with Book
         public List<SelectListItem>? Categories { get; set; } // For categories
+        public List<string> NameOfCategories { get; set; } = new List<string>();
         public List<int> SelectedCategoryIds { get; set; } = new List<int>(); // For multiple selections
     }
 }

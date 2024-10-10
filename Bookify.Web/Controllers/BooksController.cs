@@ -1,4 +1,6 @@
-﻿public class BooksController : Controller
+﻿using Bookify.Web.Core.Models;
+
+public class BooksController : Controller
 {
     private readonly IBookRepo _bookRepo;
     private readonly IMapper _mapper;
@@ -56,7 +58,9 @@
             var saveImageResult = await SaveImageAsync(model.Image, model, lastBookId + 1);
             if (saveImageResult is OkObjectResult okResult)
             {
-                newBook.ImageUrl = okResult.Value.ToString();
+                var resultData = (dynamic)okResult.Value;
+                newBook.ImageUrl = resultData.relativePath;
+                newBook.ImageThumbnailUrl = resultData.thumbnailRelativePath;
             }
             else
             {
@@ -68,7 +72,14 @@
         await AddBookCategoriesAsync(model.SelectedCategoryIds, newBook.Id);
 
         TempData["SuccessMessage"] = "Book added successfully!";
-        return RedirectToAction(nameof(Index));
+
+
+        return RedirectToAction(nameof(Details), new
+        {
+            id = newBook.Id,
+        });
+
+
     }
 
     // Action method to display the edit book view
@@ -80,6 +91,7 @@
         var bookView = _mapper.Map<BookViewModel>(book);
         await PopulateSelectListsAsync(bookView);
         bookView.SelectedCategoryIds = await _bookCategoryRepo.GetCategoryIdsByBookIdAsync(book.Id);
+
         return View("EditBook", bookView);
     }
 
@@ -87,9 +99,11 @@
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateBook(BookViewModel model)
+
     {
         var existingBook = await _bookRepo.GetBookByIdAsync(model.Id);
         if (existingBook == null) return NotFound();
+
 
         if (!ModelState.IsValid)
         {
@@ -102,15 +116,22 @@
         // Handle image update
         if (model.Image != null)
         {
-            if (!string.IsNullOrEmpty(existingBook.ImageUrl))
+
+            if (!string.IsNullOrEmpty(existingBook.ImageThumbnailUrl) || !string.IsNullOrEmpty(existingBook.ImageUrl))
             {
-                DeleteOldImage(existingBook.ImageUrl);
+                DeleteOldImages(existingBook.ImageUrl, existingBook.ImageThumbnailUrl);
             }
+
+
 
             var saveImageResult = await SaveImageAsync(model.Image, model, model.Id);
             if (saveImageResult is OkObjectResult okResult)
             {
-                existingBook.ImageUrl = okResult.Value.ToString();
+
+                var resultData = (dynamic)okResult.Value;
+
+                existingBook.ImageUrl = resultData.relativePath;
+                existingBook.ImageThumbnailUrl = resultData.thumbnailRelativePath;
             }
             else
             {
@@ -125,8 +146,80 @@
         await UpdateBookCategoriesAsync(model.SelectedCategoryIds, existingBook.Id);
 
         TempData["SuccessMessage"] = "Book updated successfully!";
-        return RedirectToAction(nameof(Index));
+
+        return RedirectToAction(nameof(Details), new
+        {
+            id = existingBook.Id,
+        });
     }
+
+
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var existingBook = await _bookRepo.GetBookByIdAsync(id); 
+
+        if (existingBook == null) 
+        {
+            return Json(new { success = false, message = "Book not found." });
+        }
+
+
+        if (!string.IsNullOrEmpty(existingBook.ImageThumbnailUrl) || !string.IsNullOrEmpty(existingBook.ImageUrl))
+        {
+            DeleteOldImages(existingBook.ImageUrl, existingBook.ImageThumbnailUrl);
+        }
+
+
+        var categoryBookIds = await _bookCategoryRepo.GetCategoryIdsByBookIdAsync(id);
+
+        if (categoryBookIds.Any())
+        {
+            foreach (var categoryId in categoryBookIds)
+            {
+                var bookCatgory = await _bookCategoryRepo.GetBookCategoryByIdsAsync(id, categoryId);
+                await _bookCategoryRepo.RemoveAsync(bookCatgory);
+            }
+        }
+
+        await _bookRepo.DeleteBookAsync(id);
+
+        return Json(new { success = true, message = "Book deleted successfully." });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        // Fetch the book details
+        var book = await _bookRepo.GetBookByIdAsync(id);
+        if (book == null)
+        {
+            return NotFound();
+        }
+
+        var bookView = _mapper.Map<BookViewModel>(book);
+
+        bookView.SelectedCategoryIds = await _bookCategoryRepo.GetCategoryIdsByBookIdAsync(book.Id);
+
+        // Fetch the author name
+        var author = await _authorRepo.GetAuthorByIdAsync(book.AuthorId);
+        bookView.AuthorName = author?.Name;
+
+
+        foreach (var categoryId in bookView.SelectedCategoryIds)
+        {
+            var category = await _categoriesRepo.GetCategoryByIdAsync(categoryId);
+            if (category != null) // Ensure category is not null
+            {
+                bookView.NameOfCategories.Add(category.Name);
+            }
+        }
+
+        return View(bookView);
+    }
+
 
 
     [AcceptVerbs("Get", "Post")]
@@ -146,6 +239,8 @@
 
 
     }
+
+
 
     // Private methods for handling business logic
 
@@ -234,14 +329,36 @@
         return View("AddBook", viewModel);
     }
 
-    private void DeleteOldImage(string imageUrl)
+    private void DeleteOldImages(string imageUrl, string thumbnailUrl)
     {
-        var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, imageUrl.TrimStart('/'));
-        if (System.IO.File.Exists(oldImagePath))
+        // Check if imageUrl is null or empty
+        if (string.IsNullOrEmpty(imageUrl) && string.IsNullOrEmpty(thumbnailUrl))
         {
-            System.IO.File.Delete(oldImagePath);
+            return; // Nothing to delete
+        }
+
+        // Delete the old image
+        if (!string.IsNullOrEmpty(imageUrl))
+        {
+            var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, imageUrl.TrimStart('/'));
+            if (System.IO.File.Exists(oldImagePath))
+            {
+                System.IO.File.Delete(oldImagePath);
+            }
+        }
+
+        // Delete the old thumbnail
+        if (!string.IsNullOrEmpty(thumbnailUrl))
+        {
+            var oldThumbnailPath = Path.Combine(_webHostEnvironment.WebRootPath, thumbnailUrl.TrimStart('/'));
+            if (System.IO.File.Exists(oldThumbnailPath))
+            {
+                System.IO.File.Delete(oldThumbnailPath);
+            }
         }
     }
+
+
 
     private async Task<IActionResult> SaveFileToDiskAsync(IFormFile file, int bookId)
     {
@@ -270,12 +387,17 @@
                 Directory.CreateDirectory(thumbnailDirectory);
             }
 
-            // Resize the original image and save it as a thumbnail (150x150 size)
-            ImageHelper.ResizeImage(filePath, thumbnailPath, 150, 150);
+            // Resize the original image and save it as a thumbnail (150 width and height auto genrate)
+            ImageHelper.ResizeImage(filePath, thumbnailPath, width: 150);
 
 
             var relativePath = Path.Combine("images", "books", bookId.ToString(), imageName).Replace("\\", "/");
-            return Ok(relativePath);
+            var thumbnailRelativePath = Path.Combine("images", "books", bookId.ToString(), "thumbnails", imageName).Replace("\\", "/");
+            return Ok(new
+            {
+                relativePath,
+                thumbnailRelativePath
+            });
         }
         catch (Exception ex)
         {

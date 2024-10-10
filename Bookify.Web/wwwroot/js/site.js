@@ -243,7 +243,7 @@ $(document).on('click', '.js-delete', function () {
                 $.ajax({
                     url: url,
                     type: 'POST',
-                    data: { Id: Id },
+                    data: { id: Id }, 
                     headers: {
                         'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
                     },
@@ -252,8 +252,9 @@ $(document).on('click', '.js-delete', function () {
                             btn.closest('tr').remove();
                             showSuccessMessage("The item has been deleted successfully!");
                         } else {
-                            console.error(response.message);
-                            showErrorMessage("An error occurred while deleting the item.");
+                            console.error("Error Message:", response.message);
+                            console.error("Detailed Error:", response.errorMessage);
+                            showErrorMessage(response.message || "An error occurred while deleting the item.");
                         }
                     },
                     error: function (xhr, status, error) {
@@ -265,7 +266,6 @@ $(document).on('click', '.js-delete', function () {
         }
     });
 });
-
 
 
 // Function to check network status

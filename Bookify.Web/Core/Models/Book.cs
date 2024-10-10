@@ -19,6 +19,7 @@
         public DateTime PublishDate { get; set; }
 
         public string? ImageUrl { get; set; }
+        public string? ImageThumbnailUrl { get; set; }
 
         // Hall property
         [MaxLength(200)]

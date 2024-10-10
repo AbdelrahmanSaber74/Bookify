@@ -50,7 +50,19 @@ namespace Bookify.Web.Repositories.BooksCategories
             }
         }
 
+        public async Task<bool> RemoveBookCategoryByBookIdAsync(int bookId)
+        {
+            var bookCategory = await _context.BookCategories.FindAsync(bookId);
 
+            if (bookCategory != null)
+            {
+                _context.BookCategories.Remove(bookCategory); 
+                await _context.SaveChangesAsync();
+                return true; 
+            }
+
+            return false;
+        }
 
     }
 }
