@@ -8,12 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="wwwroot\js\book.js" />
     <Content Remove="wwwroot\js\validation-styling.js" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="Views\Home\Index.cshtml" />
     <None Include="Views\Home\Privacy.cshtml" />
+    <None Include="wwwroot\js\book.js" />
     <None Include="wwwroot\js\validation-styling.js" />
     <None Include="wwwroot\js\site.js" />
     <None Include="wwwroot\lib\bootstrap\css\bootstrap-grid.css.map" />

@@ -13,6 +13,7 @@ namespace Bookify.Web.Repositories.Books
         Task<bool> AnyBookAsync(Expression<Func<Book, bool>> predicate);
 
         Task<Book> GetBookByTitleAndAuthor (string title, int authorId);
+        Task<IQueryable<Book>> GetAllBooksAsQueryableAsync(); // Asynchronous method to get IQueryable<Book>
 
     }
 }

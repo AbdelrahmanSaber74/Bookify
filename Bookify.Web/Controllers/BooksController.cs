@@ -1,4 +1,5 @@
 ﻿using Bookify.Web.Core.Models;
+using Microsoft.EntityFrameworkCore;
 
 public class BooksController : Controller
 {
@@ -159,9 +160,9 @@ public class BooksController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        var existingBook = await _bookRepo.GetBookByIdAsync(id); 
+        var existingBook = await _bookRepo.GetBookByIdAsync(id);
 
-        if (existingBook == null) 
+        if (existingBook == null)
         {
             return Json(new { success = false, message = "Book not found." });
         }
@@ -340,7 +341,7 @@ public class BooksController : Controller
         // Delete the old image
         if (!string.IsNullOrEmpty(imageUrl))
         {
-            var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, imageUrl.TrimStart('/'));
+            var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, imageUrl);
             if (System.IO.File.Exists(oldImagePath))
             {
                 System.IO.File.Delete(oldImagePath);
@@ -350,7 +351,7 @@ public class BooksController : Controller
         // Delete the old thumbnail
         if (!string.IsNullOrEmpty(thumbnailUrl))
         {
-            var oldThumbnailPath = Path.Combine(_webHostEnvironment.WebRootPath, thumbnailUrl.TrimStart('/'));
+            var oldThumbnailPath = Path.Combine(_webHostEnvironment.WebRootPath, thumbnailUrl);
             if (System.IO.File.Exists(oldThumbnailPath))
             {
                 System.IO.File.Delete(oldThumbnailPath);
@@ -366,7 +367,7 @@ public class BooksController : Controller
         {
             var extension = Path.GetExtension(file.FileName).ToLower();
             var imageName = $"{Guid.NewGuid()}{extension}";
-            var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "images", "books", bookId.ToString(), imageName);
+            var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "images", "books", imageName);
 
             if (!Directory.Exists(Path.GetDirectoryName(filePath)))
             {
@@ -379,7 +380,7 @@ public class BooksController : Controller
             }
 
             // Resize and create a thumbnail
-            var thumbnailPath = Path.Combine(_webHostEnvironment.WebRootPath, "images", "books", bookId.ToString(), "thumbnails", imageName);
+            var thumbnailPath = Path.Combine(_webHostEnvironment.WebRootPath, "images", "books", "thumb", imageName);
 
             var thumbnailDirectory = Path.GetDirectoryName(thumbnailPath);
             if (!Directory.Exists(thumbnailDirectory))
@@ -391,8 +392,9 @@ public class BooksController : Controller
             ImageHelper.ResizeImage(filePath, thumbnailPath, width: 150);
 
 
-            var relativePath = Path.Combine("images", "books", bookId.ToString(), imageName).Replace("\\", "/");
-            var thumbnailRelativePath = Path.Combine("images", "books", bookId.ToString(), "thumbnails", imageName).Replace("\\", "/");
+            var relativePath = "/" + Path.Combine("images", "books", imageName).Replace("\\", "/");
+            var thumbnailRelativePath = "/" + Path.Combine("images", "books", "thumb", imageName).Replace("\\", "/");
+
             return Ok(new
             {
                 relativePath,
@@ -405,4 +407,97 @@ public class BooksController : Controller
             return await ReturnAddBookViewWithErrorsAsync();
         }
     }
+
+
+    public IActionResult IndexPlus()
+    {
+        return View();
+    }
+
+
+
+    // the functionality of sending data to the server using server-side processing for DataTables.
+    [HttpPost]
+    public async Task<IActionResult> GetBooksData()
+    {
+        // Read parameters sent by DataTable
+        var draw = HttpContext.Request.Form["draw"].FirstOrDefault();
+        var start = HttpContext.Request.Form["start"].FirstOrDefault();
+        var length = HttpContext.Request.Form["length"].FirstOrDefault();
+        var sortColumnIndex = HttpContext.Request.Form["order[0][column]"].FirstOrDefault();
+        var sortDirection = HttpContext.Request.Form["order[0][dir]"].FirstOrDefault();
+        var searchValue = HttpContext.Request.Form["search[value]"].FirstOrDefault();
+
+        // Convert to int
+        int pageSize = length != null ? Convert.ToInt32(length) : 0;
+        int skip = start != null ? Convert.ToInt32(start) : 0;
+
+        // Fetch data from the database (queryable)
+        var bookQuery = await _bookRepo.GetAllBooksAsQueryableAsync(); 
+
+        // Apply search filter if needed
+        if (!string.IsNullOrEmpty(searchValue))
+        {
+            bookQuery = bookQuery.Where(b => b.Title.Contains(searchValue) || b.Author.Name.Contains(searchValue));
+        }
+
+        // Get total record count before pagination and filtering
+        var totalRecords = await bookQuery.CountAsync();
+
+        // Apply sorting based on the column index
+        switch (sortColumnIndex)
+        {
+            case "0":
+                bookQuery = sortDirection == "asc" ? bookQuery.OrderBy(b => b.Title) : bookQuery.OrderByDescending(b => b.Title);
+                break;
+            case "1":
+                bookQuery = sortDirection == "asc" ? bookQuery.OrderBy(b => b.Author.Name) : bookQuery.OrderByDescending(b => b.Author.Name);
+                break;
+            case "2":
+                bookQuery = sortDirection == "asc" ? bookQuery.OrderBy(b => b.Publisher) : bookQuery.OrderByDescending(b => b.Publisher);
+                break;
+            case "3": 
+                bookQuery = sortDirection == "asc" ? bookQuery.OrderBy(b => b.IsDeleted) : bookQuery.OrderByDescending(b => b.IsDeleted);
+                break;
+            case "4":
+                bookQuery = sortDirection == "asc" ? bookQuery.OrderBy(b => b.CreatedOn) : bookQuery.OrderByDescending(b => b.CreatedOn);
+                break;
+            case "5":
+                bookQuery = sortDirection == "asc" ? bookQuery.OrderBy(b => b.LastUpdatedOn) : bookQuery.OrderByDescending(b => b.LastUpdatedOn);
+                break;
+            default:
+                bookQuery = bookQuery.OrderBy(b => b.Title); // Default sorting by Title
+                break;
+        }
+
+        // Paginate the result
+        var paginatedBooks = await bookQuery.Skip(skip).Take(pageSize)
+            .Select(b => new
+            {
+                b.Id,
+                b.Title,
+                AuthorName = b.Author.Name, 
+                b.Publisher,
+                b.IsDeleted,
+                b.CreatedOn, 
+                LastUpdated = b.LastUpdatedOn 
+            })
+            .ToListAsync();
+
+        // Return the result in JSON format with draw and count information
+        var jsonData = new
+        {
+            draw,
+            recordsFiltered = totalRecords, // Total records after filtering
+            recordsTotal = totalRecords,    // Total records without filtering
+            data = paginatedBooks
+        };
+
+        return Json(jsonData);
+    }
+
+
+
+
+
 }

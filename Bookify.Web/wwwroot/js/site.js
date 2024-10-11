@@ -243,7 +243,7 @@ $(document).on('click', '.js-delete', function () {
                 $.ajax({
                     url: url,
                     type: 'POST',
-                    data: { id: Id }, 
+                    data: { id: Id },
                     headers: {
                         'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
                     },
@@ -267,6 +267,52 @@ $(document).on('click', '.js-delete', function () {
     });
 });
 
+
+// site.js
+function HandleDelete(btn) {
+    var Id = btn.data('id'); // Get the ID
+    var url = btn.data('url'); // Get the dynamic URL
+
+    bootbox.confirm({
+        message: 'Are you sure you want to delete this item?',
+        buttons: {
+            confirm: {
+                label: 'Yes',
+                className: 'btn-danger'
+            },
+            cancel: {
+                label: 'No',
+                className: 'btn-success'
+            }
+        },
+        callback: function (result) {
+            if (result) {
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    data: { id: Id },
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            btn.closest('tr').remove(); // Remove the row from the DataTable
+                            showSuccessMessage("The item has been deleted successfully!");
+                        } else {
+                            console.error("Error Message:", response.message);
+                            console.error("Detailed Error:", response.errorMessage);
+                            showErrorMessage(response.message || "An error occurred while deleting the item.");
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("AJAX error:", error);
+                        showErrorMessage("An error occurred while processing your request.");
+                    }
+                });
+            }
+        }
+    });
+}
 
 // Function to check network status
 function checkNetworkStatus() {

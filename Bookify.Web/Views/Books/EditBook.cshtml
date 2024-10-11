@@ -43,7 +43,7 @@
                     <div mb-10 mt-10>
                         <!-- Image URL -->
                         <!--begin::Image input-->
-                        <div class="image-input image-input-empty " data-kt-image-input="true" style="background-image: url('@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/default/image-placeholder.jpg" : $"/{Model.ImageUrl}")')">
+                        <div class="image-input image-input-empty" data-kt-image-input="true" style="background-image: url('@(string.IsNullOrEmpty(Model.ImageThumbnailUrl) ? "/images/default/no-book.jpg" :   Model.ImageThumbnailUrl)')">
                             <!--begin::Image preview wrapper-->
                             <div class="image-input-wrapper w-125px h-200px"></div>
                             <!--end::Image preview wrapper-->

@@ -55,7 +55,7 @@ namespace Bookify.Web.Repositories.Books
             return await _context.Books.Include(b => b.Author).ToListAsync();
         }
 
-
+     
         public async Task<int> GetLatestBookIdAsync()
         {
             int lastBook = await _context.Books
@@ -66,8 +66,7 @@ namespace Bookify.Web.Repositories.Books
             return lastBook  ; 
         }
 
-      
-
+   
 
         // Private method to save changes to the database
         private async Task SaveChangesAsync()
@@ -83,6 +82,10 @@ namespace Bookify.Web.Repositories.Books
                 .FirstOrDefaultAsync();
         }
 
-      
+        public async Task<IQueryable<Book>> GetAllBooksAsQueryableAsync()
+        {
+            return _context.Books.Include(b => b.Author); // Returning IQueryable directly
+        }
+
     }
 }
