@@ -1,6 +1,4 @@
-﻿using Bookify.Web.Core.Models;
-
-namespace Bookify.Web.Repositories.BooksCategories
+﻿namespace Bookify.Web.Repositories.BooksCategories
 {
     public class BookCategoryRepo : IBookCategoryRepo
     {
@@ -56,9 +54,9 @@ namespace Bookify.Web.Repositories.BooksCategories
 
             if (bookCategory != null)
             {
-                _context.BookCategories.Remove(bookCategory); 
+                _context.BookCategories.Remove(bookCategory);
                 await _context.SaveChangesAsync();
-                return true; 
+                return true;
             }
 
             return false;

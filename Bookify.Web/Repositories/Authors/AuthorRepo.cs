@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
-
-namespace Bookify.Web.Repositories.Authors
+﻿namespace Bookify.Web.Repositories.Authors
 {
     public class AuthorRepo : IAuthorRepo
     {

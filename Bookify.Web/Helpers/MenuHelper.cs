@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
-
-namespace Bookify.Web.Helpers
+﻿namespace Bookify.Web.Helpers
 {
     public static class MenuHelper
     {

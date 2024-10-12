@@ -72,7 +72,7 @@
                         <tr>
                             <td>@category.Name</td>
                             <td>
-                                <span class="badge badge-light-@(category.IsDeleted ? "danger" : "success")">
+                                <span class="badge badge-light-@(category.IsDeleted ? "danger" : "success") js-status">
                                     @(category.IsDeleted ? "Deleted" : "Available")
                                 </span>
                             </td>

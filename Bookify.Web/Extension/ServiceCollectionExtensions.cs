@@ -1,7 +1,4 @@
-﻿using Bookify.Web.Repositories.Authors;
-using Bookify.Web.Repositories.Books;
-using Bookify.Web.Repositories.BooksCategories;
-using Bookify.Web.Repositories.Categories;
+﻿using Bookify.Web.Repositories.BookCopies;
 
 namespace Bookify.Web.Extensions
 {
@@ -17,6 +14,8 @@ namespace Bookify.Web.Extensions
             services.AddScoped<IBookRepo, BookRepo>();
 
             services.AddScoped<IBookCategoryRepo, BookCategoryRepo>();
+
+            services.AddScoped<IBookCopyRepo, BookCopyRepo>();
 
 
 

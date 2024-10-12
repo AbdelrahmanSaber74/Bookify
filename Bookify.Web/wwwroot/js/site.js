@@ -162,15 +162,12 @@ function initDataTable(varTitle) {
 
 
 // Handle Toggle status
-$(document).on('click', '.js-toggle-status', function () {
+$('body').delegate('.js-toggle-status', 'click', function () {
     var btn = $(this);
-    var Id = btn.data('id');
-
-    // Get dynamic URL from the data attribute
-    var url = btn.data('url');
+    var id = btn.data('id'); // Retrieve the data-id attribute value
 
     bootbox.confirm({
-        message: 'Are you sure you want to toggle the status?',
+        message: "Are you sure that you need to toggle this item status?",
         buttons: {
             confirm: {
                 label: 'Yes',
@@ -178,88 +175,35 @@ $(document).on('click', '.js-toggle-status', function () {
             },
             cancel: {
                 label: 'No',
-                className: 'btn-success'
+                className: 'btn-secondary'
             }
         },
         callback: function (result) {
             if (result) {
-                $.ajax({
-                    url: url, // Use the dynamic URL
-                    type: 'POST',
-                    data: { Id: Id },
-                    headers: {
-                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                $.post({
+                    url: btn.data('url'),
+                    data: {
+                        '__RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val(),
+                        id: id // Correctly placed comma here
                     },
-                    success: function (response) {
-                        if (response.success) {
-                            var row = btn.closest('tr');
-                            var statusCell = row.find('td:eq(1)');
-                            var currentStatus = statusCell.find('.badge').text().trim();
+                    success: function (response) { // Use response instead of lastUpdatedOn
+                        var row = btn.parents('tr');
+                        var status = row.find('.js-status');
+                        var newStatus = status.text().trim() === 'Deleted' ? 'Available' : 'Deleted';
 
-                            // Toggle status
-                            statusCell.html('<span class="badge badge-light-' + (currentStatus === 'Available' ? 'danger' : 'success') + '">' +
-                                (currentStatus === 'Available' ? 'Deleted' : 'Available') + '</span>');
+                        // Update the status text and classes
+                        status.text(newStatus).toggleClass('badge-light-success badge-light-danger');
 
-                            // Update LastUpdatedOn field
-                            row.find('.js-updated-on').html(response.lastUpdatedOn);
-                            showSuccessMessage("The item status has been toggled successfully!");
-                        } else {
-                            console.error(response.message);
-                            showErrorMessage("An error occurred while toggling the category status.");
-                        }
+                        // Update the LastUpdatedOn field assuming it’s in the response
+                        row.find('.js-updated-on').html(response.lastUpdatedOn);
+
+                        row.addClass('animate__animated animate__flash');
+
+                        // Show success message
+                        showSuccessMessage("The item status has been toggled successfully!");
                     },
-                    error: function (xhr, status, error) {
-                        console.error("AJAX error:", error);
-                        showErrorMessage("An error occurred while processing your request.");
-                    }
-                });
-            }
-        }
-    });
-});
-
-// Handle Delete Item
-$(document).on('click', '.js-delete', function () {
-    var btn = $(this);
-    var Id = btn.data('id');
-
-    // Get dynamic URL and data object from data attributes
-    var url = btn.data('url');
-
-    bootbox.confirm({
-        message: 'Are you sure you want to delete this item?',
-        buttons: {
-            confirm: {
-                label: 'Yes',
-                className: 'btn-danger'
-            },
-            cancel: {
-                label: 'No',
-                className: 'btn-success'
-            }
-        },
-        callback: function (result) {
-            if (result) {
-                $.ajax({
-                    url: url,
-                    type: 'POST',
-                    data: { id: Id },
-                    headers: {
-                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            btn.closest('tr').remove();
-                            showSuccessMessage("The item has been deleted successfully!");
-                        } else {
-                            console.error("Error Message:", response.message);
-                            console.error("Detailed Error:", response.errorMessage);
-                            showErrorMessage(response.message || "An error occurred while deleting the item.");
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        console.error("AJAX error:", error);
-                        showErrorMessage("An error occurred while processing your request.");
+                    error: function () {
+                        showErrorMessage("An error occurred while toggling the item status.");
                     }
                 });
             }
@@ -268,8 +212,8 @@ $(document).on('click', '.js-delete', function () {
 });
 
 
-// site.js
-function HandleDelete(btn) {
+$('body').delegate('.js-delete', 'click', function () {
+    var btn = $(this); // Define btn using the clicked element
     var Id = btn.data('id'); // Get the ID
     var url = btn.data('url'); // Get the dynamic URL
 
@@ -312,7 +256,7 @@ function HandleDelete(btn) {
             }
         }
     });
-}
+});
 
 // Function to check network status
 function checkNetworkStatus() {

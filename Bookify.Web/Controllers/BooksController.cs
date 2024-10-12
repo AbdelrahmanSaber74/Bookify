@@ -1,5 +1,4 @@
-﻿using Bookify.Web.Core.Models;
-using Microsoft.EntityFrameworkCore;
+﻿using Bookify.Web.Repositories.BookCopies;
 
 public class BooksController : Controller
 {
@@ -8,6 +7,7 @@ public class BooksController : Controller
     private readonly IAuthorRepo _authorRepo;
     private readonly ICategoriesRepo _categoriesRepo;
     private readonly IBookCategoryRepo _bookCategoryRepo;
+    private readonly IBookCopyRepo _bookCopyRepo;
     private readonly IWebHostEnvironment _webHostEnvironment;
 
     // Constructor for dependency injection
@@ -17,6 +17,7 @@ public class BooksController : Controller
         IAuthorRepo authorRepo,
         ICategoriesRepo categoriesRepo,
         IBookCategoryRepo bookCategoryRepo,
+        IBookCopyRepo bookCopyRepo,
         IWebHostEnvironment webHostEnvironment)
     {
         _bookRepo = bookRepo;
@@ -24,6 +25,7 @@ public class BooksController : Controller
         _authorRepo = authorRepo;
         _categoriesRepo = categoriesRepo;
         _bookCategoryRepo = bookCategoryRepo;
+        _bookCopyRepo = bookCopyRepo;
         _webHostEnvironment = webHostEnvironment;
     }
 
@@ -200,13 +202,15 @@ public class BooksController : Controller
             return NotFound();
         }
 
+
         var bookView = _mapper.Map<BookViewModel>(book);
 
+        // Fetch the selected category IDs and book copies concurrently
         bookView.SelectedCategoryIds = await _bookCategoryRepo.GetCategoryIdsByBookIdAsync(book.Id);
-
         // Fetch the author name
         var author = await _authorRepo.GetAuthorByIdAsync(book.AuthorId);
         bookView.AuthorName = author?.Name;
+        bookView.Copies = await _bookCopyRepo.GetBookCopiesByBookIdAsync(id);
 
 
         foreach (var categoryId in bookView.SelectedCategoryIds)
@@ -433,7 +437,7 @@ public class BooksController : Controller
         int skip = start != null ? Convert.ToInt32(start) : 0;
 
         // Fetch data from the database (queryable)
-        var bookQuery = await _bookRepo.GetAllBooksAsQueryableAsync(); 
+        var bookQuery = await _bookRepo.GetAllBooksAsQueryableAsync();
 
         // Apply search filter if needed
         if (!string.IsNullOrEmpty(searchValue))
@@ -456,7 +460,7 @@ public class BooksController : Controller
             case "2":
                 bookQuery = sortDirection == "asc" ? bookQuery.OrderBy(b => b.Publisher) : bookQuery.OrderByDescending(b => b.Publisher);
                 break;
-            case "3": 
+            case "3":
                 bookQuery = sortDirection == "asc" ? bookQuery.OrderBy(b => b.IsDeleted) : bookQuery.OrderByDescending(b => b.IsDeleted);
                 break;
             case "4":
@@ -476,11 +480,11 @@ public class BooksController : Controller
             {
                 b.Id,
                 b.Title,
-                AuthorName = b.Author.Name, 
+                AuthorName = b.Author.Name,
                 b.Publisher,
                 b.IsDeleted,
-                b.CreatedOn, 
-                LastUpdated = b.LastUpdatedOn 
+                b.CreatedOn,
+                LastUpdated = b.LastUpdatedOn
             })
             .ToListAsync();
 

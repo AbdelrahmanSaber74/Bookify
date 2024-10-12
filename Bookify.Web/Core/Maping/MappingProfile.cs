@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
-
-namespace Bookify.Web.Core.Maping
+﻿namespace Bookify.Web.Core.Maping
 {
     public class MappingProfile : Profile
     {
@@ -31,6 +29,11 @@ namespace Bookify.Web.Core.Maping
             // Ignoring BookId as it will be set manually when creating BookCategory
             CreateMap<BookViewModel, BookCategory>()
                 .ForMember(dest => dest.BookId, opt => opt.Ignore());
+
+
+            CreateMap<BookCopy, BookCopyViewModel>()
+                .ForMember(dest => dest.BookTitle, opt => opt.MapFrom(src => src.Book.Title))
+                .ReverseMap();
         }
     }
 }

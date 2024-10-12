@@ -1,7 +1,4 @@
-﻿using Bookify.Web.Core.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
-
-namespace Bookify.Web.Repositories.Books
+﻿namespace Bookify.Web.Repositories.Books
 {
     public class BookRepo : IBookRepo
     {
@@ -55,7 +52,7 @@ namespace Bookify.Web.Repositories.Books
             return await _context.Books.Include(b => b.Author).ToListAsync();
         }
 
-     
+
         public async Task<int> GetLatestBookIdAsync()
         {
             int lastBook = await _context.Books
@@ -63,10 +60,10 @@ namespace Bookify.Web.Repositories.Books
                 .Select(b => b.Id)
                 .FirstOrDefaultAsync();
 
-            return lastBook  ; 
+            return lastBook;
         }
 
-   
+
 
         // Private method to save changes to the database
         private async Task SaveChangesAsync()

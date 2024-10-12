@@ -67,7 +67,7 @@
                             <td>@(book.Author?.Name ?? "Unknown Author")</td>
                             <td>@book.Publisher</td>
                             <td>
-                                <span class="badge badge-light-@(book.IsDeleted ? "danger" : "success")">
+                                <span class="js-status badge badge-light-@(book.IsDeleted ? "danger" : "success") ">
                                     @(book.IsDeleted ? "Deleted" : "Available")
                                 </span>
                             </td>

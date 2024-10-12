@@ -4,7 +4,6 @@ namespace Bookify.Web.Core.ViewModels
 {
     public class BookViewModel : BaseViewModel
     {
-
         public int Id { get; set; }
 
         [MaxLength(500, ErrorMessage = Errors.MaxLength)]
@@ -24,7 +23,6 @@ namespace Bookify.Web.Core.ViewModels
         [AssertThat("PublishDate <= Today()", ErrorMessage = Errors.NotAllowFutureDates)]
         public DateTime PublishDate { get; set; } = DateTime.Now;
 
-        //[Remote(action: "ValidateImage", controller: "Books", AdditionalFields = nameof(Id), ErrorMessage = "Invalid image file.")]
         public IFormFile? Image { get; set; }
         public string? ImageUrl { get; set; }
         public string? ImageThumbnailUrl { get; set; }
@@ -41,6 +39,9 @@ namespace Bookify.Web.Core.ViewModels
         public string? Description { get; set; }
 
         public List<SelectListItem>? Authors { get; set; }
+
+        // Corrected Copies property
+        public List<BookCopy> Copies { get; set; } = new List<BookCopy>(); // Corrected syntax
 
         // Many-to-Many relationship with Book
         public List<SelectListItem>? Categories { get; set; } // For categories

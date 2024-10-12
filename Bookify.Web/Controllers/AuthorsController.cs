@@ -1,6 +1,4 @@
-﻿using Bookify.Web.Repositories.Authors;
-
-namespace Bookify.Web.Controllers
+﻿namespace Bookify.Web.Controllers
 {
     public class AuthorsController : Controller
     {

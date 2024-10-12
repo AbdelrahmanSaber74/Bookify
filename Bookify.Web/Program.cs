@@ -21,7 +21,7 @@ builder.Services.AddControllers()
 
 // Register all services
 builder.Services.AddApplicationServices(); // استدعاء خدمات الامتداد هنا
-builder.Services.AddExpressiveAnnotations(); 
+builder.Services.AddExpressiveAnnotations();
 
 var app = builder.Build();
 

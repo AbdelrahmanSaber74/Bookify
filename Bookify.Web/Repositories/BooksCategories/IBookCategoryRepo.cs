@@ -6,7 +6,7 @@
         Task<IEnumerable<BookCategory>> GetAllAsync();
         Task<List<int>> GetCategoryIdsByBookIdAsync(int bookId);
         Task RemoveAsync(BookCategory bookCategory);
-        Task <bool> RemoveBookCategoryByBookIdAsync(int BookId);
+        Task<bool> RemoveBookCategoryByBookIdAsync(int BookId);
         Task<BookCategory> GetBookCategoryByIdsAsync(int bookId, int categoryId);
 
 
