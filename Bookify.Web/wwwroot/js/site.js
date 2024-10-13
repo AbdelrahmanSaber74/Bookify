@@ -311,3 +311,30 @@ function onModalComplete() {
 }
 
 
+
+
+// Define a named function for handling the modal rendering
+function attachModalEvent() {
+    $('.js-render-modal').on('click', function (e) {
+        e.preventDefault();
+        var title = $(this).data('title');
+        var actionUrl = $(this).attr('href'); // Get the action URL from the link
+
+        // Set the modal title
+        $('#copyModalLabel').text(title);
+
+        // Load the form into the modal body
+        $.ajax({
+            url: actionUrl,
+            type: 'GET',
+            success: function (data) {
+                $('#copyModal .modal-body').html(data);
+                $('#copyModal').modal('show');
+            },
+            error: function (xhr, status, error) {
+                // Handle errors here
+                console.error(error);
+            }
+        });
+    });
+}

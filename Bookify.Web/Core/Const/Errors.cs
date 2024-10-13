@@ -8,6 +8,7 @@ namespace Bookify.Web.Core.Const
         public const string Duplicated = "Another record with the same {0} already exists!";
         public const string DuplicatedBook = "Book with the same title is already exists with the same author!";
         public const string NotAllowFutureDates = "Date cannot be in the future!";
+        public const string InvalidRange = "{0} should be between {1} and {2}!";
 
         // Add image-related error messages
         public const string NoFileProvided = "No file provided.";

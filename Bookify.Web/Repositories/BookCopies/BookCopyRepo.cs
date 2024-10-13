@@ -1,4 +1,7 @@
-﻿namespace Bookify.Web.Repositories.BookCopies
+﻿using Bookify.Web.Core.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
+
+namespace Bookify.Web.Repositories.BookCopies
 {
     public class BookCopyRepo : IBookCopyRepo
     {
@@ -8,6 +11,34 @@
         {
             _context = context;
         }
+
+        public async Task<BookCopy> AddBookCopyAsync(BookCopy bookcopy)
+        {
+
+            await _context.BookCopies.AddAsync(bookcopy);
+            await SaveChangesAsync();
+            return bookcopy;
+        }
+
+        public Task UpdateBookACopysync(BookCopy book)
+        {
+            throw new NotImplementedException();
+        }
+        public async Task DeleteBookCopyByIdAsync(int id)
+        {
+            var bookCopy = await GetBookCopyByIdAsync(id);
+
+            if (bookCopy == null)
+            {
+                throw new KeyNotFoundException($"Author with id {id} not found.");
+            }
+
+            _context.BookCopies.Remove(bookCopy);
+            await SaveChangesAsync();
+        }
+
+
+
         public async Task<List<BookCopy>> GetBookCopiesByBookIdAsync(int bookId)
         {
             return await _context.BookCopies
@@ -32,11 +63,20 @@
         }
 
 
+
         public async Task<BookCopy> UpdateBookCopyAsync(BookCopy bookCopy)
         {
             _context.BookCopies.Update(bookCopy);
-            await _context.SaveChangesAsync();
+            await SaveChangesAsync();
             return bookCopy;
         }
+
+        private async Task SaveChangesAsync()
+        {
+            await _context.SaveChangesAsync();
+        }
+
+     
     }
+
 }

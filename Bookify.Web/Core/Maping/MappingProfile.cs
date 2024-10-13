@@ -31,9 +31,22 @@
                 .ForMember(dest => dest.BookId, opt => opt.Ignore());
 
 
-            CreateMap<BookCopy, BookCopyViewModel>()
-                .ForMember(dest => dest.BookTitle, opt => opt.MapFrom(src => src.Book.Title))
+
+            CreateMap<BookCopyViewModel, BookCopy>()
+                .ForMember(dest => dest.Book, opt => opt.Ignore())
                 .ReverseMap();
+
+
+            CreateMap<Book, BookCopyViewModel>()
+             .ForMember(dest => dest.BookTitle, opt => opt.Ignore());
+
+
+            CreateMap<Book, SelectListItem>()
+            .ForMember(dest => dest.Value, opt => opt.MapFrom(src => src.Id.ToString()))
+            .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Title));
+
+
+
         }
     }
 }
