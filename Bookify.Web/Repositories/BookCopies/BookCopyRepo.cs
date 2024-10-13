@@ -1,7 +1,4 @@
-﻿using Bookify.Web.Core.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
-
-namespace Bookify.Web.Repositories.BookCopies
+﻿namespace Bookify.Web.Repositories.BookCopies
 {
     public class BookCopyRepo : IBookCopyRepo
     {
@@ -76,7 +73,7 @@ namespace Bookify.Web.Repositories.BookCopies
             await _context.SaveChangesAsync();
         }
 
-     
+
     }
 
 }

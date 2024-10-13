@@ -13,12 +13,12 @@
             <div class="d-flex flex-wrap flex-sm-nowrap mb-6">
                 <!--begin::Image-->
 
+
                 <div class="d-flex flex-center flex-shrink-0 bg-light rounded w-100px h-100px w-lg-150px h-lg-150px me-7 mb-4">
                     <a data-fslightbox href="@Model.ImageUrl">
                         <img class="mw-50px mw-lg-75px" src="@Model.ImageThumbnailUrl" alt="@Model.Title" />
                     </a>
                 </div>
-
                 <!--end::Image-->
                 <!--begin::Wrapper-->
                 <div class="flex-grow-1">
@@ -107,7 +107,7 @@
                                             <path fill-rule="evenodd" clip-rule="evenodd" d="M14.7857 7.125H6.21429C5.62255 7.125 5.14286 7.6007 5.14286 8.1875V18.8125C5.14286 19.3993 5.62255 19.875 6.21429 19.875H14.7857C15.3774 19.875 15.8571 19.3993 15.8571 18.8125V8.1875C15.8571 7.6007 15.3774 7.125 14.7857 7.125ZM6.21429 5C4.43908 5 3 6.42709 3 8.1875V18.8125C3 20.5729 4.43909 22 6.21429 22H14.7857C16.5609 22 18 20.5729 18 18.8125V8.1875C18 6.42709 16.5609 5 14.7857 5H6.21429Z" fill="currentColor" />
                                         </svg>
                                     </span>
-                                    <div id="copiesCount" "class=" fs-7 fw-bold" data-kt-countup="true" data-kt-countup-value="@Model.Copies.Count()">0</div>
+                                    <div class="fs-7 fw-bold" data-kt-countup="true" data-kt-countup-value="@Model.Copies.Count()">0</div>
                                 </div>
                                 <!--end::Number-->
                                 <!--begin::Label-->
@@ -119,12 +119,12 @@
                         <!--end::Stats-->
                         <!--begin::Categories-->
                         <div class="align-self-end pb-3">
-                                    @foreach (var copy in Model.NameOfCategories)
-                                    {
+                            @foreach (var copy in Model.NameOfCategories)
+                            {
                                 <span class="badge badge-light-info me-auto">
-                                            @copy
+                                    @copy
                                 </span>
-                                    }
+                            }
                         </div>
                         <!--end::Categories-->
                     </div>
@@ -162,7 +162,7 @@
             <!--end::Card header-->
             <div class="card-body">
                 <h4>
-                                    @Html.Raw(Model.Description)
+                    @Html.Raw(Model.Description)
                 </h4>
             </div>
         </div>
@@ -190,9 +190,8 @@
             <!--end::Card header-->
             <div class="card-body">
 
-
-                                    @if (Model.Copies.Any())
-                                    {
+                @if(Model.Copies.Any() )
+                {
                     <table class="table table-row-dashed table-row-gray-300 gy-5 align-middle">
                         <thead>
                             <tr class="fw-bold fs-6 text-gray-400 text-uppercase">
@@ -206,20 +205,20 @@
                             </tr>
                         </thead>
                         <tbody>
-                                                @foreach (var copy in Model.Copies)
-                                                {
+                            @foreach (var copy in Model.Copies)
+                            {
 
                                 <tr>
                                     <td>@copy.SerialNumber</td>
                                     <td>@copy.EditorNumber</td>
                                     <td>
                                         <span class="badge badge-light-@(copy.IsAvailableForRental ? "success" : "warning")">
-                                                                @(copy.IsAvailableForRental ? "Available" : "Not Available")
+                                            @(copy.IsAvailableForRental ? "Available" : "Not Available")
                                         </span>
                                     </td>
                                     <td>
                                         <span class=" js-status badge badge-light-@(copy.IsDeleted ? "danger" : "success")">
-                                                                @(copy.IsDeleted ? "Deleted" : "Available")
+                                            @(copy.IsDeleted ? "Deleted" : "Available")
                                         </span>
                                     </td>
                                     <td>@copy.CreatedOn.ToString("dd MMM, yyyy")</td>
@@ -247,12 +246,13 @@
                                         </div>
                                     </td>
                                 </tr>
-                                                }
+                            }
                         </tbody>
                     </table>
-                                    }
-                                    else
-                                    {
+                }
+
+                else
+                {
                     <div class="alert alert-dismissible bg-light-warning border border-warning border-dashed d-flex flex-column flex-sm-row w-100 p-5 mb-10">
                         <span class="svg-icon svg-icon-2hx svg-icon-warning me-4 mb-5 mb-sm-0">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -262,12 +262,10 @@
                             </svg>
                         </span>
                         <div class="d-flex flex-column pe-0 pe-sm-10 align-self-center">
-                            <h5 class="mb-1">No Copies found!</h5>
+                            <h5 class="mb-1">No Book Copies found!</h5>
                         </div>
                     </div>
-                                    }
-
-
+                }
             </div>
 
         </div>
@@ -277,4 +275,8 @@
 
 <input type="hidden" name="__RequestVerificationToken" value="@antiforgery.GetAndStoreTokens(Context).RequestToken" />
 
- 
+@section CustomScripts
+{
+    <script src="~/lib/fslightbox/index.min.js"></script>
+
+}

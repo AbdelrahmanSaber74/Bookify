@@ -32,9 +32,12 @@ namespace Bookify.Web.Controllers
             return View("AddBookCopies", bookCopyView);
         }
 
+        [HttpGet]
+
         public async Task<IActionResult> Edit(int Id)
 
         {
+
             var bookCopy = await _copyRepo.GetBookCopyByIdAsync(Id);
 
             if (bookCopy == null)
