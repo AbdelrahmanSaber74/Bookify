@@ -15,6 +15,7 @@
   <ItemGroup>
     <None Include="Views\Home\Index.cshtml" />
     <None Include="Views\Home\Privacy.cshtml" />
+    <None Include="wwwroot\assets\plugins\fslightbox\fslightbox.bundle.js" />
     <None Include="wwwroot\js\book.js" />
     <None Include="wwwroot\js\validation-styling.js" />
     <None Include="wwwroot\js\site.js" />

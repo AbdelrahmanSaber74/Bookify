@@ -242,6 +242,7 @@ $('body').delegate('.js-delete', 'click', function () {
                         if (response.success) {
                             btn.closest('tr').remove(); // Remove the row from the DataTable
                             showSuccessMessage("The item has been deleted successfully!");
+
                         } else {
                             console.error("Error Message:", response.message);
                             console.error("Detailed Error:", response.errorMessage);
