@@ -35,11 +35,11 @@
                       data-ajax-success="onModalSuccess"
                       data-ajax-failure="onFailure">
 
-                      <div>
-                          <input hidden asp-for="Id"></input>
-                      </div>
+                    <div>
+                        <input type="hidden" asp-for="Id" />
+                    </div>
 
-                 
+
                     <div mb-10 mt-10>
                         <!-- Image URL -->
                         <!--begin::Image input-->
@@ -81,7 +81,6 @@
 
 
                     </div>
-                    
 
 
 
@@ -98,7 +97,8 @@
                     <div class="mb-5">
                         <div class="form-floating mb-2">
                             <select class="form-select form-select-solid js-select2" asp-for="AuthorId" required asp-items="@Model.Authors">
-                                <option disabled selected value="">Select Author</option>
+                                <option value="" disabled selected>Select Author</option>
+                                <label asp-for="AuthorId"></label>
 
                             </select>
                         </div>
@@ -124,7 +124,7 @@
                         <span asp-validation-for="PublishDate" class="text-danger"></span>
                     </div>
 
-               
+
                     <!-- Hall -->
                     <div class="mb-5">
                         <div class="form-floating mb-2">
@@ -134,7 +134,7 @@
                         <span asp-validation-for="Hall" class="text-danger"></span>
                     </div>
 
-                
+
                     <!-- Availability -->
                     <div class="mb-5">
                         <div class="col mb-2">
@@ -146,15 +146,15 @@
                     </div>
 
                     <!-- Categories -->
-                        <div class="mb-5">
-                            <div class="m-2">
-                                <label asp-for="Categories" class="form-label"></label>
-                              <select asp-for="SelectedCategoryIds" class="form-select form-select-solid js-select2" multiple="multiple" required asp-items="@Model.Categories">
-                                </select>
-                            </div>
-                            <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span>
+                    <div class="mb-5">
+                        <div class="m-2">
+                            <label asp-for="Categories" class="form-label"></label>
+                            <select asp-for="SelectedCategoryIds" class="form-select form-select-solid js-select2" multiple="multiple" required asp-items="@Model.Categories">
+                            </select>
                         </div>
-                   
+                        <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span>
+                    </div>
+
 
                     <!-- Description -->
                     <div class="mb-5">

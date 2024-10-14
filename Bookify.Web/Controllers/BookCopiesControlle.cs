@@ -1,6 +1,4 @@
-﻿using Bookify.Web.Repositories.BookCopies;
-
-namespace Bookify.Web.Controllers
+﻿namespace Bookify.Web.Controllers
 {
     public class BookCopiesController : Controller
     {
@@ -15,43 +13,31 @@ namespace Bookify.Web.Controllers
             _bookRepo = bookRepo;
         }
 
-
+        [HttpGet]
         public async Task<IActionResult> Create(int bookId)
-
         {
             var book = await _bookRepo.GetBookByIdAsync(bookId);
-
             if (book == null)
             {
                 return NotFound();
             }
 
             var bookCopyView = _mapper.Map<BookCopyViewModel>(book);
-
-
             return View("AddBookCopies", bookCopyView);
         }
 
         [HttpGet]
-
-        public async Task<IActionResult> Edit(int Id)
-
+        public async Task<IActionResult> Edit(int id)
         {
-
-            var bookCopy = await _copyRepo.GetBookCopyByIdAsync(Id);
-
+            var bookCopy = await _copyRepo.GetBookCopyByIdAsync(id);
             if (bookCopy == null)
             {
                 return NotFound();
             }
 
-
             var bookCopyView = _mapper.Map<BookCopyViewModel>(bookCopy);
-
-
             return View("EditBookCopies", bookCopyView);
         }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -62,20 +48,12 @@ namespace Bookify.Web.Controllers
                 return await GenerateBookCopiesViewWithErrorsAsync(model, "AddBookCopies");
             }
 
-
-
             var bookCopy = _mapper.Map<BookCopy>(model);
-
-
             await _copyRepo.AddBookCopyAsync(bookCopy);
-
-
             TempData["SuccessMessage"] = "Book Copies added successfully.";
-
 
             return RedirectToAction("Details", "Books", new { id = model.BookId });
         }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -86,35 +64,25 @@ namespace Bookify.Web.Controllers
                 return await GenerateBookCopiesViewWithErrorsAsync(model, "EditBookCopies");
             }
 
-
             var bookCopy = _mapper.Map<BookCopy>(model);
-
+            bookCopy.LastUpdatedOn = DateTime.Now;
 
             await _copyRepo.UpdateBookCopyAsync(bookCopy);
-
-
-            TempData["SuccessMessage"] = "Book Copies updated  successfully.";
-
+            TempData["SuccessMessage"] = "Book Copies updated successfully.";
 
             return RedirectToAction("Details", "Books", new { id = bookCopy.BookId });
         }
-
-
-
-
 
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
             var bookCopy = await _copyRepo.GetBookCopyByIdAsync(id);
-
             if (bookCopy == null)
             {
                 return NotFound();
             }
 
             await _copyRepo.DeleteBookCopyByIdAsync(id);
-
             return Json(new
             {
                 success = true,
@@ -122,18 +90,16 @@ namespace Bookify.Web.Controllers
             });
         }
 
-
         [HttpPost]
         public async Task<IActionResult> ToggleStatus(int id)
         {
             var bookCopy = await _copyRepo.GetBookCopyByIdAsync(id);
-
             if (bookCopy == null)
             {
                 return NotFound();
             }
 
-            // Toggle the IsDelete property
+            // Toggle the IsDeleted property
             bookCopy.IsDeleted = !bookCopy.IsDeleted;
             bookCopy.LastUpdatedOn = DateTime.Now;
 
@@ -147,21 +113,11 @@ namespace Bookify.Web.Controllers
             });
         }
 
-
-
         // Method Helper 
-
-        ///// Returns the "String addView " view populated with the given model, including a list of books.
         private async Task<IActionResult> GenerateBookCopiesViewWithErrorsAsync(BookCopyViewModel? model, string addView)
         {
-
-            if (model == null)
-            {
-                model = new BookCopyViewModel();
-            }
-
+            model ??= new BookCopyViewModel();
             var books = await _bookRepo.GetAllBooksAsync();
-
 
             model.Books = books.Select(b => new SelectListItem
             {
@@ -171,11 +127,5 @@ namespace Bookify.Web.Controllers
 
             return View(addView, model);
         }
-
-
-
-
-
-
     }
 }

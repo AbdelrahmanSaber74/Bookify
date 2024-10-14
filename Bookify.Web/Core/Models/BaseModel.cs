@@ -1,14 +1,22 @@
-﻿namespace Bookify.Web.Core.Models;
-
-
-public class BaseModel
+﻿
+namespace Bookify.Web.Core.Models
 {
+    public class BaseModel
+    {
+        public bool IsDeleted { get; set; }
 
-    public bool IsDeleted { get; set; }
+        public string? CreatedById { get; set; }
 
-    [DataType(DataType.DateTime)]
-    public DateTime CreatedOn { get; set; } = DateTime.Now;
+        public ApplicationUser? CreatedBy { get; set; }
 
-    [DataType(DataType.DateTime)]
-    public DateTime? LastUpdatedOn { get; set; }
+        [DataType(DataType.DateTime)]
+        public DateTime CreatedOn { get; set; } = DateTime.Now;
+
+        public string? LastUpdatedById { get; set; }
+
+        public ApplicationUser? LastUpdatedBy { get; set; }
+
+        [DataType(DataType.DateTime)]
+        public DateTime? LastUpdatedOn { get; set; }
+    }
 }

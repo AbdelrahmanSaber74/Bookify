@@ -15,10 +15,15 @@
 
 
                 <div class="d-flex flex-center flex-shrink-0 bg-light rounded w-100px h-100px w-lg-150px h-lg-150px me-7 mb-4">
-                    <a data-fslightbox href="@Model.ImageUrl">
-                        <img class="mw-50px mw-lg-75px" src="@Model.ImageThumbnailUrl" alt="@Model.Title" />
+                    <a data-fslightbox href="@(!string.IsNullOrEmpty(Model.ImageUrl) ? Model.ImageUrl : Url.Content("~/images/default/no-book.jpg"))">
+                        <img class="mw-50px mw-lg-75px"
+                             src="@(!string.IsNullOrEmpty(Model.ImageThumbnailUrl) ? Model.ImageThumbnailUrl : Url.Content("~/images/default/no-book.jpg"))"
+                             alt="@Model.Title" />
                     </a>
                 </div>
+
+
+
                 <!--end::Image-->
                 <!--begin::Wrapper-->
                 <div class="flex-grow-1">

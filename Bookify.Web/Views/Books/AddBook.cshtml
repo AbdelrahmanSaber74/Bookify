@@ -95,8 +95,9 @@
                     <!-- Author -->
                     <div class="mb-5">
                         <div class="form-floating mb-2">
-                            <select class="form-select form-select-solid js-select2" data-placeholder="Select Author" asp-for="AuthorId" required asp-items="@Model.Authors">
-                                <option disabled selected value="">Select Author</option>
+                            <select class="form-select form-select-solid js-select2" asp-for="AuthorId" required asp-items="@Model.Authors">
+                                <option value="" disabled selected>Select Author</option>
+                                <label asp-for="AuthorId"></label>
 
                             </select>
                         </div>
