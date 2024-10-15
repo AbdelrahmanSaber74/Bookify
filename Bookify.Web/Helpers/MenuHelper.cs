@@ -1,13 +1,20 @@
-﻿namespace Bookify.Web.Helpers
+﻿
+namespace Bookify.Web.Helpers
 {
     public static class MenuHelper
     {
         public static bool IsActive(ViewContext viewContext, string controller, string action)
         {
-            var currentController = viewContext.RouteData.Values["controller"].ToString();
-            var currentAction = viewContext.RouteData.Values["action"].ToString();
-            return currentController.Equals(controller, StringComparison.OrdinalIgnoreCase) &&
-                   currentAction.Equals(action, StringComparison.OrdinalIgnoreCase);
+            if (viewContext == null || viewContext.RouteData == null)
+            {
+                return false; 
+            }
+
+            var currentController = viewContext.RouteData.Values["controller"]?.ToString();
+            var currentAction = viewContext.RouteData.Values["action"]?.ToString();
+
+            return string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) &&
+                   string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

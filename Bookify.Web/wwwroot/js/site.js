@@ -86,7 +86,7 @@ function initDataTable(varTitle) {
 
         columnDefs: [
             {
-                targets: '.action-column', // Hide the Action column by class
+                targets: '.js-no-export', // Hide the Action column by class
                 visible: false, // Hide the column in the table
                 searchable: false // Ensure it's not searchable
             }
@@ -105,7 +105,7 @@ function initDataTable(varTitle) {
                         title: varTitle,
                         className: 'btn btn-sm btn-secondary',
                         exportOptions: {
-                            columns: ':visible:not(.action-column)'
+                            columns: ':visible:not(.js-no-export)'
                         }
                     },
                     {
@@ -114,7 +114,7 @@ function initDataTable(varTitle) {
                         title: varTitle,
                         className: 'btn btn-sm btn-secondary',
                         exportOptions: {
-                            columns: ':visible:not(.action-column)' // Exclude the Action column by class
+                            columns: ':visible:not(.js-no-export)' // Exclude the Action column by class
                         }
                     },
                     {
@@ -123,7 +123,7 @@ function initDataTable(varTitle) {
                         title: varTitle,
                         className: 'btn btn-sm btn-secondary',
                         exportOptions: {
-                            columns: ':visible:not(.action-column)' // Exclude the Action column by class
+                            columns: ':visible:not(.js-no-export)' // Exclude the Action column by class
                         },
                         customize: function (xlsx) {
                             var sheet = xlsx.xl.worksheets['sheet1.xml'];
@@ -136,7 +136,7 @@ function initDataTable(varTitle) {
                         title: varTitle,
                         className: 'btn btn-sm btn-secondary',
                         exportOptions: {
-                            columns: ':visible:not(.action-column)' // Exclude the Action column by class
+                            columns: ':visible:not(.js-no-export)' // Exclude the Action column by class
                         }
                     },
                     {
@@ -145,7 +145,7 @@ function initDataTable(varTitle) {
                         title: varTitle,
                         className: 'btn btn-sm btn-secondary',
                         exportOptions: {
-                            columns: ':visible:not(.action-column)' // Exclude the Action column by class
+                            columns: ':visible:not(.js-no-export)' // Exclude the Action column by class
                         }
                     },
                     {

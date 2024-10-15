@@ -1,23 +1,36 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Bookify.Web.Seeds; // Ensure this namespace is imported
 using Bookify.Web.Core.Models; // Ensure your ApplicationUser and other models are imported
+using Bookify.Web.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // Use AddIdentity to register both UserManager and RoleManager
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-     .AddDefaultUI()
-    .AddDefaultTokenProviders();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = true;
 
+    // Password settings
+    options.Password.RequireDigit = true; // Require at least one digit
+    options.Password.RequireLowercase = true; // Require at least one lowercase letter
+    options.Password.RequireUppercase = true; // Require at least one uppercase letter
+    options.Password.RequireNonAlphanumeric = true; // Require at least one special character
+    options.Password.RequiredLength = 8; // Minimum length of the password
+    options.Password.RequiredUniqueChars = 1; // Minimum number of unique characters
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultUI()
+.AddDefaultTokenProviders();
+
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddControllersWithViews();
 
 // Add Razor Pages services
@@ -46,8 +59,6 @@ using (var scope = app.Services.CreateScope())
     await SeedRoles.AddDefaultRolesAsync(roleManager);
     await DefaultUser.SeedAdminUser(userManager);
 }
-
-
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

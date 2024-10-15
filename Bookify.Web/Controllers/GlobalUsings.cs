@@ -1,9 +1,9 @@
 // GlobalUsings.cs
 global using AutoMapper;
-global using Bookify.Web.Core.Const;
 global using Bookify.Web.Core.Models;
 global using Bookify.Web.Core.ViewModels;
 global using Bookify.Web.Data;
+global using Bookify.Web.Core.Consts;
 global using Bookify.Web.Extensions;
 global using Bookify.Web.Helpers;
 global using Bookify.Web.Repositories.Authors;
@@ -19,3 +19,5 @@ global using System.Diagnostics;
 global using System.Linq.Expressions;
 global using UoN.ExpressiveAnnotations.NetCore.DependencyInjection;
 global using Bookify.Web.Repositories.BookCopies;
+global using Microsoft.AspNetCore.Authorization;
+global using Bookify.Web.Core.Consts;

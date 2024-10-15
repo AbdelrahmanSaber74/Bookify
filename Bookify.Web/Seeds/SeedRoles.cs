@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Bookify.Web.Core.Consts;
+using Microsoft.AspNetCore.Identity;
 using System.Threading.Tasks;
 
 namespace Bookify.Web.Seeds
@@ -7,7 +8,7 @@ namespace Bookify.Web.Seeds
     {
         public static async Task AddDefaultRolesAsync(RoleManager<IdentityRole> roleManager)
         {
-            var roles = new[] { UserEnum.Admin.ToString(), UserEnum.Reception.ToString() , UserEnum.Archive.ToString() };
+            var roles = new[] {AppRoles.Admin, AppRoles.Archive ,AppRoles.Reception};
 
             foreach (var role in roles)
             {

@@ -47,6 +47,14 @@
 
 
 
+            //Users 
+            CreateMap<ApplicationUser, UserViewModel>();
+
+          
+
+
+
         }
+
     }
 }

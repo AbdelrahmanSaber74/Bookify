@@ -35,6 +35,17 @@ namespace Bookify.Web.Data
                 .IsUnique();
 
 
+            // Create a unique index on the Email column in the ApplicationUser table.
+            builder.Entity<ApplicationUser>().
+                HasIndex(c => c.Email)
+                .IsUnique();
+
+            // Create a unique index on the UserName column in the ApplicationUser table.
+            builder.Entity<ApplicationUser>().
+                HasIndex(c => c.UserName)
+                .IsUnique();
+
+
             // Create a unique index on the Name column in the Author table.
             builder.Entity<Author>().
                 HasIndex(c => c.Name)

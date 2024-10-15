@@ -1,4 +1,6 @@
 ﻿
+using Bookify.Web.Core.Consts;
+
 namespace Bookify.Web.Seeds
 {
     public static class DefaultUser
@@ -30,7 +32,7 @@ namespace Bookify.Web.Seeds
                 if (result.Succeeded)
                 {
 
-                    await userManager.AddToRoleAsync(adminUser, UserEnum.Admin.ToString());
+                    await userManager.AddToRoleAsync(adminUser, AppRoles.Admin.ToString() );
                 }
 
             }

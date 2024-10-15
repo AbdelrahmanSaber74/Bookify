@@ -1,5 +1,6 @@
-﻿using Bookify.Web.Repositories.BookCopies;
+﻿using Microsoft.AspNetCore.Authorization;
 
+[Authorize]
 public class BooksController : Controller
 {
     private readonly IBookRepo _bookRepo;
