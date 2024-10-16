@@ -2,6 +2,7 @@
 
 namespace Bookify.Web.Controllers
 {
+    [Authorize(Roles = AppRoles.Archive)]
     public class AuthorsController : Controller
     {
         private readonly IAuthorRepo _authorRepo;
@@ -38,6 +39,7 @@ namespace Bookify.Web.Controllers
             }
 
             var newAuthor = _mapper.Map<Author>(model);
+            newAuthor.CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             await _authorRepo.AddAuthorAsync(newAuthor);
 
             TempData["SuccessMessage"] = "Author added successfully!";

@@ -1,5 +1,8 @@
-﻿namespace Bookify.Web.Controllers
+﻿using System.Security.Claims;
+
+namespace Bookify.Web.Controllers
 {
+    [Authorize(Roles = AppRoles.Archive)]
     public class BookCopiesController : Controller
     {
         private readonly IBookCopyRepo _copyRepo;
@@ -49,6 +52,7 @@
             }
 
             var bookCopy = _mapper.Map<BookCopy>(model);
+            bookCopy.CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             await _copyRepo.AddBookCopyAsync(bookCopy);
             TempData["SuccessMessage"] = "Book Copies added successfully.";
 
@@ -66,6 +70,7 @@
 
             var bookCopy = _mapper.Map<BookCopy>(model);
             bookCopy.LastUpdatedOn = DateTime.Now;
+            bookCopy.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             await _copyRepo.UpdateBookCopyAsync(bookCopy);
             TempData["SuccessMessage"] = "Book Copies updated successfully.";
@@ -102,6 +107,7 @@
             // Toggle the IsDeleted property
             bookCopy.IsDeleted = !bookCopy.IsDeleted;
             bookCopy.LastUpdatedOn = DateTime.Now;
+            bookCopy.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             // Update the book copy in the repository
             await _copyRepo.UpdateBookCopyAsync(bookCopy);

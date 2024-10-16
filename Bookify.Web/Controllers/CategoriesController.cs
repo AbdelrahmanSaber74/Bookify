@@ -3,6 +3,8 @@ using System.Security.Claims;
 
 namespace Bookify.Web.Controllers
 {
+    [Authorize(Roles = AppRoles.Archive)]
+
     public class CategoriesController : Controller
     {
         private readonly ICategoriesRepo _categoriesRepo;
@@ -46,7 +48,9 @@ namespace Bookify.Web.Controllers
             if (!ModelState.IsValid) return View("AddCategory", model);
 
             var newCategory = _mapper.Map<Category>(model);
+            newCategory.CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             await _categoriesRepo.AddCategoryAsync(newCategory);
+            
 
             TempData["SuccessMessage"] = "Category added successfully!";
             return RedirectToAction(nameof(Index));

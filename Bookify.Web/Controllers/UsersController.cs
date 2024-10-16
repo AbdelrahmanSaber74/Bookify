@@ -77,7 +77,7 @@ namespace Bookify.Web.Controllers
 
             };
 
-            var result = await _userManager.CreateAsync(newUser, model.Password);
+            var result = await _userManager.CreateAsync(newUser, model.Password!);
 
             if (result.Succeeded)
             {
@@ -137,6 +137,7 @@ namespace Bookify.Web.Controllers
 
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditUser(AddEditUserViewModel model)
         {
             if (!ModelState.IsValid)
@@ -144,45 +145,53 @@ namespace Bookify.Web.Controllers
                 return await ReturnFormViewWithError(model);
             }
 
-            var user = await _userManager.FindByEmailAsync(model.Email);
+            // Find the user by ID
+            var user = await _userManager.FindByIdAsync(model.Id!);
             if (user == null)
             {
                 TempData["ErrorMessage"] = "User not found.";
-                return RedirectToAction(nameof(Index)); 
-            }
-
-            user.UserName = model.UserName; 
-            user.Email = model.Email;
-            user.PhoneNumber = model.PhoneNumber;
-            user.FullName = model.FullName;
-
-            var updateUserResult = await _userManager.UpdateAsync(user);
-            if (!updateUserResult.Succeeded)
-            {
-                ModelState.AddModelError(string.Empty, "Error updating user details.");
-                return await ReturnFormViewWithError(model);
-            }
-
-            var currentRoles = await _userManager.GetRolesAsync(user);
-            var removeRolesResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
-            if (!removeRolesResult.Succeeded)
-            {
-                var errorMessages = removeRolesResult.Errors.Select(e => e.Description).ToArray();
-                TempData["WarningMessage"] = "Failed to remove existing roles: " + string.Join(", ", errorMessages);
                 return RedirectToAction(nameof(Index));
             }
 
-            var addRolesResult = await _userManager.AddToRolesAsync(user, model.SelectedRoles);
-            if (addRolesResult.Succeeded)
+            // Update user information from model
+            _mapper.Map(model, user);
+            user.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            user.LastUpdatedOn = DateTime.Now;
+
+            // Update the user in the database
+            var updateUserResult = await _userManager.UpdateAsync(user);
+            if (!updateUserResult.Succeeded)
             {
-                TempData["SuccessMessage"] = "User updated successfully!";
-            }
-            else
-            {
-                var errorMessages = addRolesResult.Errors.Select(e => e.Description).ToArray();
-                TempData["WarningMessage"] = "Failed to add roles: " + string.Join(", ", errorMessages);
+                TempData["WarningMessage"] = "Failed to update user details.";
+                return RedirectToAction(nameof(Index));
             }
 
+            // Fetch the current roles and check if they need updating
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            var rolesUpdated = !currentRoles.SequenceEqual(model.SelectedRoles);
+
+            if (rolesUpdated)
+            {
+                // Remove old roles and add new roles
+                var removeRolesResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                if (!removeRolesResult.Succeeded)
+                {
+                    var errorMessages = removeRolesResult.Errors.Select(e => e.Description).ToArray();
+                    TempData["WarningMessage"] = "Failed to remove existing roles: " + string.Join(", ", errorMessages);
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var addRolesResult = await _userManager.AddToRolesAsync(user, model.SelectedRoles);
+                if (!addRolesResult.Succeeded)
+                {
+                    var errorMessages = addRolesResult.Errors.Select(e => e.Description).ToArray();
+                    TempData["WarningMessage"] = "Failed to add new roles: " + string.Join(", ", errorMessages);
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
+            // Success message
+            TempData["SuccessMessage"] = "User updated successfully!";
             return RedirectToAction(nameof(Index));
         }
 
