@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 [Authorize]
 public class BooksController : Controller
@@ -146,6 +147,8 @@ public class BooksController : Controller
         }
 
         existingBook.LastUpdatedOn = DateTime.Now;
+        existingBook.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
         await _bookRepo.UpdateBookAsync(existingBook);
         await UpdateBookCategoriesAsync(model.SelectedCategoryIds, existingBook.Id);
 

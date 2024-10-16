@@ -1,4 +1,6 @@
-﻿namespace Bookify.Web.Controllers
+﻿using System.Security.Claims;
+
+namespace Bookify.Web.Controllers
 {
     public class AuthorsController : Controller
     {
@@ -70,6 +72,7 @@
 
             existingAuthor.IsDeleted = !existingAuthor.IsDeleted;
             existingAuthor.LastUpdatedOn = DateTime.Now;
+            existingAuthor.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             await _authorRepo.UpdateAuthorAsync(existingAuthor);
 
@@ -111,6 +114,7 @@
 
             _mapper.Map(model, existingAuthor);
             existingAuthor.LastUpdatedOn = DateTime.Now;
+            existingAuthor.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             await _authorRepo.UpdateAuthorAsync(existingAuthor);
 

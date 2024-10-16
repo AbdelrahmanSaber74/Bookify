@@ -21,9 +21,9 @@
 
         [StringLength(100, ErrorMessage = Errors.MaxMinLength  , MinimumLength = 6)]
         [RegularExpression(RegexPatterns.Password  ,  ErrorMessage = Errors.WeakPassword)] 
-        public string Password { get; set; } = null!;
+        public string? Password { get; set; } = null!;
         [Compare("Password", ErrorMessage = Errors.PasswordMismatchMessage)]
-        public string ConfirmPassword { get; set; } = null!;
+        public string? ConfirmPassword { get; set; } = null!;
         public bool IsDeleted { get; set; }
         public DateTime CreatedOn { get; set; }
         public DateTime? LastUpdatedOn { get; set; }

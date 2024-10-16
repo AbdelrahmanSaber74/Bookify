@@ -1,4 +1,6 @@
 ﻿
+using System.Security.Claims;
+
 namespace Bookify.Web.Controllers
 {
     public class CategoriesController : Controller
@@ -62,6 +64,7 @@ namespace Bookify.Web.Controllers
 
             _mapper.Map(model, existingCategory);
             existingCategory.LastUpdatedOn = DateTime.Now;
+            existingCategory.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             await _categoriesRepo.UpdateCategoryAsync(existingCategory);
 
@@ -91,6 +94,7 @@ namespace Bookify.Web.Controllers
 
             existingCategory.IsDeleted = !existingCategory.IsDeleted;
             existingCategory.LastUpdatedOn = DateTime.Now;
+            existingCategory.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             await _categoriesRepo.UpdateCategoryAsync(existingCategory);
 

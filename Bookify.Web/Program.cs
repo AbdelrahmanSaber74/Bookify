@@ -16,7 +16,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Use AddIdentity to register both UserManager and RoleManager
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    options.SignIn.RequireConfirmedAccount = true;
+    options.SignIn.RequireConfirmedAccount = false;
 
     // Password settings
     options.Password.RequireDigit = true; // Require at least one digit
@@ -24,7 +24,6 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireUppercase = true; // Require at least one uppercase letter
     options.Password.RequireNonAlphanumeric = true; // Require at least one special character
     options.Password.RequiredLength = 8; // Minimum length of the password
-    options.Password.RequiredUniqueChars = 1; // Minimum number of unique characters
 
 
     options.User.RequireUniqueEmail = true;

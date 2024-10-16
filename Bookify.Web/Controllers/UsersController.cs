@@ -1,4 +1,5 @@
 ﻿using Bookify.Web.Core.Consts;
+using NuGet.Protocol;
 using System.Data;
 using System.Security.Claims;
 
@@ -13,13 +14,15 @@ namespace Bookify.Web.Controllers
         private readonly ILogger<UsersController> _logger;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IMapper _mapper;
-
+        private readonly string _resetPassword;
+        private readonly IConfiguration _configuration;
 
         public UsersController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
             RoleManager<IdentityRole> roleManager,
             IMapper mapper,
+            IConfiguration configuration,
             ILogger<UsersController> logger)
         {
             _userManager = userManager;
@@ -27,7 +30,9 @@ namespace Bookify.Web.Controllers
             _roleManager = roleManager;
             _logger = logger;
             _mapper = mapper;
+            _configuration = configuration;
 
+            _resetPassword = _configuration["ResetPassword"];
         }
 
         [HttpGet]
@@ -131,6 +136,57 @@ namespace Bookify.Web.Controllers
         }
 
 
+        [HttpPost]
+        public async Task<IActionResult> EditUser(AddEditUserViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return await ReturnFormViewWithError(model);
+            }
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "User not found.";
+                return RedirectToAction(nameof(Index)); 
+            }
+
+            user.UserName = model.UserName; 
+            user.Email = model.Email;
+            user.PhoneNumber = model.PhoneNumber;
+            user.FullName = model.FullName;
+
+            var updateUserResult = await _userManager.UpdateAsync(user);
+            if (!updateUserResult.Succeeded)
+            {
+                ModelState.AddModelError(string.Empty, "Error updating user details.");
+                return await ReturnFormViewWithError(model);
+            }
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            var removeRolesResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+            if (!removeRolesResult.Succeeded)
+            {
+                var errorMessages = removeRolesResult.Errors.Select(e => e.Description).ToArray();
+                TempData["WarningMessage"] = "Failed to remove existing roles: " + string.Join(", ", errorMessages);
+                return RedirectToAction(nameof(Index));
+            }
+
+            var addRolesResult = await _userManager.AddToRolesAsync(user, model.SelectedRoles);
+            if (addRolesResult.Succeeded)
+            {
+                TempData["SuccessMessage"] = "User updated successfully!";
+            }
+            else
+            {
+                var errorMessages = addRolesResult.Errors.Select(e => e.Description).ToArray();
+                TempData["WarningMessage"] = "Failed to add roles: " + string.Join(", ", errorMessages);
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+
         [AllowAnonymous]
         public async Task<IActionResult> LogOut()
         {
@@ -165,6 +221,50 @@ namespace Bookify.Web.Controllers
 
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ResetPassword(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            var currentPassword = user.PasswordHash;
+
+            // Remove the current password
+            var removeResult = await _userManager.RemovePasswordAsync(user);
+            if (!removeResult.Succeeded)
+            {
+                TempData["WarningMessage"] = "Unable to remove the current password.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Reset the password
+            var result = await _userManager.AddPasswordAsync(user, _resetPassword);
+
+            if (result.Succeeded)
+            {
+                user.LastUpdatedOn = DateTime.Now;
+                user.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                // Update the user with the new password
+                await _userManager.UpdateAsync(user);
+
+                TempData["SuccessMessage"] = "Password has been reset successfully!";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // If the password reset fails, revert to the old password
+            await _userManager.AddPasswordAsync(user, currentPassword);
+            await _userManager.UpdateAsync(user);
+
+            var errorMessages = result.Errors.Select(e => e.Description).ToArray();
+            TempData["WarningMessage"] = "Password was not reset successfully! " + string.Join(", ", errorMessages);
+            return RedirectToAction(nameof(Index));
+        }
+
+
 
         [AcceptVerbs("Get", "Post")]
         public async Task<IActionResult> AllowUserName(string UserName, string Id)
@@ -184,8 +284,8 @@ namespace Bookify.Web.Controllers
         }
 
 
-        [AcceptVerbs("Get", "Post")]
-        public async Task<IActionResult> AllowEmail(string Email, string Id)
+        [HttpGet]
+        public async Task<IActionResult> AllowEmail(string Id , string Email)
         {
             var user = await _userManager.FindByEmailAsync(Email);
 
