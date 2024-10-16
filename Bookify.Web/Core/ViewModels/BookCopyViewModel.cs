@@ -4,6 +4,8 @@ namespace Bookify.Web.Core.ViewModels
     {
         public int Id { get; set; }
         public int BookId { get; set; }
+
+        [RegularExpression(RegexPatterns.CharactersOnly_Eng, ErrorMessage = Errors.OnlyEnglishLetters)]
         public string? BookTitle { get; set; }
         public string? SerialNumber { get; set; }
 

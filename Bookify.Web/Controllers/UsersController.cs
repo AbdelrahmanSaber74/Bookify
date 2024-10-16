@@ -51,6 +51,7 @@ namespace Bookify.Web.Controllers
 
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddUser(AddEditUserViewModel model)
         {
             if (!ModelState.IsValid)
@@ -68,7 +69,6 @@ namespace Bookify.Web.Controllers
                 CreatedOn = DateTime.Now,
                 CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)!.Value,
                 PhoneNumber = model.PhoneNumber,
-               
 
             };
 
@@ -81,6 +81,11 @@ namespace Bookify.Web.Controllers
                 TempData["SuccessMessage"] = "User added successfully!";
                 return RedirectToAction(nameof(Index));
 
+            }
+
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
             }
 
             return await ReturnFormViewWithError(model);
@@ -133,6 +138,70 @@ namespace Bookify.Web.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleStatus(string Id)
+        {
+            var user = await _userManager.FindByIdAsync(Id);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            user.IsDeleted = !user.IsDeleted;
+            user.LastUpdatedOn = DateTime.Now;
+            user.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            await _userManager.UpdateAsync(user);
+
+            return Json(new
+            {
+                success = true,
+                lastUpdatedOn = user.LastUpdatedOn.ToString()
+            });
+
+        }
+
+
+        [AcceptVerbs("Get", "Post")]
+        public async Task<IActionResult> AllowUserName(string UserName, string Id)
+        {
+
+            var user = await _userManager.FindByNameAsync(UserName);
+
+            if (user != null && user.Id != Id)
+            {
+                var errorMessage = string.Format(Errors.Duplicated, "User");
+
+                return Json(string.Format(errorMessage));
+            }
+
+            return Json(true);
+
+        }
+
+
+        [AcceptVerbs("Get", "Post")]
+        public async Task<IActionResult> AllowEmail(string Email, string Id)
+        {
+            var user = await _userManager.FindByEmailAsync(Email);
+
+            if (user != null && user.Id != Id)
+            {
+                var errorMessage = string.Format(Errors.Duplicated, "User");
+
+                return Json(string.Format(errorMessage));
+
+            }
+
+
+            return Json(true);
+
+        }
+
         private async Task<IActionResult> ReturnFormViewWithError(AddEditUserViewModel? model)
         {
 
@@ -158,7 +227,7 @@ namespace Bookify.Web.Controllers
         }
 
 
-     
+
 
     }
 }

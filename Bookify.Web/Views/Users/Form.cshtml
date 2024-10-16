@@ -32,23 +32,30 @@
 
                     <div asp-validation-summary="All"></div>
 
-                    @* CSRF Token *@
-                    <input type="hidden" name="__RequestVerificationToken" value="@antiforgery.GetAndStoreTokens(Context).RequestToken" />
-
 
                     <!-- Full Name -->
                     <div class="mb-5">
                         <div class="form-floating mb-2">
-                            <input type="text" class="form-control" placeholder="Full Name" asp-for="FullName" required />
+                            <input type="text" class="form-control form-control-solid" placeholder="Full Name" asp-for="FullName" required autocomplete="off" />
                             <label asp-for="FullName"></label>
                         </div>
                         <span asp-validation-for="FullName" class="text-danger"></span>
                     </div>
 
+
+                    <!-- UserName  -->
+                    <div class="mb-5">
+                        <div class="form-floating mb-2">
+                            <input type="text" class="form-control form-control-solid" placeholder="UserName" asp-for="UserName" required autocomplete="off" />
+                            <label asp-for="UserName"></label>
+                        </div>
+                        <span asp-validation-for="UserName" class="text-danger"></span>
+                    </div>
+
                     <!-- Email -->
                     <div class="mb-5">
                         <div class="form-floating mb-2">
-                            <input type="text" class="form-control" placeholder="Email" asp-for="Email" required  />
+                            <input type="text" class="form-control form-control-solid" placeholder="Email" asp-for="Email" required autocomplete="off" />
                             <label asp-for="Email"></label>
                         </div>
                         <span asp-validation-for="Email" class="text-danger"></span>
@@ -60,7 +67,7 @@
                         <!-- Password -->
                         <div class="mb-5">
                             <div class="form-floating mb-2">
-                                <input type="password" class="form-control" placeholder="Password" asp-for="Password" required />
+                                <input type="password" class="form-control form-control-solid" placeholder="Password" asp-for="Password" required  />
                                 <label asp-for="Password"></label>
                             </div>
                             <span asp-validation-for="Password" class="text-danger"></span>
@@ -69,7 +76,7 @@
                         <!-- Confirm Password -->
                         <div class="mb-5">
                             <div class="form-floating mb-2">
-                                <input type="password" class="form-control" placeholder="Confirm Password" asp-for="ConfirmPassword" required />
+                                <input type="password" class="form-control form-control-solid" placeholder="Confirm Password" asp-for="ConfirmPassword" required  />
                                 <label asp-for="ConfirmPassword"></label>
                             </div>
                             <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
@@ -79,7 +86,7 @@
                     <!-- Phone Number -->
                     <div class="mb-5">
                         <div class="form-floating mb-2">
-                            <input type="text" class="form-control" placeholder="Phone Number" asp-for="PhoneNumber" required />
+                            <input type="text" class="form-control form-control-solid" placeholder="Phone Number" asp-for="PhoneNumber" required autocomplete="off" />
                             <label asp-for="PhoneNumber"></label>
                         </div>
                         <span asp-validation-for="PhoneNumber" class="text-danger"></span>
@@ -88,7 +95,7 @@
 
                     <!-- Roles Dropdown -->
                     <div class="mb-5">
-                        <select asp-for="SelectedRoles" multiple required class="mt-2 form-select js-select2" data-placeholder="Select Roles">
+                        <select asp-for="SelectedRoles" multiple required class="mt-2 form-select  form-select-solid js-select2" data-placeholder="Select Roles" autocomplete="off">
                             <option  disabled value="">Select Roles</option>
                             @foreach (var item in Model.Roles)
                             {
@@ -118,6 +125,7 @@
         </div>
     </div>
 </div>
+<input type="hidden" name="__RequestVerificationToken" value="@antiforgery.GetAndStoreTokens(Context).RequestToken" />
 
 <!-- Loading Overlay -->
 <div id="loadingOverlay" style="display: none;">

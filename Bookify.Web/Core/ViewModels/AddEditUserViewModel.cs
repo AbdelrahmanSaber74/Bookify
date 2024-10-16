@@ -10,10 +10,12 @@
         public string? FullName { get; set; } = null;
 
         [MaxLength(20 , ErrorMessage = Errors.MaxLength)]
+        [Remote(controller: "Users", action: "AllowUserName", AdditionalFields = nameof(Id))]
         public string? UserName { get; set; } = null;
 
         [MaxLength(200, ErrorMessage = Errors.MaxLength)]
         [EmailAddress(ErrorMessage = Errors.InvalidEmailFormat)]
+        [Remote(controller: "Users", action: "AllowEmail", AdditionalFields = nameof(Id))]
         public string Email { get; set; } = null!;
         public string? PhoneNumber { get; set; } = null;
 

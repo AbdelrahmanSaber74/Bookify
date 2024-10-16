@@ -25,6 +25,12 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireNonAlphanumeric = true; // Require at least one special character
     options.Password.RequiredLength = 8; // Minimum length of the password
     options.Password.RequiredUniqueChars = 1; // Minimum number of unique characters
+
+
+    options.User.RequireUniqueEmail = true;
+
+
+
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultUI()
