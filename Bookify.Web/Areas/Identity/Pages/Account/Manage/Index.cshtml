@@ -12,7 +12,7 @@
 	var identity = (ClaimsIdentity)User.Identity;
 	var imageUrlClaim = identity.FindFirst("imageUrl");
 	var thumbnailUrlClaim = identity.FindFirst("thumbnailUrl");
-
+ 
 	// Use the imageUrl or fallback to a default avatar
 	var imageUrl = imageUrlClaim != null && !string.IsNullOrEmpty(imageUrlClaim.Value)
 		? imageUrlClaim.Value

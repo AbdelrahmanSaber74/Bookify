@@ -4,25 +4,25 @@
 
 namespace Bookify.Web.Data.Migrations
 {
-    /// <inheritdoc />
-    public partial class AddImageThumbnailUrlInBookModel : Migration
-    {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.AddColumn<string>(
-                name: "ImageThumbnailUrl",
-                table: "Books",
-                type: "nvarchar(max)",
-                nullable: true);
-        }
+	/// <inheritdoc />
+	public partial class AddImageThumbnailUrlInBookModel : Migration
+	{
+		/// <inheritdoc />
+		protected override void Up(MigrationBuilder migrationBuilder)
+		{
+			migrationBuilder.AddColumn<string>(
+				name: "ImageThumbnailUrl",
+				table: "Books",
+				type: "nvarchar(max)",
+				nullable: true);
+		}
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.DropColumn(
-                name: "ImageThumbnailUrl",
-                table: "Books");
-        }
-    }
+		/// <inheritdoc />
+		protected override void Down(MigrationBuilder migrationBuilder)
+		{
+			migrationBuilder.DropColumn(
+				name: "ImageThumbnailUrl",
+				table: "Books");
+		}
+	}
 }

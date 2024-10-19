@@ -99,7 +99,7 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
 				_imageService.DeleteOldImages(user.ImageUrl , user.ThumbnailUrl);
 
                 // Save new image
-                var result = await _imageService.SaveImageAsync(Input.Avatar, $"images/users");
+                var result = await _imageService.SaveImageAsync(Input.Avatar, "images/users");
 
                 if (result is OkObjectResult okResult)
                 {
