@@ -1,6 +1,4 @@
-﻿using Bookify.Web.Core.Consts;
-using NuGet.Protocol;
-using System.Data;
+﻿using System.Data;
 using System.Security.Claims;
 
 namespace Bookify.Web.Controllers
@@ -324,7 +322,7 @@ namespace Bookify.Web.Controllers
                 return NotFound();
             }
 
-       
+
 
             var isLocked = await _userManager.IsLockedOutAsync(user);
 

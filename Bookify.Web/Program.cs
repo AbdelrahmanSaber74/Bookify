@@ -13,7 +13,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.SignIn.RequireConfirmedAccount = false;
 
 
-    
+
     options.Password.RequiredLength = 8; // Minimum length of the password
 
     options.User.RequireUniqueEmail = true;

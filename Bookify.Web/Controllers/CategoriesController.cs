@@ -50,7 +50,7 @@ namespace Bookify.Web.Controllers
             var newCategory = _mapper.Map<Category>(model);
             newCategory.CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             await _categoriesRepo.AddCategoryAsync(newCategory);
-            
+
 
             TempData["SuccessMessage"] = "Category added successfully!";
             return RedirectToAction(nameof(Index));

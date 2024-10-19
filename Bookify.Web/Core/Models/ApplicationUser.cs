@@ -15,6 +15,8 @@
         public DateTime? LastUpdatedOn { get; set; }
         public string? CreatedById { get; set; }
         public string? LastUpdatedById { get; set; }
+        public string? ImageUrl {  get; set; }
+        public string? ThumbnailUrl { get; set; }
 
     }
 }

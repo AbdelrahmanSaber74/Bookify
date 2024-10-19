@@ -1,5 +1,4 @@
-﻿using Bookify.Web.Repositories.BookCopies;
-
+﻿
 namespace Bookify.Web.Extensions
 {
     public static class ServiceCollectionExtensions
@@ -19,11 +18,14 @@ namespace Bookify.Web.Extensions
 
 
 
+			// Register ImageService with DI container
+			services.AddScoped<IImageService, ImageService>();
+
 			// Replace the default ClaimsPrincipalFactory with the custom one
 			services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, CustomUserClaimsPrincipalFactory>();
 
-			// Register AutoMapper in the DI container and load mappings from the current application domain's assemblies
-			services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            // Register AutoMapper in the DI container and load mappings from the current application domain's assemblies
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             return services;
         }

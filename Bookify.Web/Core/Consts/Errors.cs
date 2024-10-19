@@ -13,9 +13,10 @@ namespace Bookify.Web.Core.Consts
         public const string PasswordMismatchMessage = "The password and confirmation password do not match!";
         public const string InvalidEmailFormat = "The email format is invalid.";
         public const string WeakPassword = "Passwords must contain an uppercase character, lowercase character, a digit, and a non-alphanumeric character. Passwords must be at least 8 characters long.";
+		public const string InvalidMobileNumber = "Invalid mobile number.";
 
-        // Add image-related error messages
-        public const string NoFileProvided = "No file provided.";
+		// Add image-related error messages
+		public const string NoFileProvided = "No file provided.";
         public const string FileSizeExceeded = "File size exceeds the maximum limit of {0} MB.";
         public const string InvalidFileType = "Invalid file type. Only {0} are allowed.";
         public const string PermissionDenied = "You do not have permission to save this file.";

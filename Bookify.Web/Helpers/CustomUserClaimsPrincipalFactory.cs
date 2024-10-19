@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 public class CustomUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<ApplicationUser, IdentityRole>
 {
@@ -22,12 +20,24 @@ public class CustomUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<Appli
 		var fullNameClaim = identity.FindFirst(ClaimTypes.GivenName);
 		if (fullNameClaim == null)
 		{
-			// Assuming ApplicationUser has FirstName and LastName properties
+			// Assuming ApplicationUser has FullName property
 			var fullName = $"{user.FullName}".Trim();
 			identity.AddClaim(new Claim(ClaimTypes.GivenName, fullName));
 		}
 
-		// You can add other custom claims here as well, like user roles or permissions
+		// Add custom ImageUrl claim if it doesn't already exist
+		var imageUrlClaim = identity.FindFirst("ImageUrl");
+		if (imageUrlClaim == null && !string.IsNullOrEmpty(user.ImageUrl))
+		{
+			identity.AddClaim(new Claim("ImageUrl", user.ImageUrl));
+		}
+
+		// Add custom ThumbnailUrl claim if it doesn't already exist
+		var thumbnailUrlClaim = identity.FindFirst("ThumbnailUrl");
+		if (thumbnailUrlClaim == null && !string.IsNullOrEmpty(user.ThumbnailUrl))
+		{
+			identity.AddClaim(new Claim("ThumbnailUrl", user.ThumbnailUrl));
+		}
 
 		return identity;
 	}

@@ -1,4 +1,23 @@
-﻿<!--begin::Header-->
+﻿@using System.Security.Claims;
+
+@{
+	// Get the user's imageUrl and thumbnailUrl from claims
+	var identity = (ClaimsIdentity)User.Identity;
+	var imageUrlClaim = identity.FindFirst("imageUrl");
+	var thumbnailUrlClaim = identity.FindFirst("thumbnailUrl");
+
+	// Use the imageUrl or fallback to a default avatar
+	var imageUrl = imageUrlClaim != null && !string.IsNullOrEmpty(imageUrlClaim.Value)
+		? imageUrlClaim.Value
+		: "/assets/images/avatar.png";
+
+	// Use the thumbnailUrl or fallback to a default thumbnail
+	var thumbnailUrl = thumbnailUrlClaim != null && !string.IsNullOrEmpty(thumbnailUrlClaim.Value)
+		? thumbnailUrlClaim.Value
+		: "/assets/images/avatar-thumb.png";
+}
+
+<!--begin::Header-->
 <div id="kt_header" class="header">
 	<!--begin::Container-->
 	<div class="container-fluid d-flex flex-stack">
@@ -135,7 +154,7 @@
 					<!--end::Name-->
 					<!--begin::Symbol-->
 					<div class="symbol symbol-30px symbol-md-40px">
-						<img src="~/assets/images/avatar.png" alt="image" />
+						<img src="@imageUrl" alt="image" />
 					</div>
 					<!--end::Symbol-->
 				</div>
@@ -147,7 +166,7 @@
 						<div class="menu-content d-flex align-items-center px-3">
 							<!--begin::Avatar-->
 							<div class="symbol symbol-50px me-5">
-								<img alt="Logo" src="~/assets/images/avatar.png" />
+								<img alt="Logo" src="@imageUrl" />
 							</div>
 							<!--end::Avatar-->
 							<!--begin::Username-->

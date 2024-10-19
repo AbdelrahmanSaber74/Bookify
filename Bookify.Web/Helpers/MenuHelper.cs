@@ -7,7 +7,7 @@ namespace Bookify.Web.Helpers
         {
             if (viewContext == null || viewContext.RouteData == null)
             {
-                return false; 
+                return false;
             }
 
             var currentController = viewContext.RouteData.Values["controller"]?.ToString();
