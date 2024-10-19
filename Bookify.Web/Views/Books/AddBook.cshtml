@@ -42,6 +42,12 @@
                       data-ajax-success="onModalSuccess"
                       data-ajax-failure="onFailure">
 
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                    }
+
+
                     <!-- Image URL -->
                     <!--begin::Image input-->
                     <div class="mb-8 mt-10">

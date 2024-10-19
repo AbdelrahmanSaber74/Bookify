@@ -1,12 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Hosting;
-
-public class ImageService : IImageService
+﻿public class ImageService : IImageService
 {
     private readonly IWebHostEnvironment _webHostEnvironment;
 
@@ -19,19 +11,19 @@ public class ImageService : IImageService
     {
         if (file == null || file.Length == 0)
         {
-            return new BadRequestObjectResult("No file provided.");
+            return new BadRequestObjectResult(Errors.NoFileProvided);
         }
 
         const int maxFileSize = 5 * 1024 * 1024; // 5 MB
         if (file.Length > maxFileSize)
         {
-            return new BadRequestObjectResult($"File size exceeds the limit of {maxFileSize / (1024 * 1024)} MB.");
+            return new BadRequestObjectResult(string.Format(Errors.FileSizeExceeded, maxFileSize / (1024 * 1024)));
         }
 
         var allowedFileTypes = new[] { "image/jpeg", "image/png", "image/gif" };
         if (!allowedFileTypes.Contains(file.ContentType))
         {
-            return new BadRequestObjectResult($"Invalid file type. Allowed types are: {string.Join(", ", allowedFileTypes)}.");
+            return new BadRequestObjectResult(string.Format(Errors.InvalidFileType, string.Join(", ", allowedFileTypes))); 
         }
 
         try
@@ -77,7 +69,7 @@ public class ImageService : IImageService
         {
             // Log the exception if necessary (consider using a logging framework)
             Console.WriteLine(ex.Message); // For debugging purposes
-            return new StatusCodeResult(500); // Internal Server Error
+            return new BadRequestObjectResult(Errors.SaveError); 
         }
     }
 

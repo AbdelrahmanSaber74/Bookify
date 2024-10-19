@@ -19,7 +19,7 @@ namespace Bookify.Web.Extensions
 
 
 			// Register ImageService with DI container
-			services.AddScoped<IImageService, ImageService>();
+			services.AddTransient<IImageService, ImageService>();
 
 			// Replace the default ClaimsPrincipalFactory with the custom one
 			services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, CustomUserClaimsPrincipalFactory>();

@@ -117,13 +117,15 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
                     }
                 }
 
-                else
+				else if (result is BadRequestObjectResult badRequestResult)
 				{
-                    ModelState.AddModelError("Input.Avatar", "Error uploading the image. Please try again.");
+					var errorMessage = badRequestResult.Value?.ToString() ?? Errors.ImageSaveFailed;
+					ModelState.AddModelError(string.Empty, errorMessage);
+					return Page();
+				}
 
-                }
 
-                
+
 			}
 			else if (Input.ImageRemoved)
 			{
