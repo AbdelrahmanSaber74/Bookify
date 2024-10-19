@@ -96,10 +96,10 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
 			if (Input.Avatar != null)
 			{
 				// Delete old image
-				_imageService.DeleteOldImages(user.ImageUrl , user.ThumbnailUrl);
+				_imageService.DeleteOldImages(user.ImageUrl , null);
 
                 // Save new image
-                var result = await _imageService.SaveImageAsync(Input.Avatar, "images/users");
+                var result = await _imageService.SaveImageAsync(Input.Avatar, "images/users", false);
 
                 if (result is OkObjectResult okResult)
                 {
@@ -110,7 +110,6 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
                     if (resultData != null)
                     {
                         user.ImageUrl = resultData.relativePath; // Assuming these are the keys you used in SaveImageAsync
-                        user.ThumbnailUrl = resultData.thumbnailRelativePath;
 
                         // Update the user in the database
                         await _userManager.UpdateAsync(user);
@@ -129,10 +128,10 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
 			}
 			else if (Input.ImageRemoved)
 			{
-                _imageService.DeleteOldImages(user.ImageUrl, user.ThumbnailUrl);
-            }
-            // Update Phone Number
-            if (Input.PhoneNumber != await _userManager.GetPhoneNumberAsync(user))
+				_imageService.DeleteOldImages(user.ImageUrl, null);
+			}
+			// Update Phone Number
+			if (Input.PhoneNumber != await _userManager.GetPhoneNumberAsync(user))
 			{
 				var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
 				if (!setPhoneResult.Succeeded)

@@ -1,104 +1,109 @@
 ﻿public class ImageService : IImageService
 {
-    private readonly IWebHostEnvironment _webHostEnvironment;
+	private readonly IWebHostEnvironment _webHostEnvironment;
 
-    public ImageService(IWebHostEnvironment webHostEnvironment)
-    {
-        _webHostEnvironment = webHostEnvironment;
-    }
+	public ImageService(IWebHostEnvironment webHostEnvironment)
+	{
+		_webHostEnvironment = webHostEnvironment;
+	}
 
-    public async Task<IActionResult> SaveImageAsync(IFormFile file, string folderPath)
-    {
-        if (file == null || file.Length == 0)
-        {
-            return new BadRequestObjectResult(Errors.NoFileProvided);
-        }
+	public async Task<IActionResult> SaveImageAsync(IFormFile file, string folderPath, bool hasThumbnail)
+	{
+		if (file == null || file.Length == 0)
+		{
+			return new BadRequestObjectResult(Errors.NoFileProvided);
+		}
 
-        const int maxFileSize = 5 * 1024 * 1024; // 5 MB
-        if (file.Length > maxFileSize)
-        {
-            return new BadRequestObjectResult(string.Format(Errors.FileSizeExceeded, maxFileSize / (1024 * 1024)));
-        }
+		const int maxFileSize = 5 * 1024 * 1024; // 5 MB
+		if (file.Length > maxFileSize)
+		{
+			return new BadRequestObjectResult(string.Format(Errors.FileSizeExceeded, maxFileSize / (1024 * 1024)));
+		}
 
-        var allowedFileTypes = new[] { "image/jpeg", "image/png", "image/gif" };
-        if (!allowedFileTypes.Contains(file.ContentType))
-        {
-            return new BadRequestObjectResult(string.Format(Errors.InvalidFileType, string.Join(", ", allowedFileTypes))); 
-        }
+		var allowedFileTypes = new[] { "image/jpeg", "image/png", "image/gif" };
+		if (!allowedFileTypes.Contains(file.ContentType))
+		{
+			return new BadRequestObjectResult(string.Format(Errors.InvalidFileType, string.Join(", ", allowedFileTypes)));
+		}
 
-        try
-        {
-            // Generate a unique filename
-            var extension = Path.GetExtension(file.FileName).ToLower();
-            var imageName = $"{Guid.NewGuid()}{extension}";
-            var filePath = Path.Combine(_webHostEnvironment.WebRootPath, folderPath, imageName);
+		try
+		{
+			// Generate a unique filename
+			var extension = Path.GetExtension(file.FileName).ToLower();
+			var imageName = $"{Guid.NewGuid()}{extension}";
+			var filePath = Path.Combine(_webHostEnvironment.WebRootPath, folderPath, imageName);
 
-            // Ensure the directory exists
-            var fullFolderPath = Path.Combine(_webHostEnvironment.WebRootPath, folderPath);
-            Directory.CreateDirectory(fullFolderPath); // Create the folder if it doesn't exist
+			// Ensure the directory exists
+			var fullFolderPath = Path.Combine(_webHostEnvironment.WebRootPath, folderPath);
+			Directory.CreateDirectory(fullFolderPath); // Create the folder if it doesn't exist
 
-            // Save the original file
-            await using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
+			// Save the original file
+			await using (var stream = new FileStream(filePath, FileMode.Create))
+			{
+				await file.CopyToAsync(stream);
+			}
 
-            // Create thumbnail if specified
-            string thumbnailRelativePath = null;
-            var thumbnailPath = Path.Combine(fullFolderPath, "thumbs", imageName);
-            var thumbnailDirectory = Path.GetDirectoryName(thumbnailPath);
+			string thumbnailRelativePath = null;
 
-            if (thumbnailDirectory != null && !Directory.Exists(thumbnailDirectory))
-            {
-                Directory.CreateDirectory(thumbnailDirectory);
-            }
+			// Create thumbnail if specified
+			if (hasThumbnail)
+			{
+				var thumbnailPath = Path.Combine(fullFolderPath, "thumbs", imageName);
+				var thumbnailDirectory = Path.GetDirectoryName(thumbnailPath);
 
-            // Resize the original image and save it as a thumbnail
-            ImageHelper.ResizeImage(filePath, thumbnailPath, width: 150);
+				if (thumbnailDirectory != null && !Directory.Exists(thumbnailDirectory))
+				{
+					Directory.CreateDirectory(thumbnailDirectory);
+				}
 
-            thumbnailRelativePath = "/" + Path.Combine(folderPath, "thumbs", imageName).Replace("\\", "/");
-            var relativePath = "/" + Path.Combine(folderPath, imageName).Replace("\\", "/");
+				// Resize the original image and save it as a thumbnail
+				ImageHelper.ResizeImage(filePath, thumbnailPath, width: 150);
 
-            return new OkObjectResult(new
-            {
-                relativePath,
-                thumbnailRelativePath
-            });
-        }
-        catch (Exception ex)
-        {
-            // Log the exception if necessary (consider using a logging framework)
-            Console.WriteLine(ex.Message); // For debugging purposes
-            return new BadRequestObjectResult(Errors.SaveError); 
-        }
-    }
+				thumbnailRelativePath = "/" + Path.Combine(folderPath, "thumbs", imageName).Replace("\\", "/");
+			}
 
-    public void DeleteOldImages(string imageUrl, string thumbnailUrl)
-    {
-        // Check if imageUrl and thumbnailUrl are both null or empty
-        if (string.IsNullOrEmpty(imageUrl) && string.IsNullOrEmpty(thumbnailUrl))
-        {
-            return; // Nothing to delete
-        }
+			var relativePath = "/" + Path.Combine(folderPath, imageName).Replace("\\", "/");
 
-        // Delete the old image
-        if (!string.IsNullOrEmpty(imageUrl))
-        {
-            var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, imageUrl.TrimStart('/'));
-            if (System.IO.File.Exists(oldImagePath))
-            {
-                System.IO.File.Delete(oldImagePath);
-            }
-        }
+			return new OkObjectResult(new
+			{
+				relativePath,
+				thumbnailRelativePath
+			});
+		}
+		catch (Exception ex)
+		{
+			// Log the exception if necessary (consider using a logging framework)
+			Console.WriteLine(ex.Message); // For debugging purposes
+			return new BadRequestObjectResult(Errors.SaveError);
+		}
+	}
 
-        // Delete the old thumbnail if hasThumbnail is true
-        if (!string.IsNullOrEmpty(thumbnailUrl))
-        {
-            var oldThumbnailPath = Path.Combine(_webHostEnvironment.WebRootPath, thumbnailUrl.TrimStart('/'));
-            if (System.IO.File.Exists(oldThumbnailPath))
-            {
-                System.IO.File.Delete(oldThumbnailPath);
-            }
-        }
-    }
+	public void DeleteOldImages(string imageUrl, string thumbnailUrl)
+	{
+		// Check if imageUrl and thumbnailUrl are both null or empty
+		if (string.IsNullOrEmpty(imageUrl) && string.IsNullOrEmpty(thumbnailUrl))
+		{
+			return; // Nothing to delete
+		}
+
+		// Delete the old image
+		if (!string.IsNullOrEmpty(imageUrl))
+		{
+			var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, imageUrl.TrimStart('/'));
+			if (System.IO.File.Exists(oldImagePath))
+			{
+				System.IO.File.Delete(oldImagePath);
+			}
+		}
+
+		// Delete the old thumbnail if specified
+		if (!string.IsNullOrEmpty(thumbnailUrl))
+		{
+			var oldThumbnailPath = Path.Combine(_webHostEnvironment.WebRootPath, thumbnailUrl.TrimStart('/'));
+			if (System.IO.File.Exists(oldThumbnailPath))
+			{
+				System.IO.File.Delete(oldThumbnailPath);
+			}
+		}
+	}
 }

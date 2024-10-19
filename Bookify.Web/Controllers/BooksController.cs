@@ -63,7 +63,7 @@ namespace Bookify.Web.Controllers
             // Handle image upload
             if (model.Image != null)
             {
-                var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/books");
+                var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/books", true);
                 if (saveImageResult is OkObjectResult okResult)
                 {
                     var resultData = (dynamic)okResult.Value;
@@ -125,7 +125,7 @@ namespace Bookify.Web.Controllers
                     _imageService.DeleteOldImages(existingBook.ImageUrl, existingBook.ImageThumbnailUrl);
                 }
 
-                var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/books");
+                var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/books" , true);
                 if (saveImageResult is OkObjectResult okResult)
                 {
                     var resultData = (dynamic)okResult.Value;

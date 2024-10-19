@@ -32,12 +32,7 @@ public class CustomUserClaimsPrincipalFactory : UserClaimsPrincipalFactory<Appli
 			identity.AddClaim(new Claim("ImageUrl", user.ImageUrl));
 		}
 
-		// Add custom ThumbnailUrl claim if it doesn't already exist
-		var thumbnailUrlClaim = identity.FindFirst("ThumbnailUrl");
-		if (thumbnailUrlClaim == null && !string.IsNullOrEmpty(user.ThumbnailUrl))
-		{
-			identity.AddClaim(new Claim("ThumbnailUrl", user.ThumbnailUrl));
-		}
+		
 
 		return identity;
 	}

@@ -4,17 +4,12 @@
 	// Get the user's imageUrl and thumbnailUrl from claims
 	var identity = (ClaimsIdentity)User.Identity;
 	var imageUrlClaim = identity.FindFirst("imageUrl");
-	var thumbnailUrlClaim = identity.FindFirst("thumbnailUrl");
 
 	// Use the imageUrl or fallback to a default avatar
 	var imageUrl = imageUrlClaim != null && !string.IsNullOrEmpty(imageUrlClaim.Value)
 		? imageUrlClaim.Value
 		: "/assets/images/avatar.png";
 
-	// Use the thumbnailUrl or fallback to a default thumbnail
-	var thumbnailUrl = thumbnailUrlClaim != null && !string.IsNullOrEmpty(thumbnailUrlClaim.Value)
-		? thumbnailUrlClaim.Value
-		: "/assets/images/avatar-thumb.png";
 }
 
 <!--begin::Header-->
