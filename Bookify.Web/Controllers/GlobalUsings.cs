@@ -21,3 +21,4 @@ global using UoN.ExpressiveAnnotations.NetCore.DependencyInjection;
 global using Bookify.Web.Repositories.BookCopies;
 global using Microsoft.AspNetCore.Authorization;
 global using Bookify.Web.Core.Consts;
+global using Bookify.Web.Seeds;

@@ -19,9 +19,11 @@ namespace Bookify.Web.Extensions
 
 
 
+			// Replace the default ClaimsPrincipalFactory with the custom one
+			services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, CustomUserClaimsPrincipalFactory>();
 
-            // Register AutoMapper in the DI container and load mappings from the current application domain's assemblies
-            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+			// Register AutoMapper in the DI container and load mappings from the current application domain's assemblies
+			services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
             return services;
         }

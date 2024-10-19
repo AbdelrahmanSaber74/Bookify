@@ -339,3 +339,41 @@ function attachModalEvent() {
         });
     });
 }
+
+
+
+//Handle Confirm
+$('body').delegate('.js-confirm', 'click', function () {
+    var btn = $(this); 
+
+    bootbox.confirm({
+        message: btn.data('message'),  
+        buttons: {
+            confirm: {
+                label: 'Yes',           
+                className: 'btn-success' 
+            },
+            cancel: {
+                label: 'No',          
+                className: 'btn-secondary' 
+            }
+        },
+        callback: function (result) {
+            if (result) {
+                // If user confirms, send POST request to unlock the user
+                $.post({
+                    url: btn.data('url'), 
+                    data: {
+                        '__RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() 
+                    },
+                    success: function () {
+                        showSuccessMessage("User has been unlocked successfully!");
+                    },
+                    error: function () {
+                        showErrorMessage("Failed to unlock the user. Please try again.");
+                    }
+                });
+            }
+        }
+    });
+});

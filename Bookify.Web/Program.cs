@@ -1,9 +1,3 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Bookify.Web.Seeds; // Ensure this namespace is imported
-using Bookify.Web.Core.Models; // Ensure your ApplicationUser and other models are imported
-using Bookify.Web.Data;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
@@ -18,13 +12,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
 
-    // Password settings
-    options.Password.RequireDigit = true; // Require at least one digit
-    options.Password.RequireLowercase = true; // Require at least one lowercase letter
-    options.Password.RequireUppercase = true; // Require at least one uppercase letter
-    options.Password.RequireNonAlphanumeric = true; // Require at least one special character
-    options.Password.RequiredLength = 8; // Minimum length of the password
 
+    
+    options.Password.RequiredLength = 8; // Minimum length of the password
 
     options.User.RequireUniqueEmail = true;
 
@@ -34,6 +24,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultUI()
 .AddDefaultTokenProviders();
+
+
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddControllersWithViews();

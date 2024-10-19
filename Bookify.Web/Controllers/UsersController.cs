@@ -294,7 +294,7 @@ namespace Bookify.Web.Controllers
 
 
         [HttpGet]
-        public async Task<IActionResult> AllowEmail(string Id , string Email)
+        public async Task<IActionResult> AllowEmail(string Id, string Email)
         {
             var user = await _userManager.FindByEmailAsync(Email);
 
@@ -310,6 +310,33 @@ namespace Bookify.Web.Controllers
             return Json(true);
 
         }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+
+        public async Task<IActionResult> Unlock(string Id)
+        {
+            var user = await _userManager.FindByIdAsync(Id);
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+       
+
+            var isLocked = await _userManager.IsLockedOutAsync(user);
+
+            if (isLocked)
+            {
+                await _userManager.SetLockoutEndDateAsync(user, null);
+            }
+
+            return Ok();
+
+        }
+
 
         private async Task<IActionResult> ReturnFormViewWithError(AddEditUserViewModel? model)
         {
