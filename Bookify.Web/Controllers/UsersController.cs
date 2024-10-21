@@ -1,69 +1,49 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
+﻿using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.WebUtilities;
 using System.Data;
 using System.Security.Claims;
-using System.Text.Encodings.Web;
 using System.Text;
+using System.Text.Encodings.Web;
 
 namespace Bookify.Web.Controllers
 {
-
     [Authorize(Roles = AppRoles.Admin)]
     public class UsersController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly ILogger<UsersController> _logger;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IMapper _mapper;
+        private readonly IEmailSender _emailSender;
+        private readonly ILogger<UsersController> _logger;
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly string _resetPassword;
-        private readonly IConfiguration _configuration;
-        private readonly IEmailSender _emailSender;
 
-        public UsersController(
-            UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
-            RoleManager<IdentityRole> roleManager,
-            IMapper mapper,
-            IConfiguration configuration,
-            IEmailSender emailSender,
-            ILogger<UsersController> logger,
-            IWebHostEnvironment webHostEnvironment)
+        public UsersController(UserManager<ApplicationUser> userManager,SignInManager<ApplicationUser> signInManager,RoleManager<IdentityRole> roleManager,IMapper mapper,IConfiguration configuration,IEmailSender emailSender,ILogger<UsersController> logger, IWebHostEnvironment webHostEnvironment)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
-            _logger = logger;
             _mapper = mapper;
             _emailSender = emailSender;
-            _configuration = configuration;
-
-            _resetPassword = _configuration["ResetPassword"];
+            _logger = logger;
             _webHostEnvironment = webHostEnvironment;
+            _resetPassword = configuration["ResetPassword"]!;
         }
 
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-
             var users = await _userManager.Users.ToListAsync();
-
             var viewModel = _mapper.Map<IEnumerable<UserViewModel>>(users);
-
-
             return View(viewModel);
-
         }
 
         [HttpGet]
         public async Task<IActionResult> Create()
         {
             return await ReturnFormViewWithError(null);
-
         }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -74,89 +54,36 @@ namespace Bookify.Web.Controllers
                 return await ReturnFormViewWithError(model);
             }
 
-            ApplicationUser newUser = new ApplicationUser
-            {
-                UserName = model.FullName,
-                NormalizedUserName = model.Email.ToUpper(),
-                FullName = model.FullName,
-                Email = model.Email,
-                NormalizedEmail = model.Email.ToUpper(),
-                CreatedOn = DateTime.Now,
-                CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)!.Value,
-                PhoneNumber = model.PhoneNumber,
-
-            };
-
+            var newUser = CreateUser(model);
             var result = await _userManager.CreateAsync(newUser, model.Password!);
 
             if (result.Succeeded)
             {
-                // Sending a confirmation email to the user
-
-                var filePath = $"{_webHostEnvironment.WebRootPath}/templates/email.html";
-                StreamReader streamReader = new StreamReader(filePath);
-
-                var body = streamReader.ReadToEnd();
-                streamReader.Close();
-
-                var code = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
-
-                code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-
-                var callbackUrl = Url.Page(
-                 "/Account/ConfirmEmail",
-                 pageHandler: null,
-                 values: new { area = "Identity", userId = newUser.Id, code },
-                 protocol: Request.Scheme);
-                    
-                body = body.Replace("[imageUrl]", "https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729535424/icon-positive-vote-1_rdexez_ii8um2.jpg?_s=public-apps")
-                         .Replace("[header]", $"Hey {model.FullName}")
-                         .Replace("[body]", "Please Confirm your account")
-                         .Replace("[url]", HtmlEncoder.Default.Encode(callbackUrl!))
-                         .Replace("[linkTitle]", "Acctive Account");
-
-
-                await _emailSender.SendEmailAsync(model.Email, "Confirm your email", body);
-
+                await SendConfirmationEmail(newUser, model.FullName, model.Email);
                 await _userManager.AddToRolesAsync(newUser, model.SelectedRoles);
                 TempData["SuccessMessage"] = "User added successfully!";
                 return RedirectToAction(nameof(Index));
-
             }
 
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
-
+            AddErrorsToModelState(result.Errors);
             return await ReturnFormViewWithError(model);
-
-
-
         }
 
-
         [HttpGet]
-        public async Task<IActionResult> Edit(string Id)
+        public async Task<IActionResult> Edit(string id)
         {
-            var user = await _userManager.FindByIdAsync(Id);
-
-            if (user == null)
-            {
-                return NotFound();
-            }
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return NotFound();
 
             var userRoles = await _userManager.GetRolesAsync(user);
-
             var allRoles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
-
             var roleItems = allRoles.Select(role => new SelectListItem
             {
                 Value = role,
                 Text = role,
             }).ToList();
 
-            var viewmodel = new AddEditUserViewModel
+            var viewModel = new AddEditUserViewModel
             {
                 Id = user.Id,
                 FullName = user.FullName,
@@ -167,10 +94,8 @@ namespace Bookify.Web.Controllers
                 SelectedRoles = userRoles.ToList()
             };
 
-
-            return View("Form", viewmodel);
+            return View("Form", viewModel);
         }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -181,7 +106,6 @@ namespace Bookify.Web.Controllers
                 return await ReturnFormViewWithError(model);
             }
 
-            // Find the user by ID
             var user = await _userManager.FindByIdAsync(model.Id!);
             if (user == null)
             {
@@ -189,12 +113,10 @@ namespace Bookify.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Update user information from model
             _mapper.Map(model, user);
             user.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             user.LastUpdatedOn = DateTime.Now;
 
-            // Update the user in the database
             var updateUserResult = await _userManager.UpdateAsync(user);
             if (!updateUserResult.Succeeded)
             {
@@ -202,37 +124,12 @@ namespace Bookify.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Fetch the current roles and check if they need updating
-            var currentRoles = await _userManager.GetRolesAsync(user);
-            var rolesUpdated = !currentRoles.SequenceEqual(model.SelectedRoles);
-
-            if (rolesUpdated)
-            {
-                // Remove old roles and add new roles
-                var removeRolesResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
-                if (!removeRolesResult.Succeeded)
-                {
-                    var errorMessages = removeRolesResult.Errors.Select(e => e.Description).ToArray();
-                    TempData["WarningMessage"] = "Failed to remove existing roles: " + string.Join(", ", errorMessages);
-                    return RedirectToAction(nameof(Index));
-                }
-
-                var addRolesResult = await _userManager.AddToRolesAsync(user, model.SelectedRoles);
-                if (!addRolesResult.Succeeded)
-                {
-                    var errorMessages = addRolesResult.Errors.Select(e => e.Description).ToArray();
-                    TempData["WarningMessage"] = "Failed to add new roles: " + string.Join(", ", errorMessages);
-                    return RedirectToAction(nameof(Index));
-                }
-            }
-
-            // Success message
+            await UpdateUserRoles(user, model.SelectedRoles);
             await _userManager.UpdateSecurityStampAsync(user);
 
             TempData["SuccessMessage"] = "User updated successfully!";
             return RedirectToAction(nameof(Index));
         }
-
 
         [AllowAnonymous]
         public async Task<IActionResult> LogOut()
@@ -241,51 +138,30 @@ namespace Bookify.Web.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleStatus(string Id)
+        public async Task<IActionResult> ToggleStatus(string id)
         {
-            var user = await _userManager.FindByIdAsync(Id);
-
-            if (user == null)
-            {
-                return NotFound();
-            }
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return NotFound();
 
             user.IsDeleted = !user.IsDeleted;
             user.LastUpdatedOn = DateTime.Now;
             user.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             await _userManager.UpdateAsync(user);
+            if (user.IsDeleted) await _userManager.UpdateSecurityStampAsync(user);
 
-            if (user.IsDeleted)
-            {
-
-                await _userManager.UpdateSecurityStampAsync(user);
-            }
-
-            return Json(new
-            {
-                success = true,
-                lastUpdatedOn = user.LastUpdatedOn.ToString()
-            });
-
+            return Json(new { success = true, lastUpdatedOn = user.LastUpdatedOn.ToString() });
         }
 
         [HttpGet]
         public async Task<IActionResult> ResetPassword(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
+            if (user == null) return NotFound();
 
             var currentPassword = user.PasswordHash;
-
-            // Remove the current password
             var removeResult = await _userManager.RemovePasswordAsync(user);
             if (!removeResult.Succeeded)
             {
@@ -293,23 +169,17 @@ namespace Bookify.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Reset the password
             var result = await _userManager.AddPasswordAsync(user, _resetPassword);
-
             if (result.Succeeded)
             {
                 user.LastUpdatedOn = DateTime.Now;
                 user.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-                // Update the user with the new password
                 await _userManager.UpdateAsync(user);
-
                 TempData["SuccessMessage"] = "Password has been reset successfully!";
                 return RedirectToAction(nameof(Index));
             }
 
-            // If the password reset fails, revert to the old password
-            await _userManager.AddPasswordAsync(user, currentPassword);
+            await _userManager.AddPasswordAsync(user, currentPassword!);
             await _userManager.UpdateAsync(user);
 
             var errorMessages = result.Errors.Select(e => e.Description).ToArray();
@@ -317,80 +187,49 @@ namespace Bookify.Web.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-
-
         [AcceptVerbs("Get", "Post")]
-        public async Task<IActionResult> AllowUserName(string UserName, string Id)
+        public async Task<IActionResult> AllowUserName(string userName, string id)
         {
-
-            var user = await _userManager.FindByNameAsync(UserName);
-
-            if (user != null && user.Id != Id)
+            var user = await _userManager.FindByNameAsync(userName);
+            if (user != null && user.Id != id)
             {
-                var errorMessage = string.Format(Errors.Duplicated, "User");
-
-                return Json(string.Format(errorMessage));
+                return Json(string.Format(Errors.Duplicated, "User"));
             }
 
             return Json(true);
-
         }
-
 
         [HttpGet]
-        public async Task<IActionResult> AllowEmail(string Id, string Email)
+        public async Task<IActionResult> AllowEmail(string id, string email)
         {
-            var user = await _userManager.FindByEmailAsync(Email);
-
-            if (user != null && user.Id != Id)
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user != null && user.Id != id)
             {
-                var errorMessage = string.Format(Errors.Duplicated, "User");
-
-                return Json(string.Format(errorMessage));
-
+                return Json(string.Format(Errors.Duplicated, "User"));
             }
 
-
             return Json(true);
-
         }
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-
-        public async Task<IActionResult> Unlock(string Id)
+        public async Task<IActionResult> Unlock(string id)
         {
-            var user = await _userManager.FindByIdAsync(Id);
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return NotFound();
 
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-
-
-            var isLocked = await _userManager.IsLockedOutAsync(user);
-
-            if (isLocked)
+            if (await _userManager.IsLockedOutAsync(user))
             {
                 await _userManager.SetLockoutEndDateAsync(user, null);
             }
 
             return Ok();
-
         }
-
 
         private async Task<IActionResult> ReturnFormViewWithError(AddEditUserViewModel? model)
         {
+            model ??= new AddEditUserViewModel();
 
-            if (model == null)
-            {
-                model = new AddEditUserViewModel();
-            }
-
-            // Get the list of roles from the role manager
             var roles = await _roleManager.Roles
                 .Select(r => new SelectListItem
                 {
@@ -399,15 +238,66 @@ namespace Bookify.Web.Controllers
                 })
                 .ToListAsync();
 
-            // Populate the Roles property in the model
             model.Roles = roles;
-
-            // Return the view with the model that includes the error
             return View("Form", model);
         }
 
+        private ApplicationUser CreateUser(AddEditUserViewModel model)
+        {
+            return new ApplicationUser
+            {
+                UserName = model.FullName,
+                NormalizedUserName = model.Email.ToUpper(),
+                FullName = model.FullName,
+                Email = model.Email,
+                NormalizedEmail = model.Email.ToUpper(),
+                CreatedOn = DateTime.Now,
+                CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)!.Value,
+                PhoneNumber = model.PhoneNumber,
+            };
+        }
 
+        private async Task SendConfirmationEmail(ApplicationUser newUser, string fullName, string email)
+        {
+            var filePath = $"{_webHostEnvironment.WebRootPath}/templates/email.html";
+            string body;
 
+            using (var streamReader = new StreamReader(filePath))
+            {
+                body = await streamReader.ReadToEndAsync();
+            }
 
+            var code = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
+            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+
+            var callbackUrl = Url.Page(
+                "/Account/ConfirmEmail",
+                pageHandler: null,
+                values: new { area = "Identity", userId = newUser.Id, code },
+                protocol: Request.Scheme);
+
+            body = body.Replace("{{FullName}}", fullName)
+                       .Replace("{{ConfirmLink}}", HtmlEncoder.Default.Encode(callbackUrl));
+
+            await _emailSender.SendEmailAsync(email, "Confirm your email", body);
+        }
+
+        private void AddErrorsToModelState(IEnumerable<IdentityError> errors)
+        {
+            foreach (var error in errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+        }
+
+        private async Task UpdateUserRoles(ApplicationUser user, IList<string> selectedRoles)
+        {
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            var rolesToAdd = selectedRoles.Except(currentRoles).ToList();
+            var rolesToRemove = currentRoles.Except(selectedRoles).ToList();
+
+            await _userManager.AddToRolesAsync(user, rolesToAdd);
+            await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+        }
     }
 }
