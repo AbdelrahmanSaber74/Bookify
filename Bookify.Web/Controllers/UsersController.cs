@@ -1,4 +1,6 @@
-﻿using System.Data;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using System.Data;
 using System.Security.Claims;
 
 namespace Bookify.Web.Controllers
@@ -14,6 +16,7 @@ namespace Bookify.Web.Controllers
 		private readonly IMapper _mapper;
 		private readonly string _resetPassword;
 		private readonly IConfiguration _configuration;
+		private readonly IEmailSender _emailSender;
 
 		public UsersController(
 			UserManager<ApplicationUser> userManager,
@@ -21,13 +24,16 @@ namespace Bookify.Web.Controllers
 			RoleManager<IdentityRole> roleManager,
 			IMapper mapper,
 			IConfiguration configuration,
-			ILogger<UsersController> logger)
+			IEmailSender emailSender ,
+
+            ILogger<UsersController> logger)
 		{
 			_userManager = userManager;
 			_signInManager = signInManager;
 			_roleManager = roleManager;
 			_logger = logger;
 			_mapper = mapper;
+			_emailSender = emailSender;
 			_configuration = configuration;
 
 			_resetPassword = _configuration["ResetPassword"];
@@ -36,7 +42,15 @@ namespace Bookify.Web.Controllers
 		[HttpGet]
 		public async Task<IActionResult> Index()
 		{
-			var users = await _userManager.Users.ToListAsync();
+
+            string toEmail = "tech.abdelrahman.s@gmail.com";
+            string subject = "Test Email from Bookify";
+            string message = "<h1>Hello,</h1><p>This is a test email sent from the Bookify application.</p>";
+
+            await _emailSender.SendEmailAsync(toEmail, subject, message);
+
+
+            var users = await _userManager.Users.ToListAsync();
 
 			var viewModel = _mapper.Map<IEnumerable<UserViewModel>>(users);
 
@@ -188,8 +202,10 @@ namespace Bookify.Web.Controllers
 				}
 			}
 
-			// Success message
-			TempData["SuccessMessage"] = "User updated successfully!";
+            // Success message
+            await _userManager.UpdateSecurityStampAsync(user);
+
+            TempData["SuccessMessage"] = "User updated successfully!";
 			return RedirectToAction(nameof(Index));
 		}
 
@@ -219,6 +235,11 @@ namespace Bookify.Web.Controllers
 			user.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
 			await _userManager.UpdateAsync(user);
+
+			if (user.IsDeleted) {
+			
+				await _userManager.UpdateSecurityStampAsync(user);	
+			}
 
 			return Json(new
 			{

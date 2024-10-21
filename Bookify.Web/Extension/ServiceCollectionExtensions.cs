@@ -1,4 +1,7 @@
-﻿
+﻿using Bookify.Web.Repositories.Email;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
+
 namespace Bookify.Web.Extensions
 {
 	public static class ServiceCollectionExtensions
@@ -17,6 +20,15 @@ namespace Bookify.Web.Extensions
 			services.AddScoped<IBookCopyRepo, BookCopyRepo>();
 
 
+			services.AddTransient<IEmailSender, EmailSender>();
+
+
+
+
+			services.Configure<SecurityStampValidatorOptions>(options =>
+			{
+				options.ValidationInterval = TimeSpan.FromSeconds(0);
+			});
 
 			// Register ImageService with DI container
 			services.AddTransient<IImageService, ImageService>();

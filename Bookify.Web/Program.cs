@@ -1,3 +1,5 @@
+using Bookify.Web.Seetings;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
@@ -42,6 +44,9 @@ builder.Services.AddControllers()
 
 // Register all additional services
 builder.Services.AddApplicationServices();
+// Configure EmailSettings from appsettings.json
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+
 builder.Services.AddExpressiveAnnotations();
 
 var app = builder.Build();

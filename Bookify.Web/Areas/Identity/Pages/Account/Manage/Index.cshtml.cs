@@ -96,25 +96,25 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
 			if (Input.Avatar != null)
 			{
 				// Delete old image
-				_imageService.DeleteOldImages(user.ImageUrl , null);
+				_imageService.DeleteOldImages(user.ImageUrl, null);
 
-                // Save new image
-                var result = await _imageService.SaveImageAsync(Input.Avatar, "images/users", false);
+				// Save new image
+				var result = await _imageService.SaveImageAsync(Input.Avatar, "images/users", false);
 
-                if (result is OkObjectResult okResult)
-                {
-                    // Extract the result data
-                    var resultData = okResult.Value as dynamic;
+				if (result is OkObjectResult okResult)
+				{
+					// Extract the result data
+					var resultData = okResult.Value as dynamic;
 
-                    // Make sure resultData contains the expected properties
-                    if (resultData != null)
-                    {
-                        user.ImageUrl = resultData.relativePath; // Assuming these are the keys you used in SaveImageAsync
+					// Make sure resultData contains the expected properties
+					if (resultData != null)
+					{
+						user.ImageUrl = resultData.relativePath; // Assuming these are the keys you used in SaveImageAsync
 
-                        // Update the user in the database
-                        await _userManager.UpdateAsync(user);
-                    }
-                }
+						// Update the user in the database
+						await _userManager.UpdateAsync(user);
+					}
+				}
 
 				else if (result is BadRequestObjectResult badRequestResult)
 				{
@@ -129,6 +129,8 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
 			else if (Input.ImageRemoved)
 			{
 				_imageService.DeleteOldImages(user.ImageUrl, null);
+				user.ImageUrl = null;
+				await _userManager.UpdateAsync(user);
 			}
 			// Update Phone Number
 			if (Input.PhoneNumber != await _userManager.GetPhoneNumberAsync(user))
@@ -158,6 +160,6 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
 			return RedirectToPage();
 		}
 
-		
+
 	}
 }

@@ -116,7 +116,7 @@
 									<i class="bi bi-pencil-fill fs-7"></i>
 									<!--begin::Inputs-->
 									<input type="file" asp-for="Input.Avatar" accept=".png, .jpg, .jpeg">
-									<input type="hidden" name="avatar_remove">
+									<input type="hidden" asp-for="Input.ImageRemoved">
 									<!--end::Inputs-->
 								</label>
 								<!--end::Label-->
@@ -287,5 +287,6 @@
 
 @section Scripts {
 	<partial name="_ValidationScriptsPartial" />
-	<script src="~/js/profile.js" asp-append-version="true"></script>
+	
+    <script src="~/js/profile.js" asp-append-version="true"></script>
 }
