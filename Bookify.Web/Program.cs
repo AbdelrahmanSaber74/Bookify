@@ -12,7 +12,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Use AddIdentity to register both UserManager and RoleManager
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-	options.SignIn.RequireConfirmedAccount = false;
+	options.SignIn.RequireConfirmedAccount = true;
 
 
 

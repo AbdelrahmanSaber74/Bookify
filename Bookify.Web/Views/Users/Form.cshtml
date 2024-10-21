@@ -30,7 +30,7 @@
             <div class="col-md-4">
                 <form method="post" asp-controller="Users" asp-action="@(Model.Id == null ? "AddUser" : "EditUser")">
 
-
+                    <div asp-validation-summary="All"></div>
 
                     <!-- Hidden input for Id -->
                     <input asp-for="Id" type="hidden" />

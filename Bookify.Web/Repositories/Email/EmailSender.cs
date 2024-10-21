@@ -9,10 +9,12 @@ namespace Bookify.Web.Repositories.Email
     public class EmailSender : IEmailSender
     {
         private readonly EmailSettings _emailSettings;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public EmailSender(IOptions<EmailSettings> emailSettings)
+        public EmailSender(IOptions<EmailSettings> emailSettings , IWebHostEnvironment webHostEnvironment)
         {
             _emailSettings = emailSettings.Value;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
@@ -31,7 +33,9 @@ namespace Bookify.Web.Repositories.Email
                     IsBodyHtml = true
                 };
 
-                mailMessage.To.Add(email);
+
+
+                mailMessage.To.Add(_webHostEnvironment.IsDevelopment() ? "tech.abdelrahman.s@gmail.com" : email);
 
                 try
                 {
