@@ -4,14 +4,14 @@ using System.Net;
 using System.Net.Mail;
 using Bookify.Web.Seetings;
 
-namespace Bookify.Web.Repositories.Email
+namespace Bookify.Web.Services
 {
     public class EmailSender : IEmailSender
     {
         private readonly EmailSettings _emailSettings;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public EmailSender(IOptions<EmailSettings> emailSettings , IWebHostEnvironment webHostEnvironment)
+        public EmailSender(IOptions<EmailSettings> emailSettings, IWebHostEnvironment webHostEnvironment)
         {
             _emailSettings = emailSettings.Value;
             _webHostEnvironment = webHostEnvironment;

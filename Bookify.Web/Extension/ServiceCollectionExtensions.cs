@@ -1,10 +1,10 @@
-﻿using Bookify.Web.Repositories.Email;
+﻿using Bookify.Web.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 
 namespace Bookify.Web.Extensions
 {
-	public static class ServiceCollectionExtensions
+    public static class ServiceCollectionExtensions
 	{
 		public static IServiceCollection AddApplicationServices(this IServiceCollection services)
 		{
@@ -21,6 +21,8 @@ namespace Bookify.Web.Extensions
 
 
 			services.AddTransient<IEmailSender, EmailSender>();
+
+			services.AddTransient<IEmailBodyBuilder, EmailBodyBuilder>();
 
 
 
