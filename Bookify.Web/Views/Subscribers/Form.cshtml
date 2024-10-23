@@ -9,14 +9,11 @@
         <h3 class="card-title">@(Model.Id.Equals(0) ? "Add" : "Edit") Subscriber</h3>
     </div>
     <div class="card-body">
-        <form method="post" asp-controller="Subscribers" enctype="multipart/form-data" id="Form">
+        <form method="post" asp-controller="Subscribers" enctype="multipart/form-data"  id="Form">
             @if (Model.Id > 0)
             {
                 <input type="hidden" asp-for="Id" />
             }
-
-
-            <div asp-validation-summary="All"></div>
             <div class="row mb-6">
                 <label class="col-lg-4 col-form-label fw-semibold fs-6" asp-for="Image"></label>
                 <div class="col-lg-8">
@@ -97,22 +94,22 @@
                 <div class="col-lg-8">
                     <div class="row">
                         <div class="col-lg-6">
-                            <select id="governorateSelect" aria-label="Select a Governorate" data-control="select2" data-placeholder="Select a governorate..." class="form-select form-select-solid form-select-lg fw-semibold" asp-for="SelectedGovernorateId" asp-items="Model.Governorates">
+                            <select id="governorateSelect" aria-label="Select a Governorate" data-control="select2" data-placeholder="Select a governorate..." class="form-select form-select-solid form-select-lg fw-semibold" asp-for="GovernorateId" asp-items="Model.Governorates">
                                 <option value="">Select a governorate...</option>
                             </select>
-                            <span asp-validation-for="SelectedGovernorateId" class="text-danger"></span>
+                            <span asp-validation-for="GovernorateId" class="text-danger"></span>
                         </div>
                         <div class="col-lg-6">
-                            <select id="citySelect" aria-label="Select an Area" data-control="select2" data-placeholder="Select an area..." class="form-select form-select-solid form-select-lg fw-semibold" asp-for="SelectedAreaId">
+                            <select id="citySelect" aria-label="Select an Area" data-control="select2" data-placeholder="Select an area..." class="form-select form-select-solid form-select-lg fw-semibold" asp-for="AreaId">
                                 <option value="">Select an area...</option>
-                                @foreach(var area in Model.Areas)
+                                @foreach (var area in Model.Areas)
                                 {
                                     <option value="@area.Value">@area.Value</option>
 
-                                    
-                                } 
+
+                                }
                             </select>
-                            <span asp-validation-for="SelectedAreaId" class="text-danger"></span>
+                            <span asp-validation-for="AreaId" class="text-danger"></span>
                         </div>
                     </div>
                 </div>

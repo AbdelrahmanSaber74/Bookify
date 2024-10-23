@@ -1,4 +1,5 @@
-﻿namespace Bookify.Web.Controllers
+﻿
+namespace Bookify.Web.Controllers
 {
     public class SubscribersController : Controller
     {
@@ -6,17 +7,19 @@
         private readonly IGovernorateRepo _governorateRepo;
         private readonly IAreaRepo _areaRepo;
         private readonly IMapper _mapper;
-
+        private readonly IImageService _imageService;
         public SubscribersController(
             ISubscribersRepository subscribersRepository,
             IGovernorateRepo governorateRepo,
             IAreaRepo areaRepo,
-            IMapper mapper)
+            IMapper mapper,
+            IImageService imageService)
         {
             _subscribersRepo = subscribersRepository;
             _governorateRepo = governorateRepo;
             _areaRepo = areaRepo;
             _mapper = mapper;
+            _imageService = imageService;
         }
 
         public async Task<IActionResult> Index()
@@ -35,12 +38,50 @@
 
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(SubscriberFormViewModel model)
         {
+            if (!ModelState.IsValid)
+            {
+                var viewModel = await PopulateViewModel(model);
+                return View("Form", viewModel);
+            }
 
-            return Json(model);
 
+            var newSubscriber = _mapper.Map<Subscriber>(model);
+            newSubscriber.CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            // Handle image upload
+            if (model.Image != null)
+            {
+                var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/Subscribers", true);
+                if (saveImageResult is OkObjectResult okResult)
+                {
+                    var resultData = (dynamic)okResult.Value;
+                    newSubscriber.ImageUrl = resultData.relativePath;
+                    newSubscriber.ImageThumbnailUrl = resultData.thumbnailRelativePath;
+                }
+                else if (saveImageResult is BadRequestObjectResult badRequestResult)
+                {
+                    var errorMessage = badRequestResult.Value?.ToString() ?? Errors.ImageSaveFailed;
+                    ModelState.AddModelError(string.Empty, errorMessage);
+
+                    var viewModel = await PopulateViewModel(model);
+                    return View("Form", viewModel);
+
+                }
+            }
+
+
+
+            await _subscribersRepo.AddAsync(newSubscriber);
+
+            TempData["SuccessMessage"] = "Subscriber added successfully!";
+
+            return RedirectToAction(nameof(Index));
         }
+
+
 
         [AcceptVerbs("Get", "Post")]
         public async Task<IActionResult> AllowEmail(SubscriberFormViewModel model)

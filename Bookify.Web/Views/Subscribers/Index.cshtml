@@ -73,7 +73,7 @@
                             <td>@subscriber.MobileNumber</td>
                             <td>@subscriber.DateOfBirth.ToShortDateString()</td>
                             <td>
-                                <span class="badge @((subscriber.IsBlackListed ? "bg-success" : "bg-danger"))">@((subscriber.IsBlackListed ? "Active" : "Inactive"))</span>
+                                <span class="badge @((!subscriber.IsBlackListed ? "bg-success" : "bg-danger"))">@((!subscriber.IsDeleted ? "Active" : "Inactive"))</span>
                             </td>
 
 
@@ -116,6 +116,21 @@
     }
 </div>
 
+<input type="hidden" name="__RequestVerificationToken" value="@antiforgery.GetAndStoreTokens(Context).RequestToken" />
+
+@section CustomScripts {
+    <script src="~/assets/plugins/datatables/datatables.bundle.js"></script>
+}
+
 @section Scripts {
     <script src="~/assets/js/custom.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Initialize the DataTable
+            initDataTable("Subscribers - Report");
+        });
+
+    </script>
+
 }

@@ -27,10 +27,10 @@
         public string Email { get; set; } = null!;
 
         [MaxLength(500)]
-        public string ImageUrl { get; set; } = null!;
+        public string? ImageUrl { get; set; } = null!;
 
         [MaxLength(500)]
-        public string ImageThumbnailUrl { get; set; } = null!;
+        public string? ImageThumbnailUrl { get; set; } = null!;
 
         public int AreaId { get; set; }
 

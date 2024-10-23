@@ -17,7 +17,7 @@ namespace Bookify.Web.Core.Models
 
         [Display(Name = "Date Of Birth")]
         [AssertThat("DateOfBirth <= Today()", ErrorMessage = Errors.NotAllowFutureDates)]
-        public DateTime DateOfBirth { get; set; } = DateTime.Now;
+        public DateTime? DateOfBirth { get; set; } = DateTime.Now;
 
         [MaxLength(14), Display(Name = "National ID"),
             RegularExpression(RegexPatterns.NationalId, ErrorMessage = Errors.InvalidNationalId)]
@@ -36,12 +36,11 @@ namespace Bookify.Web.Core.Models
         [Remote(controller: "Subscribers", action: "AllowEmail", AdditionalFields = nameof(Id), ErrorMessage = Errors.Duplicated)]
         public string Email { get; set; } = null!;
 
-        [MaxLength(500)]
+
         [RequiredIf("Id == 0", ErrorMessage = Errors.EmptyImage)]
-       
         public IFormFile? Image { get; set; }
-        public string ImageUrl { get; set; } = null!;
-        public string ImageThumbnailUrl { get; set; } = null!;
+        public string? ImageUrl { get; set; } = null!;
+        public string? ImageThumbnailUrl { get; set; } = null!;
 
         [MaxLength(500)]
         public string Address { get; set; } = null!;
@@ -52,8 +51,8 @@ namespace Bookify.Web.Core.Models
         public IEnumerable<SelectListItem>? Governorates { get; set; } 
         public IEnumerable<SelectListItem>? Areas { get; set; }
 
-        public int SelectedGovernorateId { get; set; }
-        public int SelectedAreaId { get; set; } 
+        public int GovernorateId { get; set; }
+        public int AreaId { get; set; } 
 
     }
 }

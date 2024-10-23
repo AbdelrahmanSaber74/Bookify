@@ -57,7 +57,12 @@
 
 
             // Subscriber 
-            CreateMap<Subscriber, SubscriberViewModel>();
+            CreateMap<Subscriber, SubscriberViewModel>()
+                .ReverseMap();
+
+            CreateMap<Subscriber, SubscriberFormViewModel>()
+             .ReverseMap();
+
 
             CreateMap<Governorate, SelectListItem>()
                .ForMember(dest => dest.Value, opt => opt.MapFrom(src => src.Id)) 
