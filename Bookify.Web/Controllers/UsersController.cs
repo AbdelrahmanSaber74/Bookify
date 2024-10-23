@@ -1,15 +1,8 @@
-﻿using Bookify.Web.Services;
-using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.AspNetCore.WebUtilities;
-using System;
-using System.Data;
-using System.Security.Claims;
-using System.Text;
-using System.Text.Encodings.Web;
+﻿using System.Text;
 
 namespace Bookify.Web.Controllers
 {
-	[Authorize(Roles = AppRoles.Admin)]
+	[Authorize(Roles = AppRoles.Reception)]
 	public class UsersController : Controller
 	{
 		private readonly UserManager<ApplicationUser> _userManager;
@@ -152,7 +145,7 @@ namespace Bookify.Web.Controllers
 			user.IsDeleted = !user.IsDeleted;
 			user.LastUpdatedOn = DateTime.Now;
 			user.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
+			
 			await _userManager.UpdateAsync(user);
 			if (user.IsDeleted) await _userManager.UpdateSecurityStampAsync(user);
 

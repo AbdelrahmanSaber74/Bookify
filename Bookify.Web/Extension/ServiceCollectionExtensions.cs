@@ -1,4 +1,6 @@
-﻿using Bookify.Web.Services;
+﻿using Bookify.Web.Repositories.Areas;
+using Bookify.Web.Repositories.Governorates;
+using Bookify.Web.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 
@@ -19,8 +21,15 @@ namespace Bookify.Web.Extensions
 
 			services.AddScoped<IBookCopyRepo, BookCopyRepo>();
 
+            services.AddScoped<ISubscribersRepository, SubscribersRepository>();
 
-			services.AddTransient<IEmailSender, EmailSender>();
+            services.AddScoped<IGovernorateRepo, GovernorateRepo>();
+
+            services.AddScoped<IAreaRepo, AreaRepo>();
+
+
+
+            services.AddTransient<IEmailSender, EmailSender>();
 
 			services.AddTransient<IEmailBodyBuilder, EmailBodyBuilder>();
 
