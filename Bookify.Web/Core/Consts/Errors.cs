@@ -14,7 +14,9 @@ namespace Bookify.Web.Core.Consts
 		public const string InvalidEmailFormat = "The email format is invalid.";
 		public const string WeakPassword = "Passwords must contain an uppercase character, lowercase character, a digit, and a non-alphanumeric character. Passwords must be at least 8 characters long.";
 		public const string InvalidMobileNumber = "Invalid mobile number.";
-        public const string ImageSaveFailed = "Failed to save the image. Please try again."; 
+        public const string ImageSaveFailed = "Failed to save the image. Please try again.";
+        public const string InvalidNationalId = "Invalid national ID.";
+        public const string EmptyImage = "Please select an image.";
 
         // Add image-related error messages
         public const string NoFileProvided = "No file provided.";

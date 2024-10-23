@@ -1,4 +1,6 @@
-﻿namespace Bookify.Web.Repositories.Repositories
+﻿using Bookify.Web.Core.Models;
+
+namespace Bookify.Web.Repositories.Repositories
 {
     public class SubscribersRepository : ISubscribersRepository
     {
@@ -41,6 +43,10 @@
             }
         }
 
+        public async Task<Subscriber> FindSubscriberAsync(Expression<Func<Subscriber, bool>> predicate)
+        {
+            return await _context.Subscribers.FirstOrDefaultAsync(predicate);
+        }
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync(); 

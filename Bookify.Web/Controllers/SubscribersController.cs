@@ -1,14 +1,8 @@
-﻿using Bookify.Web.Core.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace Bookify.Web.Controllers
+﻿namespace Bookify.Web.Controllers
 {
     public class SubscribersController : Controller
     {
-        private readonly ISubscribersRepository _subscribersRepository;
+        private readonly ISubscribersRepository _subscribersRepo;
         private readonly IGovernorateRepo _governorateRepo;
         private readonly IAreaRepo _areaRepo;
         private readonly IMapper _mapper;
@@ -19,7 +13,7 @@ namespace Bookify.Web.Controllers
             IAreaRepo areaRepo,
             IMapper mapper)
         {
-            _subscribersRepository = subscribersRepository;
+            _subscribersRepo = subscribersRepository;
             _governorateRepo = governorateRepo;
             _areaRepo = areaRepo;
             _mapper = mapper;
@@ -27,7 +21,7 @@ namespace Bookify.Web.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var subscribers = await _subscribersRepository.GetAllAsync();
+            var subscribers = await _subscribersRepo.GetAllAsync();
             var subscriberViewModels = _mapper.Map<IEnumerable<SubscriberViewModel>>(subscribers);
             return View(subscriberViewModels);
         }
@@ -39,6 +33,38 @@ namespace Bookify.Web.Controllers
             return View("Form", model);
         }
 
+
+        [HttpPost]
+        public async Task<IActionResult> Create(SubscriberFormViewModel model)
+        {
+
+            return Json(model);
+
+        }
+
+        [AcceptVerbs("Get", "Post")]
+        public async Task<IActionResult> AllowEmail(SubscriberFormViewModel model)
+        {
+            var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.Email == model.Email);
+            var isAllowed = subscriber == null || subscriber.Id.Equals(model.Id);
+            return Json(isAllowed);
+        }
+
+        [AcceptVerbs("Get", "Post")]
+        public async Task<IActionResult> AllowMobileNumber(SubscriberFormViewModel model)
+        {
+            var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.MobileNumber == model.MobileNumber);
+            var isAllowed = subscriber == null || subscriber.Id.Equals(model.Id);
+            return Json(isAllowed);
+        }
+
+        [AcceptVerbs("Get", "Post")]
+        public async Task<IActionResult> AllowNationalId(SubscriberFormViewModel model)
+        {
+            var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.NationalId == model.NationalId);
+            var isAllowed = subscriber == null || subscriber.Id.Equals(model.Id);
+            return Json(isAllowed);
+        }
         private async Task<SubscriberFormViewModel> PopulateViewModel(SubscriberFormViewModel? model = null)
         {
             var viewModel = model ?? new SubscriberFormViewModel();
@@ -53,7 +79,7 @@ namespace Bookify.Web.Controllers
         public async Task<IActionResult> GetCitiesByGovernorate(int governorateId)
         {
             var areas = await _areaRepo.GetAreasByGovernorateIdAsync(governorateId);
-            var areaList = _mapper.Map<IEnumerable<SelectListItem>>(areas); 
+            var areaList = _mapper.Map<IEnumerable<SelectListItem>>(areas);
             return Json(areaList);
         }
     }
