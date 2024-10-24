@@ -10,9 +10,12 @@
     </div>
     <div class="card-body">
         <form method="post" asp-controller="Subscribers" enctype="multipart/form-data"  id="Form">
+
             @if (Model.Id > 0)
             {
                 <input type="hidden" asp-for="Id" />
+                <input type="hidden" asp-for="ImageUrl" />
+                <input type="hidden" asp-for="ImageThumbnailUrl" />
             }
             <div class="row mb-6">
                 <label class="col-lg-4 col-form-label fw-semibold fs-6" asp-for="Image"></label>
@@ -100,20 +103,21 @@
                             <span asp-validation-for="GovernorateId" class="text-danger"></span>
                         </div>
                         <div class="col-lg-6">
-                            <select id="citySelect" aria-label="Select an Area" data-control="select2" data-placeholder="Select an area..." class="form-select form-select-solid form-select-lg fw-semibold" asp-for="AreaId">
+                            <select id="citySelect" asp-items="Model.Areas" aria-label="Select an Area" data-control="select2" data-placeholder="Select an area..." class="form-select form-select-solid form-select-lg fw-semibold" asp-for="AreaId">
                                 <option value="">Select an area...</option>
-                                @foreach (var area in Model.Areas)
+                              @*   @foreach (var area in Model.Areas)
                                 {
                                     <option value="@area.Value">@area.Value</option>
 
 
-                                }
+                                } *@
                             </select>
                             <span asp-validation-for="AreaId" class="text-danger"></span>
                         </div>
                     </div>
                 </div>
             </div>
+
 
             <!-- Address -->
             <div class="row mb-6">

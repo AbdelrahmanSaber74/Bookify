@@ -73,7 +73,9 @@
                             <td>@subscriber.MobileNumber</td>
                             <td>@subscriber.DateOfBirth.ToShortDateString()</td>
                             <td>
-                                <span class="badge @((!subscriber.IsBlackListed ? "bg-success" : "bg-danger"))">@((!subscriber.IsDeleted ? "Active" : "Inactive"))</span>
+                                <span class="badge badge-light-@(subscriber.IsDeleted ? "danger" : "success") js-status">
+                                    @(subscriber.IsDeleted ? "Deleted" : "Available")
+                                </span>
                             </td>
 
 

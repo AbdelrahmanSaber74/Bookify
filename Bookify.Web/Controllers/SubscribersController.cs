@@ -1,4 +1,6 @@
 ﻿
+using Bookify.Web.Core.Models;
+
 namespace Bookify.Web.Controllers
 {
     public class SubscribersController : Controller
@@ -34,6 +36,77 @@ namespace Bookify.Web.Controllers
         {
             var model = await PopulateViewModel();
             return View("Form", model);
+        }
+
+
+
+        [HttpGet]
+        public async Task<IActionResult> Edit(int Id)
+        {
+
+            var existingSubscriber = await _subscribersRepo.GetByIdAsync(Id);
+
+            if (existingSubscriber == null)
+            {
+                return NotFound();
+            }
+
+            var viewModel = _mapper.Map<SubscriberFormViewModel>(existingSubscriber);
+            var model = await PopulateViewModel(viewModel);
+            return View("Form", model);
+        }
+
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(SubscriberFormViewModel model)
+        {
+            var existingSubscriber = await _subscribersRepo.GetByIdAsync(model.Id);
+
+
+            if (!ModelState.IsValid)
+            {
+                var viewModel = await PopulateViewModel(model);
+                return View("Form", viewModel);
+            }
+
+            _mapper.Map(model, existingSubscriber);
+         
+            // Handle image update
+            if (model.Image != null)
+            {
+                if (!string.IsNullOrEmpty(existingSubscriber.ImageThumbnailUrl) || !string.IsNullOrEmpty(existingSubscriber.ImageUrl))
+                {
+                    _imageService.DeleteOldImages(existingSubscriber.ImageUrl, existingSubscriber.ImageThumbnailUrl);
+                }
+
+                var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/Subscribers", true);
+                if (saveImageResult is OkObjectResult okResult)
+                {
+                    var resultData = (dynamic)okResult.Value;
+                    existingSubscriber.ImageUrl = resultData.relativePath;
+                    existingSubscriber.ImageThumbnailUrl = resultData.thumbnailRelativePath;
+                }
+                else
+                {
+                    await PopulateViewModel(model);
+                    ModelState.AddModelError(string.Empty, "Failed to save the image. Please try again.");
+                    return View("Form", model);
+                }
+            }
+
+            existingSubscriber.LastUpdatedOn = DateTime.Now;
+            existingSubscriber.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
+
+
+            await _subscribersRepo.UpdateAsync(existingSubscriber);
+
+            TempData["SuccessMessage"] = "Subscriber Updated successfully!";
+
+            return RedirectToAction(nameof(Index));
+
+
         }
 
 
@@ -83,6 +156,44 @@ namespace Bookify.Web.Controllers
 
 
 
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleStatus(int Id)
+        {
+
+            var subscriber = await _subscribersRepo.GetByIdAsync(Id);
+            if (subscriber == null)
+            {
+                return NotFound();
+
+            }
+
+            subscriber.IsDeleted = !subscriber.IsDeleted;
+            subscriber.LastUpdatedOn = DateTime.Now;
+            subscriber.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
+
+            await _subscribersRepo.UpdateAsync(subscriber);
+
+            TempData["SuccessMessage"] = "Subscriber status updated successfully!";
+
+            return RedirectToAction(nameof(Index));
+
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var existingSubscriber = await _subscribersRepo.GetByIdAsync(id);
+            if (existingSubscriber == null) return Json(new { success = false, message = "Subscriber not found." });
+
+            await _subscribersRepo.DeleteAsync(existingSubscriber.Id);
+
+            return Json(new { success = true });
+        }
+
+
         [AcceptVerbs("Get", "Post")]
         public async Task<IActionResult> AllowEmail(SubscriberFormViewModel model)
         {
@@ -106,12 +217,24 @@ namespace Bookify.Web.Controllers
             var isAllowed = subscriber == null || subscriber.Id.Equals(model.Id);
             return Json(isAllowed);
         }
+
+
         private async Task<SubscriberFormViewModel> PopulateViewModel(SubscriberFormViewModel? model = null)
         {
             var viewModel = model ?? new SubscriberFormViewModel();
             var governorates = await _governorateRepo.GetAllGovernoratesAsync() ?? new List<Governorate>();
             viewModel.Governorates = _mapper.Map<IEnumerable<SelectListItem>>(governorates);
-            viewModel.Areas = new List<SelectListItem>();
+
+
+            if (viewModel.GovernorateId > 0) 
+            {
+                var areas = await _areaRepo.GetAreasByGovernorateIdAsync(viewModel.GovernorateId);
+                viewModel.Areas = _mapper.Map<IEnumerable<SelectListItem>>(areas);
+            }
+            else
+            {
+                viewModel.Areas = new List<SelectListItem>(); // No areas if no governorate is selected
+            }
 
             return viewModel;
         }

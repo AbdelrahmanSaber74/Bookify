@@ -40,7 +40,7 @@ namespace Bookify.Web.Core.Models
         [RequiredIf("Id == 0", ErrorMessage = Errors.EmptyImage)]
         public IFormFile? Image { get; set; }
         public string? ImageUrl { get; set; } = null!;
-        public string? ImageThumbnailUrl { get; set; } = null!;
+        public string? ImageThumbnailUrl { get; set; } 
 
         [MaxLength(500)]
         public string Address { get; set; } = null!;
@@ -49,7 +49,7 @@ namespace Bookify.Web.Core.Models
 
 
         public IEnumerable<SelectListItem>? Governorates { get; set; } 
-        public IEnumerable<SelectListItem>? Areas { get; set; }
+        public IEnumerable<SelectListItem>? Areas { get; set; } 
 
         public int GovernorateId { get; set; }
         public int AreaId { get; set; } 
