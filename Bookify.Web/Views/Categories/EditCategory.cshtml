@@ -29,6 +29,8 @@
             <div class="col-md-4">
                 <form method="post" asp-controller="Categories" asp-action="UpdateCategory">
                     <input type="hidden" asp-for="Id" /> <!-- Hidden field for category Id -->
+                    <input type="hidden" asp-for="CreatedById" />
+
                     <div class="mb-3">
                         <div class="form-floating mb-2">
                             <input type="text" class="form-control" placeholder="Category Name" asp-for="Name" required />

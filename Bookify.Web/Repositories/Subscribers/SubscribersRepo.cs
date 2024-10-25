@@ -2,11 +2,11 @@
 
 namespace Bookify.Web.Repositories.Repositories
 {
-    public class SubscribersRepository : ISubscribersRepository
+    public class SubscribersRepo : ISubscribersRepo
     {
-        private readonly ApplicationDbContext _context; 
+        private readonly ApplicationDbContext _context;
 
-        public SubscribersRepository(ApplicationDbContext context)
+        public SubscribersRepo(ApplicationDbContext context)
         {
             _context = context;
         }
@@ -18,13 +18,16 @@ namespace Bookify.Web.Repositories.Repositories
 
         public async Task<Subscriber> GetByIdAsync(int id)
         {
-            return await _context.Subscribers.FindAsync(id);
+            return await _context.Subscribers
+                .Include(s => s.Governorate)
+                .Include(s => s.Area)
+                .FirstOrDefaultAsync(s => s.Id == id);
         }
 
         public async Task AddAsync(Subscriber subscriber)
         {
             await _context.Subscribers.AddAsync(subscriber);
-            await SaveChangesAsync(); 
+            await SaveChangesAsync();
         }
 
         public async Task UpdateAsync(Subscriber subscriber)
@@ -49,7 +52,15 @@ namespace Bookify.Web.Repositories.Repositories
         }
         public async Task SaveChangesAsync()
         {
-            await _context.SaveChangesAsync(); 
+            await _context.SaveChangesAsync();
         }
+
+        public async Task<Subscriber> Search(string value)
+        {
+            return await _context.Subscribers
+                .SingleOrDefaultAsync(m => m.NationalId == value || m.MobileNumber == value || m.Email == value);
+        }
+
+
     }
 }

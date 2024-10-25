@@ -3,7 +3,7 @@
 namespace Bookify.Web.Core.Models
 {
     
-    public class SubscriberFormViewModel : BaseModel
+    public class SubscriberFormViewModel : BaseViewModel
     {
         public int Id { get; set; }
 

@@ -12,7 +12,7 @@
         }
         public async Task<IEnumerable<Governorate>> GetAllGovernoratesAsync()
         {
-            return await _context.Governorates.ToListAsync();
+            return await _context.Governorates.Where(m => !m.IsDeleted).ToListAsync();
         }
     }
 }

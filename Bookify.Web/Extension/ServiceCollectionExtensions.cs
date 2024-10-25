@@ -21,7 +21,7 @@ namespace Bookify.Web.Extensions
 
 			services.AddScoped<IBookCopyRepo, BookCopyRepo>();
 
-            services.AddScoped<ISubscribersRepository, SubscribersRepository>();
+            services.AddScoped<ISubscribersRepo, SubscribersRepo>();
 
             services.AddScoped<IGovernorateRepo, GovernorateRepo>();
 

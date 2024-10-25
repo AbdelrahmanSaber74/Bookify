@@ -8,9 +8,11 @@ namespace Bookify.Web.Core.ViewModels
 
 		[DataType(DataType.DateTime)]
 		public DateTime CreatedOn { get; set; } = DateTime.Now;
+		public string? CreatedById { get; set; } 
 
 		[DataType(DataType.DateTime)]
 		public DateTime? LastUpdatedOn { get; set; }
+		public string? LastUpdatedById { get; set; }
 
 	}
 }

@@ -28,6 +28,7 @@
             <div class="col-md-4">
                 <form method="post" asp-controller="Authors" asp-action="UpdateAuthor">
                     <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="CreatedById" />
                     <div class="mb-3">
                         <div class="form-floating mb-2">
                             <input type="text" class="form-control" placeholder=" Name" asp-for="Name" required />

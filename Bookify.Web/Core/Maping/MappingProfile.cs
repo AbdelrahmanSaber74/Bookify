@@ -58,15 +58,20 @@
 
             // Subscriber 
             CreateMap<Subscriber, SubscriberViewModel>()
+                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName.ToUpper()}"))
                 .ReverseMap();
 
+            CreateMap<Subscriber, SubscriberSearchResultViewModel>();
+
             CreateMap<Subscriber, SubscriberFormViewModel>()
-             .ReverseMap();
+                .ReverseMap();
+
+
 
 
             CreateMap<Governorate, SelectListItem>()
-               .ForMember(dest => dest.Value, opt => opt.MapFrom(src => src.Id)) 
-               .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Name)); 
+               .ForMember(dest => dest.Value, opt => opt.MapFrom(src => src.Id))
+               .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Name));
 
             CreateMap<Area, SelectListItem>()
                .ForMember(dest => dest.Value, opt => opt.MapFrom(src => src.Id)) // Set the Value to the Category Id

@@ -11,7 +11,7 @@
 
         public async Task<IEnumerable<Area>> GetAllAreasAsync()
         {
-            return await _context.Areas.ToListAsync();
+            return await _context.Areas.Where(m => !m.IsDeleted).ToListAsync();
         }
 
         public async Task<IEnumerable<Area>> GetAreasByGovernorateIdAsync(int governorateId)
@@ -23,8 +23,7 @@
 
             if (areas == null || !areas.Any())
             {
-                // يمكنك إضافة رسالة أو إجراء مختلف هنا إذا لم تكن هناك مناطق متاحة
-                return Enumerable.Empty<Area>(); // إرجاع قائمة فارغة بدلاً من null
+                return Enumerable.Empty<Area>();
             }
 
             return areas;

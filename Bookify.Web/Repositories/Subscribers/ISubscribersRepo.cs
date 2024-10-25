@@ -1,7 +1,7 @@
 ﻿
 namespace Bookify.Web.Repositories.Repositories
 {
-    public interface ISubscribersRepository
+    public interface ISubscribersRepo
     {
         Task<IEnumerable<Subscriber>> GetAllAsync();
         Task<Subscriber> GetByIdAsync(int id);
@@ -9,7 +9,9 @@ namespace Bookify.Web.Repositories.Repositories
         Task AddAsync(Subscriber subscriber);   
         Task UpdateAsync(Subscriber subscriber);
         Task DeleteAsync(int id);
-        Task SaveChangesAsync(); 
+        Task SaveChangesAsync();
+		Task<Subscriber> Search(string value);
 
-    }
+
+	}
 }

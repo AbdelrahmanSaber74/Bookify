@@ -1,35 +1,71 @@
-﻿
-using Bookify.Web.Core.Models;
-
-namespace Bookify.Web.Controllers
+﻿namespace Bookify.Web.Controllers
 {
     public class SubscribersController : Controller
     {
-        private readonly ISubscribersRepository _subscribersRepo;
+        private readonly ISubscribersRepo _subscribersRepo;
         private readonly IGovernorateRepo _governorateRepo;
         private readonly IAreaRepo _areaRepo;
         private readonly IMapper _mapper;
         private readonly IImageService _imageService;
+        private readonly ApplicationDbContext _applicationDbContext;
         public SubscribersController(
-            ISubscribersRepository subscribersRepository,
+            ISubscribersRepo subscribersRepository,
             IGovernorateRepo governorateRepo,
             IAreaRepo areaRepo,
             IMapper mapper,
-            IImageService imageService)
+            ApplicationDbContext applicationDbContext,
+        IImageService imageService)
         {
             _subscribersRepo = subscribersRepository;
             _governorateRepo = governorateRepo;
             _areaRepo = areaRepo;
             _mapper = mapper;
             _imageService = imageService;
+            _applicationDbContext = applicationDbContext;
         }
 
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            var subscribers = await _subscribersRepo.GetAllAsync();
-            var subscriberViewModels = _mapper.Map<IEnumerable<SubscriberViewModel>>(subscribers);
-            return View(subscriberViewModels);
+            return View();
         }
+
+        [HttpPost]
+        public async Task<IActionResult> Search(string value)
+        {
+
+            if (value == null)
+            {
+                return View("Index", null);
+
+            }
+
+            var results = await _subscribersRepo.Search(value);
+
+            if (results != null)
+            {
+                var viewModel = _mapper.Map<SubscriberSearchResultViewModel>(results);
+                return View("Index", viewModel);
+            }
+
+            return View("Index",null);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Details(int id)
+        {
+            var results = await _subscribersRepo.GetByIdAsync(id);
+
+            if (results is null)
+            {
+                return View(viewName: "Index");
+            }
+
+            var viewModel = _mapper.Map<SubscriberViewModel>(results);
+
+            return View("Details", viewModel);
+
+        }
+
 
         [HttpGet]
         public async Task<IActionResult> Create()
@@ -72,7 +108,7 @@ namespace Bookify.Web.Controllers
             }
 
             _mapper.Map(model, existingSubscriber);
-         
+
             // Handle image update
             if (model.Image != null)
             {
@@ -226,21 +262,21 @@ namespace Bookify.Web.Controllers
             viewModel.Governorates = _mapper.Map<IEnumerable<SelectListItem>>(governorates);
 
 
-            if (viewModel.GovernorateId > 0) 
+            if (viewModel.GovernorateId > 0)
             {
                 var areas = await _areaRepo.GetAreasByGovernorateIdAsync(viewModel.GovernorateId);
                 viewModel.Areas = _mapper.Map<IEnumerable<SelectListItem>>(areas);
             }
             else
             {
-                viewModel.Areas = new List<SelectListItem>(); // No areas if no governorate is selected
+                viewModel.Areas = new List<SelectListItem>();
             }
 
             return viewModel;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetCitiesByGovernorate(int governorateId)
+        public async Task<IActionResult> GetAreasByGovernorate(int governorateId)
         {
             var areas = await _areaRepo.GetAreasByGovernorateIdAsync(governorateId);
             var areaList = _mapper.Map<IEnumerable<SelectListItem>>(areas);
