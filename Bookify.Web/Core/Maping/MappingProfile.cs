@@ -58,10 +58,11 @@
 
             // Subscriber 
             CreateMap<Subscriber, SubscriberViewModel>()
-                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName.ToUpper()}"))
+                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"))
                 .ReverseMap();
 
-            CreateMap<Subscriber, SubscriberSearchResultViewModel>();
+            CreateMap<Subscriber, SubscriberSearchResultViewModel>()
+                     .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"));
 
             CreateMap<Subscriber, SubscriberFormViewModel>()
                 .ReverseMap();

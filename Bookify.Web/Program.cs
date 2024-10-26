@@ -1,5 +1,3 @@
-using Bookify.Web.Seetings;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
@@ -29,25 +27,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 
 
-builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-builder.Services.AddControllersWithViews();
-
-// Add Razor Pages services
-builder.Services.AddRazorPages();
-
-builder.Services.AddControllers()
-	.AddNewtonsoftJson(options =>
-	{
-		options.SerializerSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
-		options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
-	});
-
 // Register all additional services
-builder.Services.AddApplicationServices();
-// Configure EmailSettings from appsettings.json
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddApplicationServices(builder.Configuration);
 
-builder.Services.AddExpressiveAnnotations();
 
 var app = builder.Build();
 

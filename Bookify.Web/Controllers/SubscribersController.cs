@@ -1,4 +1,7 @@
-﻿namespace Bookify.Web.Controllers
+﻿using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+
+namespace Bookify.Web.Controllers
 {
     public class SubscribersController : Controller
     {
@@ -8,13 +11,16 @@
         private readonly IMapper _mapper;
         private readonly IImageService _imageService;
         private readonly ApplicationDbContext _applicationDbContext;
+        private readonly IDataProtector _dataProtector;
         public SubscribersController(
             ISubscribersRepo subscribersRepository,
             IGovernorateRepo governorateRepo,
             IAreaRepo areaRepo,
             IMapper mapper,
+
             ApplicationDbContext applicationDbContext,
-        IImageService imageService)
+        IImageService imageService,
+        IDataProtectionProvider personalDataProtector)
         {
             _subscribersRepo = subscribersRepository;
             _governorateRepo = governorateRepo;
@@ -22,6 +28,7 @@
             _mapper = mapper;
             _imageService = imageService;
             _applicationDbContext = applicationDbContext;
+            _dataProtector = personalDataProtector.CreateProtector("MySecureKey");
         }
 
         public IActionResult Index()
@@ -39,32 +46,36 @@
 
             }
 
-            var results = await _subscribersRepo.Search(value);
+            var Subscriber = await _subscribersRepo.Search(value);
 
-            if (results != null)
+            if (Subscriber != null)
             {
-                var viewModel = _mapper.Map<SubscriberSearchResultViewModel>(results);
+                var viewModel = _mapper.Map<SubscriberSearchResultViewModel>(Subscriber);
+                viewModel.Key = _dataProtector.Protect(Subscriber.Id.ToString() );
                 return View("Index", viewModel);
             }
 
             return View("Index",null);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Details(int id)
+        [HttpGet]
+        public async Task<IActionResult> Details(string id)
         {
-            var results = await _subscribersRepo.GetByIdAsync(id);
+            var subscriberId = int.Parse(_dataProtector.Unprotect(id));
 
-            if (results is null)
+            var subscriber = await _subscribersRepo.GetByIdAsync(subscriberId);
+
+            if (subscriber == null)
             {
-                return View(viewName: "Index");
+                return RedirectToAction("Index");
             }
 
-            var viewModel = _mapper.Map<SubscriberViewModel>(results);
+            var subscriberViewModel = _mapper.Map<SubscriberViewModel>(subscriber);
+            subscriberViewModel.Key = id;
 
-            return View("Details", viewModel);
-
+            return View("Details", subscriberViewModel);
         }
+
 
 
         [HttpGet]
@@ -77,10 +88,12 @@
 
 
         [HttpGet]
-        public async Task<IActionResult> Edit(int Id)
+        public async Task<IActionResult> Edit(string id)
         {
 
-            var existingSubscriber = await _subscribersRepo.GetByIdAsync(Id);
+            var subscriberId = int.Parse(_dataProtector.Unprotect(id));
+
+            var existingSubscriber = await _subscribersRepo.GetByIdAsync(subscriberId);
 
             if (existingSubscriber == null)
             {
@@ -88,6 +101,7 @@
             }
 
             var viewModel = _mapper.Map<SubscriberFormViewModel>(existingSubscriber);
+            viewModel.Key = id;
             var model = await PopulateViewModel(viewModel);
             return View("Form", model);
         }
@@ -98,7 +112,10 @@
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(SubscriberFormViewModel model)
         {
-            var existingSubscriber = await _subscribersRepo.GetByIdAsync(model.Id);
+            var subscriberId = int.Parse(_dataProtector.Unprotect(model.Key));
+
+
+            var existingSubscriber = await _subscribersRepo.GetByIdAsync(subscriberId);
 
 
             if (!ModelState.IsValid)
@@ -140,7 +157,7 @@
 
             TempData["SuccessMessage"] = "Subscriber Updated successfully!";
 
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Details) , new {id = model.Key });
 
 
         }
@@ -182,12 +199,14 @@
             }
 
 
-
+            //Todo : Send Welcome Email 
             await _subscribersRepo.AddAsync(newSubscriber);
 
             TempData["SuccessMessage"] = "Subscriber added successfully!";
 
-            return RedirectToAction(nameof(Index));
+            var subscriberIdProtect = _dataProtector.Protect(newSubscriber.Id.ToString() );
+
+            return RedirectToAction(nameof(Details) , new {id = subscriberIdProtect });
         }
 
 
@@ -233,24 +252,45 @@
         [AcceptVerbs("Get", "Post")]
         public async Task<IActionResult> AllowEmail(SubscriberFormViewModel model)
         {
+            var subscriberId = 0;
+
+            if (!string.IsNullOrEmpty(model.Key))
+            {
+                subscriberId = int.Parse(_dataProtector.Unprotect(model.Key));
+            }
+
             var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.Email == model.Email);
-            var isAllowed = subscriber == null || subscriber.Id.Equals(model.Id);
+            var isAllowed = subscriber == null || subscriber.Id.Equals(subscriberId);
             return Json(isAllowed);
         }
 
         [AcceptVerbs("Get", "Post")]
         public async Task<IActionResult> AllowMobileNumber(SubscriberFormViewModel model)
         {
+            var subscriberId = 0;
+
+            if (!string.IsNullOrEmpty(model.Key))
+            {
+                subscriberId = int.Parse(_dataProtector.Unprotect(model.Key));
+            }
+
             var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.MobileNumber == model.MobileNumber);
-            var isAllowed = subscriber == null || subscriber.Id.Equals(model.Id);
+            var isAllowed = subscriber == null || subscriber.Id.Equals(subscriberId);
             return Json(isAllowed);
         }
 
         [AcceptVerbs("Get", "Post")]
         public async Task<IActionResult> AllowNationalId(SubscriberFormViewModel model)
         {
+            var subscriberId = 0;
+
+            if (!string.IsNullOrEmpty(model.Key))
+            {
+                subscriberId = int.Parse(_dataProtector.Unprotect(model.Key));
+            }
+
             var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.NationalId == model.NationalId);
-            var isAllowed = subscriber == null || subscriber.Id.Equals(model.Id);
+            var isAllowed = subscriber == null || subscriber.Id.Equals(subscriberId);
             return Json(isAllowed);
         }
 

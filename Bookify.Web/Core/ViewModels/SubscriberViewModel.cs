@@ -3,7 +3,7 @@
     
     public class SubscriberViewModel : BaseViewModel
     {
-        public int Id { get; set; }
+        public string? Key { get; set; }
 
         public string FullName { get; set; } = null!;
 

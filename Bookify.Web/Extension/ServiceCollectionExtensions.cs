@@ -1,56 +1,59 @@
-﻿using Bookify.Web.Repositories.Areas;
-using Bookify.Web.Repositories.Governorates;
-using Bookify.Web.Services;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
+﻿using Bookify.Web.Seetings;
+using Microsoft.AspNetCore.DataProtection;
+
 
 namespace Bookify.Web.Extensions
 {
     public static class ServiceCollectionExtensions
-	{
-		public static IServiceCollection AddApplicationServices(this IServiceCollection services)
-		{
-			// Register services here
-			services.AddScoped<ICategoriesRepo, CategoriesRepo>();
+    {
+        public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
+        {
+            // Register Repositories
+            services.AddScoped<ICategoriesRepo, CategoriesRepo>()
+                    .AddScoped<IAuthorRepo, AuthorRepo>()
+                    .AddScoped<IBookRepo, BookRepo>()
+                    .AddScoped<IBookCategoryRepo, BookCategoryRepo>()
+                    .AddScoped<IBookCopyRepo, BookCopyRepo>()
+                    .AddScoped<ISubscribersRepo, SubscribersRepo>()
+                    .AddScoped<IGovernorateRepo, GovernorateRepo>()
+                    .AddScoped<IAreaRepo, AreaRepo>();
 
-			services.AddScoped<IAuthorRepo, AuthorRepo>();
+            // Register Email Services
+            services.AddTransient<IEmailSender, EmailSender>()
+                    .AddTransient<IEmailBodyBuilder, EmailBodyBuilder>();
 
-			services.AddScoped<IBookRepo, BookRepo>();
+            // Configure Email Settings
+            services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
 
-			services.AddScoped<IBookCategoryRepo, BookCategoryRepo>();
+            // Register Security and Data Protection Services
+            services.AddDataProtection().SetApplicationName(nameof(Bookify));
+            services.Configure<SecurityStampValidatorOptions>(options =>
+            {
+                options.ValidationInterval = TimeSpan.FromSeconds(0);
+            });
 
-			services.AddScoped<IBookCopyRepo, BookCopyRepo>();
+            // Register Image Service
+            services.AddTransient<IImageService, ImageService>();
 
-            services.AddScoped<ISubscribersRepo, SubscribersRepo>();
+            // Replace the default ClaimsPrincipalFactory with a custom one
+            services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, CustomUserClaimsPrincipalFactory>();
 
-            services.AddScoped<IGovernorateRepo, GovernorateRepo>();
+            // Add AutoMapper and load mappings from all assemblies
+            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-            services.AddScoped<IAreaRepo, AreaRepo>();
+            // Register MVC, Razor Pages, and additional services
+            services.AddControllersWithViews()
+                    .AddNewtonsoftJson(options =>
+                    {
+                        options.SerializerSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
+                        options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+                    });
 
+            services.AddRazorPages();
+            services.AddDatabaseDeveloperPageExceptionFilter();
+            services.AddExpressiveAnnotations();
 
-
-            services.AddTransient<IEmailSender, EmailSender>();
-
-			services.AddTransient<IEmailBodyBuilder, EmailBodyBuilder>();
-
-
-
-
-			services.Configure<SecurityStampValidatorOptions>(options =>
-			{
-				options.ValidationInterval = TimeSpan.FromSeconds(0);
-			});
-
-			// Register ImageService with DI container
-			services.AddTransient<IImageService, ImageService>();
-
-			// Replace the default ClaimsPrincipalFactory with the custom one
-			services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, CustomUserClaimsPrincipalFactory>();
-
-			// Register AutoMapper in the DI container and load mappings from the current application domain's assemblies
-			services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
-			return services;
-		}
-	}
+            return services;
+        }
+    }
 }
