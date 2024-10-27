@@ -99,13 +99,20 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
                     values: new { area = "Identity", userId = userId, email = Input.NewEmail, code = code },
                     protocol: Request.Scheme);
 
+                var placeholder = new Dictionary<string, string>()
+                {
+                    { "imageUrl" , "https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729557070/icon-positive-vote-2_jcxdww_rghb1a.jpg?_s=public-apps"} ,
+                    { "header" , $"Hey {user.FullName}"} ,
+                    { "body" , "Please Confirm your email"} ,
+                    { "url" , callbackUrl} ,
+                    { "linkTitle" , "Active Email"} ,
+                };
+
                 var body = await _emailBodyBuilder.GetEmailBodyAsync(
-                                        "https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729535424/icon-positive-vote-1_rdexez_ii8um2.jpg?_s=public-apps",
-                                        $"Hey {user.FullName}",
-                                        "Please Confirm your email",
-                                        "Active email",
-                                        callbackUrl!
-                                    );
+                                EmailTemplates.Email,
+                                placeholder
+                            );
+
 
                 await _emailSender.SendEmailAsync(user.Email, "Confirm New email", body);
 

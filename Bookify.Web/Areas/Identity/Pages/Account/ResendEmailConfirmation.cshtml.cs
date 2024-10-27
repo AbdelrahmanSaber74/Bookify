@@ -97,14 +97,22 @@ namespace Bookify.Web.Areas.Identity.Pages.Account
 				protocol: Request.Scheme);
 
 
-			var body = await _emailBodyBuilder.GetEmailBodyAsync(
-							"https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729535424/icon-positive-vote-1_rdexez_ii8um2.jpg?_s=public-apps",
-							$"Hey {user.FullName}",
-							"Please Confirm your account",
-							"Active Account",
-							callbackUrl!
-						);
+            var placeholder = new Dictionary<string, string>()
+                {
+                    { "imageUrl" , "https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729535424/icon-positive-vote-1_rdexez_ii8um2.jpg?_s=public-apps"} ,
+                    { "header" , $"Hey {user.FullName}"} ,
+                    { "body" , "Please Confirm your account"} ,
+                    { "url" , callbackUrl} ,
+                    { "linkTitle" , "Active Account"} ,
+                };
 
+            var body = await _emailBodyBuilder.GetEmailBodyAsync(
+                            EmailTemplates.Email,
+                            placeholder
+                        );
+
+
+        
 			await _emailSender.SendEmailAsync(user.Email, "Confirm your email", body);
 		
 

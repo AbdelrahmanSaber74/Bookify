@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.DataProtection;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using WhatsAppCloudApi;
+using WhatsAppCloudApi.Services;
 
 namespace Bookify.Web.Controllers
 {
@@ -10,59 +11,62 @@ namespace Bookify.Web.Controllers
         private readonly IAreaRepo _areaRepo;
         private readonly IMapper _mapper;
         private readonly IImageService _imageService;
-        private readonly ApplicationDbContext _applicationDbContext;
         private readonly IDataProtector _dataProtector;
+        private readonly IWhatsAppClient _whatsAppClient;
+        private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IEmailBodyBuilder _emailBodyBuilder;
+        private readonly IEmailSender _emailSender;
+
         public SubscribersController(
-            ISubscribersRepo subscribersRepository,
+            ISubscribersRepo subscribersRepo,
             IGovernorateRepo governorateRepo,
             IAreaRepo areaRepo,
             IMapper mapper,
-
             ApplicationDbContext applicationDbContext,
-        IImageService imageService,
-        IDataProtectionProvider personalDataProtector)
+            IImageService imageService,
+            IDataProtectionProvider dataProtectionProvider,
+            IWhatsAppClient whatsAppClient,
+            IWebHostEnvironment webHostEnvironment,
+            IEmailBodyBuilder emailBodyBuilder,
+            IEmailSender emailSender)
         {
-            _subscribersRepo = subscribersRepository;
+            _subscribersRepo = subscribersRepo;
             _governorateRepo = governorateRepo;
             _areaRepo = areaRepo;
             _mapper = mapper;
             _imageService = imageService;
-            _applicationDbContext = applicationDbContext;
-            _dataProtector = personalDataProtector.CreateProtector("MySecureKey");
+            _dataProtector = dataProtectionProvider.CreateProtector("MySecureKey");
+            _whatsAppClient = whatsAppClient;
+            _webHostEnvironment = webHostEnvironment;
+            _emailBodyBuilder = emailBodyBuilder;
+            _emailSender = emailSender;
         }
 
-        public IActionResult Index()
-        {
-            return View();
-        }
+        public async Task<IActionResult> Index() => View();
 
         [HttpPost]
         public async Task<IActionResult> Search(string value)
         {
-
-            if (value == null)
+            if (string.IsNullOrEmpty(value))
             {
                 return View("Index", null);
-
             }
 
-            var Subscriber = await _subscribersRepo.Search(value);
-
-            if (Subscriber != null)
+            var subscriber = await _subscribersRepo.Search(value);
+            if (subscriber != null)
             {
-                var viewModel = _mapper.Map<SubscriberSearchResultViewModel>(Subscriber);
-                viewModel.Key = _dataProtector.Protect(Subscriber.Id.ToString() );
+                var viewModel = _mapper.Map<SubscriberSearchResultViewModel>(subscriber);
+                viewModel.Key = _dataProtector.Protect(subscriber.Id.ToString());
                 return View("Index", viewModel);
             }
 
-            return View("Index",null);
+            return View("Index", null);
         }
 
         [HttpGet]
         public async Task<IActionResult> Details(string id)
         {
             var subscriberId = int.Parse(_dataProtector.Unprotect(id));
-
             var subscriber = await _subscribersRepo.GetByIdAsync(subscriberId);
 
             if (subscriber == null)
@@ -72,27 +76,16 @@ namespace Bookify.Web.Controllers
 
             var subscriberViewModel = _mapper.Map<SubscriberViewModel>(subscriber);
             subscriberViewModel.Key = id;
-
             return View("Details", subscriberViewModel);
         }
 
-
-
         [HttpGet]
-        public async Task<IActionResult> Create()
-        {
-            var model = await PopulateViewModel();
-            return View("Form", model);
-        }
-
-
+        public async Task<IActionResult> Create() => View("Form", await PopulateViewModel());
 
         [HttpGet]
         public async Task<IActionResult> Edit(string id)
         {
-
             var subscriberId = int.Parse(_dataProtector.Unprotect(id));
-
             var existingSubscriber = await _subscribersRepo.GetByIdAsync(subscriberId);
 
             if (existingSubscriber == null)
@@ -102,31 +95,128 @@ namespace Bookify.Web.Controllers
 
             var viewModel = _mapper.Map<SubscriberFormViewModel>(existingSubscriber);
             viewModel.Key = id;
-            var model = await PopulateViewModel(viewModel);
-            return View("Form", model);
+            return View("Form", await PopulateViewModel(viewModel));
         }
-
-
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(SubscriberFormViewModel model)
         {
             var subscriberId = int.Parse(_dataProtector.Unprotect(model.Key));
-
-
             var existingSubscriber = await _subscribersRepo.GetByIdAsync(subscriberId);
-
 
             if (!ModelState.IsValid)
             {
-                var viewModel = await PopulateViewModel(model);
-                return View("Form", viewModel);
+                return View("Form", await PopulateViewModel(model));
             }
 
             _mapper.Map(model, existingSubscriber);
+            await HandleImageUpdate(model, existingSubscriber);
+            existingSubscriber.LastUpdatedOn = DateTime.Now;
+            existingSubscriber.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            // Handle image update
+            await _subscribersRepo.UpdateAsync(existingSubscriber);
+            TempData["SuccessMessage"] = "Subscriber Updated successfully!";
+            return RedirectToAction(nameof(Details), new { id = model.Key });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(SubscriberFormViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(" Form", await PopulateViewModel(model));
+            }
+
+            var newSubscriber = _mapper.Map<Subscriber>(model);
+            newSubscriber.CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            await HandleImageUpload(model, newSubscriber);
+            await SendWhatsAppNotification(model);
+            await SendWelcomeEmail(model);
+
+            await _subscribersRepo.AddAsync(newSubscriber);
+            TempData["SuccessMessage"] = "Subscriber added successfully!";
+            return RedirectToAction(nameof(Details), new { id = _dataProtector.Protect(newSubscriber.Id.ToString()) });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleStatus(int id)
+        {
+            var subscriber = await _subscribersRepo.GetByIdAsync(id);
+            if (subscriber == null)
+            {
+                return NotFound();
+            }
+
+            subscriber.IsDeleted = !subscriber.IsDeleted;
+            subscriber.LastUpdatedOn = DateTime.Now;
+            subscriber.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            await _subscribersRepo.UpdateAsync(subscriber);
+            TempData["SuccessMessage"] = "Subscriber status updated successfully!";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var existingSubscriber = await _subscribersRepo.GetByIdAsync(id);
+            if (existingSubscriber == null)
+            {
+                return Json(new { success = false, message = "Subscriber not found." });
+            }
+
+            await _subscribersRepo.DeleteAsync(existingSubscriber.Id);
+            return Json(new { success = true });
+        }
+
+        [AcceptVerbs("Get", "Post")]
+        public async Task<IActionResult> AllowEmail(SubscriberFormViewModel model)
+        {
+            var subscriberId = string.IsNullOrEmpty(model.Key) ? 0 : int.Parse(_dataProtector.Unprotect(model.Key));
+            var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.Email == model.Email);
+            return Json(subscriber == null || subscriber.Id.Equals(subscriberId));
+        }
+
+        [AcceptVerbs("Get", "Post")]
+        public async Task<IActionResult> AllowMobileNumber(SubscriberFormViewModel model)
+        {
+            var subscriberId = string.IsNullOrEmpty(model.Key) ? 0 : int.Parse(_dataProtector.Unprotect(model.Key));
+            var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.MobileNumber == model.MobileNumber);
+            return Json(subscriber == null || subscriber.Id.Equals(subscriberId));
+        }
+
+        [AcceptVerbs("Get", "Post")]
+        public async Task<IActionResult> AllowNationalId(SubscriberFormViewModel model)
+        {
+            var subscriberId = string.IsNullOrEmpty(model.Key) ? 0 : int.Parse(_dataProtector.Unprotect(model.Key));
+            var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.NationalId == model.NationalId);
+            return Json(subscriber == null || subscriber.Id.Equals(subscriberId));
+        }
+
+        private async Task<SubscriberFormViewModel> PopulateViewModel(SubscriberFormViewModel? model = null)
+        {
+            var viewModel = model ?? new SubscriberFormViewModel();
+            var governorates = await _governorateRepo.GetAllGovernoratesAsync() ?? new List<Governorate>();
+            viewModel.Governorates = _mapper.Map<IEnumerable<SelectListItem>>(governorates);
+
+            if (viewModel.GovernorateId > 0)
+            {
+                var areas = await _areaRepo.GetAreasByGovernorateIdAsync(viewModel.GovernorateId);
+                viewModel.Areas = _mapper.Map<IEnumerable<SelectListItem>>(areas);
+            }
+            else
+            {
+                viewModel.Areas = new List<SelectListItem>();
+            }
+
+            return viewModel;
+        }
+
+        private async Task HandleImageUpdate(SubscriberFormViewModel model, Subscriber existingSubscriber)
+        {
             if (model.Image != null)
             {
                 if (!string.IsNullOrEmpty(existingSubscriber.ImageThumbnailUrl) || !string.IsNullOrEmpty(existingSubscriber.ImageUrl))
@@ -143,41 +233,13 @@ namespace Bookify.Web.Controllers
                 }
                 else
                 {
-                    await PopulateViewModel(model);
                     ModelState.AddModelError(string.Empty, "Failed to save the image. Please try again.");
-                    return View("Form", model);
                 }
             }
-
-            existingSubscriber.LastUpdatedOn = DateTime.Now;
-            existingSubscriber.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
-
-
-            await _subscribersRepo.UpdateAsync(existingSubscriber);
-
-            TempData["SuccessMessage"] = "Subscriber Updated successfully!";
-
-            return RedirectToAction(nameof(Details) , new {id = model.Key });
-
-
         }
 
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(SubscriberFormViewModel model)
+        private async Task HandleImageUpload(SubscriberFormViewModel model, Subscriber newSubscriber)
         {
-            if (!ModelState.IsValid)
-            {
-                var viewModel = await PopulateViewModel(model);
-                return View("Form", viewModel);
-            }
-
-
-            var newSubscriber = _mapper.Map<Subscriber>(model);
-            newSubscriber.CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            // Handle image upload
             if (model.Image != null)
             {
                 var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/Subscribers", true);
@@ -191,128 +253,52 @@ namespace Bookify.Web.Controllers
                 {
                     var errorMessage = badRequestResult.Value?.ToString() ?? Errors.ImageSaveFailed;
                     ModelState.AddModelError(string.Empty, errorMessage);
-
-                    var viewModel = await PopulateViewModel(model);
-                    return View("Form", viewModel);
-
                 }
             }
-
-
-            //Todo : Send Welcome Email 
-            await _subscribersRepo.AddAsync(newSubscriber);
-
-            TempData["SuccessMessage"] = "Subscriber added successfully!";
-
-            var subscriberIdProtect = _dataProtector.Protect(newSubscriber.Id.ToString() );
-
-            return RedirectToAction(nameof(Details) , new {id = subscriberIdProtect });
         }
 
-
-
-
-        [HttpPost]
-        public async Task<IActionResult> ToggleStatus(int Id)
+        private async Task SendWhatsAppNotification(SubscriberFormViewModel model)
         {
-
-            var subscriber = await _subscribersRepo.GetByIdAsync(Id);
-            if (subscriber == null)
+            if (model.HasWhatsApp)
             {
-                return NotFound();
+                var components = new List<WhatsAppComponent>()
+                {
+                    new WhatsAppComponent
+                    {
+                        Type = "body",
+                        Parameters = new List<object>()
+                        {
+                            new WhatsAppTextParameter { Text = "Ahmed" }
+                        }
+                    }
+                };
 
+                var mobileNumber = _webHostEnvironment.IsDevelopment() ? "01022917856" : model.MobileNumber;
+
+                var result = await _whatsAppClient.SendMessage(
+                    $"2{mobileNumber}",
+                    WhatsAppLanguageCode.English_US,
+                    WhatsAppTemplates.statement_available_2,
+                    components
+                );
             }
-
-            subscriber.IsDeleted = !subscriber.IsDeleted;
-            subscriber.LastUpdatedOn = DateTime.Now;
-            subscriber.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
-
-            await _subscribersRepo.UpdateAsync(subscriber);
-
-            TempData["SuccessMessage"] = "Subscriber status updated successfully!";
-
-            return RedirectToAction(nameof(Index));
-
         }
 
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
+        private async Task SendWelcomeEmail(SubscriberFormViewModel model)
         {
-            var existingSubscriber = await _subscribersRepo.GetByIdAsync(id);
-            if (existingSubscriber == null) return Json(new { success = false, message = "Subscriber not found." });
-
-            await _subscribersRepo.DeleteAsync(existingSubscriber.Id);
-
-            return Json(new { success = true });
-        }
-
-
-        [AcceptVerbs("Get", "Post")]
-        public async Task<IActionResult> AllowEmail(SubscriberFormViewModel model)
-        {
-            var subscriberId = 0;
-
-            if (!string.IsNullOrEmpty(model.Key))
+            var placeholder = new Dictionary<string, string>()
             {
-                subscriberId = int.Parse(_dataProtector.Unprotect(model.Key));
-            }
+                { "imageUrl" , "https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729557070/icon-positive-vote-2_jcxdww_rghb1a.jpg?_s=public-apps"} ,
+                { "header", $"Welcome {model.FirstName}," },
+                { "body", "thanks for joining Bookify 🤩" }
+            };
 
-            var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.Email == model.Email);
-            var isAllowed = subscriber == null || subscriber.Id.Equals(subscriberId);
-            return Json(isAllowed);
-        }
+            var body = await _emailBodyBuilder.GetEmailBodyAsync(
+                EmailTemplates.Notification,
+                placeholder
+            );
 
-        [AcceptVerbs("Get", "Post")]
-        public async Task<IActionResult> AllowMobileNumber(SubscriberFormViewModel model)
-        {
-            var subscriberId = 0;
-
-            if (!string.IsNullOrEmpty(model.Key))
-            {
-                subscriberId = int.Parse(_dataProtector.Unprotect(model.Key));
-            }
-
-            var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.MobileNumber == model.MobileNumber);
-            var isAllowed = subscriber == null || subscriber.Id.Equals(subscriberId);
-            return Json(isAllowed);
-        }
-
-        [AcceptVerbs("Get", "Post")]
-        public async Task<IActionResult> AllowNationalId(SubscriberFormViewModel model)
-        {
-            var subscriberId = 0;
-
-            if (!string.IsNullOrEmpty(model.Key))
-            {
-                subscriberId = int.Parse(_dataProtector.Unprotect(model.Key));
-            }
-
-            var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.NationalId == model.NationalId);
-            var isAllowed = subscriber == null || subscriber.Id.Equals(subscriberId);
-            return Json(isAllowed);
-        }
-
-
-        private async Task<SubscriberFormViewModel> PopulateViewModel(SubscriberFormViewModel? model = null)
-        {
-            var viewModel = model ?? new SubscriberFormViewModel();
-            var governorates = await _governorateRepo.GetAllGovernoratesAsync() ?? new List<Governorate>();
-            viewModel.Governorates = _mapper.Map<IEnumerable<SelectListItem>>(governorates);
-
-
-            if (viewModel.GovernorateId > 0)
-            {
-                var areas = await _areaRepo.GetAreasByGovernorateIdAsync(viewModel.GovernorateId);
-                viewModel.Areas = _mapper.Map<IEnumerable<SelectListItem>>(areas);
-            }
-            else
-            {
-                viewModel.Areas = new List<SelectListItem>();
-            }
-
-            return viewModel;
+            await _emailSender.SendEmailAsync(model.Email, "Confirm your email", body);
         }
 
         [HttpGet]

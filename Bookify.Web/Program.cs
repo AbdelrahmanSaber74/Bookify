@@ -1,3 +1,5 @@
+using WhatsAppCloudApi.Extensions;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
@@ -28,6 +30,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 
 // Register all additional services
+builder.Services.AddWhatsAppApiClient(builder.Configuration);
+
 builder.Services.AddApplicationServices(builder.Configuration);
 
 

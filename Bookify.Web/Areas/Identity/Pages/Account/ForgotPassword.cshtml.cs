@@ -68,14 +68,19 @@ namespace Bookify.Web.Areas.Identity.Pages.Account
 
 
 
+				var placeholder = new Dictionary<string, string>()
+				{
+					{ "imageUrl" , "https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729557070/icon-positive-vote-2_jcxdww_rghb1a.jpg?_s=public-apps"} ,
+					{ "header" , $"Hello {user.FullName},"} ,
+					{ "body" , "We received a request to reset your password. If you didn't make this request, you can ignore this email."} ,
+					{ "url" , callbackUrl } ,
+					{ "linkTitle" , "Reset Your Password"} ,
+				};
 
 				var body = await _emailBodyBuilder.GetEmailBodyAsync(
-								"https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729557070/icon-positive-vote-2_jcxdww_rghb1a.jpg?_s=public-apps",
-								$"Hello {user.FullName},",
-								"We received a request to reset your password. If you didn't make this request, you can ignore this email.",
-								"Reset Your Password",
-								callbackUrl!
-							);
+					            EmailTemplates.Email,
+                                placeholder
+                            );
 
 				await _emailSender.SendEmailAsync(user.Email, "Confirm your email", body);
 			

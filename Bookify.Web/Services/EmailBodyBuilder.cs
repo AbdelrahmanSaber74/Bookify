@@ -12,25 +12,26 @@ namespace Bookify.Web.Services
 			_webHostEnvironment = webHostEnvironment;
 		}
 
-		public async Task<string> GetEmailBodyAsync(string imageUrl, string header, string bodyContent, string linkTitle , string callBack)
+		public async Task<string> GetEmailBodyAsync(string template, Dictionary<string , string > placeholders)
 		{
-			// Load the HTML template from file
-			var filePath = $"{_webHostEnvironment.WebRootPath}/templates/email.html";	
-			string body;
+			// Load the HTML template from file	
+			var filePath = $"{_webHostEnvironment.WebRootPath}/templates/{template}.html";	
+			string body; 
 
 			using (var streamReader = new StreamReader(filePath))
 			{
 				body = await streamReader.ReadToEndAsync();
 			}
 
-			// Replace placeholders in the email template
-			body = body.Replace("[imageUrl]", imageUrl)
-					   .Replace("[header]", header)
-					   .Replace("[body]", bodyContent)
-					   .Replace("[url]", HtmlEncoder.Default.Encode(callBack))
-					   .Replace("[linkTitle]", linkTitle);
+            // Replace placeholders in the email template
+            foreach (var placeholder in placeholders)
+            {
+                // Encoding the values to prevent any potential HTML injection
+                var encodedValue = HtmlEncoder.Default.Encode(placeholder.Value);
+                body = body.Replace($"[{placeholder.Key}]", encodedValue);
+            }
 
-			return body;
+            return body;
 		}
 	}
 }

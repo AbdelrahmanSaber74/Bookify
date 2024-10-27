@@ -268,18 +268,26 @@ namespace Bookify.Web.Controllers
 					protocol: Request.Scheme);
 
 
-			var body = await _emailBodyBuilder.GetEmailBodyAsync(
-							"https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729535424/icon-positive-vote-1_rdexez_ii8um2.jpg?_s=public-apps",
-							$"Hey {fullName}",
-							"Please Confirm your account",
-							"Active Account",
-							callbackUrl!
-						);
 
+
+            var placeholder = new Dictionary<string, string>()
+                {
+                    { "imageUrl" , "https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729535424/icon-positive-vote-1_rdexez_ii8um2.jpg?_s=public-apps"} ,
+                    { "header" , $"Hey {fullName}"} ,
+                    { "body" , "Please Confirm your account"} ,
+                    { "url" , callbackUrl!} ,
+                    { "linkTitle" , "Active Account" } ,
+                };
+
+            var body = await _emailBodyBuilder.GetEmailBodyAsync(
+                            EmailTemplates.Email,
+                            placeholder
+                        );
 
 			await _emailSender.SendEmailAsync(email, "Confirm your email", body);
 
 		}
+
 
 		private void AddErrorsToModelState(IEnumerable<IdentityError> errors)
 		{
