@@ -21,6 +21,7 @@ namespace Bookify.Web.Repositories.Repositories
             return await _context.Subscribers
                 .Include(s => s.Governorate)
                 .Include(s => s.Area)
+                .Include(s => s.subscriptions)
                 .FirstOrDefaultAsync(s => s.Id == id);
         }
 

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.DataProtection;
+﻿using Bookify.Web.Repositories.Subscription;
+using Microsoft.AspNetCore.DataProtection;
 using WhatsAppCloudApi;
 using WhatsAppCloudApi.Services;
 
@@ -16,6 +17,7 @@ namespace Bookify.Web.Controllers
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly IEmailBodyBuilder _emailBodyBuilder;
         private readonly IEmailSender _emailSender;
+        private readonly ISubscriptionRepo _subscriptionRepo;
 
         public SubscribersController(
             ISubscribersRepo subscribersRepo,
@@ -28,7 +30,8 @@ namespace Bookify.Web.Controllers
             IWhatsAppClient whatsAppClient,
             IWebHostEnvironment webHostEnvironment,
             IEmailBodyBuilder emailBodyBuilder,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            ISubscriptionRepo subscriptionRepo)
         {
             _subscribersRepo = subscribersRepo;
             _governorateRepo = governorateRepo;
@@ -40,9 +43,11 @@ namespace Bookify.Web.Controllers
             _webHostEnvironment = webHostEnvironment;
             _emailBodyBuilder = emailBodyBuilder;
             _emailSender = emailSender;
+            _subscriptionRepo = subscriptionRepo;
         }
 
         public async Task<IActionResult> Index() => View();
+
 
         [HttpPost]
         public async Task<IActionResult> Search(string value)
@@ -71,7 +76,14 @@ namespace Bookify.Web.Controllers
 
             if (subscriber == null)
             {
-                return RedirectToAction("Index");
+                return RedirectToAction(actionName: "Index");
+            }
+
+            if (subscriber.IsDeleted)
+            {
+                TempData["WarningMessage"] = "Subscriber Is Deleted!";
+                return RedirectToAction(actionName: "Index");
+
             }
 
             var subscriberViewModel = _mapper.Map<SubscriberViewModel>(subscriber);
@@ -113,7 +125,7 @@ namespace Bookify.Web.Controllers
             _mapper.Map(model, existingSubscriber);
             await HandleImageUpdate(model, existingSubscriber);
             existingSubscriber.LastUpdatedOn = DateTime.Now;
-            existingSubscriber.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            existingSubscriber.LastUpdatedById = GetCurrentUserId();
 
             await _subscribersRepo.UpdateAsync(existingSubscriber);
             TempData["SuccessMessage"] = "Subscriber Updated successfully!";
@@ -130,10 +142,15 @@ namespace Bookify.Web.Controllers
             }
 
             var newSubscriber = _mapper.Map<Subscriber>(model);
-            newSubscriber.CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            newSubscriber.CreatedById = GetCurrentUserId();
             await HandleImageUpload(model, newSubscriber);
             await SendWhatsAppNotification(model);
             await SendWelcomeEmail(model);
+
+
+            // Create and add subscription
+            var subscription = CreateSubscription(newSubscriber.Id, GetCurrentUserId());
+            newSubscriber.subscriptions.Add(subscription);
 
             await _subscribersRepo.AddAsync(newSubscriber);
             TempData["SuccessMessage"] = "Subscriber added successfully!";
@@ -151,7 +168,7 @@ namespace Bookify.Web.Controllers
 
             subscriber.IsDeleted = !subscriber.IsDeleted;
             subscriber.LastUpdatedOn = DateTime.Now;
-            subscriber.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            subscriber.LastUpdatedById = GetCurrentUserId();
 
             await _subscribersRepo.UpdateAsync(subscriber);
             TempData["SuccessMessage"] = "Subscriber status updated successfully!";
@@ -194,6 +211,46 @@ namespace Bookify.Web.Controllers
             var subscriberId = string.IsNullOrEmpty(model.Key) ? 0 : int.Parse(_dataProtector.Unprotect(model.Key));
             var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.NationalId == model.NationalId);
             return Json(subscriber == null || subscriber.Id.Equals(subscriberId));
+        }
+
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RenewSubscription(string sKey)
+        {
+            var subscriberId = int.Parse(_dataProtector.Unprotect(sKey));
+
+
+            //  Last end date Subscription
+            var subscription = await _subscriptionRepo.GetLastSubscriptionBySubscriberId(subscriberId);
+
+            var subscriber = await _subscribersRepo.GetByIdAsync(subscriberId);
+
+            if (subscription == null)
+            {
+                return NotFound();
+            }
+
+
+            var startDate = subscription.EndDate > DateTime.Now ? subscription.EndDate.AddDays(1) : DateTime.Today;
+
+
+            // Create and add subscription
+            var newSubscription = CreateSubscription(subscriberId, GetCurrentUserId()!, startDate);
+            await _subscriptionRepo.AddSubscription(newSubscription);
+
+
+            //Send Email And Whatapp
+            var subscriberModel = _mapper.Map<SubscriberFormViewModel>(subscriber);
+            await SendWhatsAppNotification(subscriberModel);
+            await SendWelcomeEmail(subscriberModel);
+
+
+            var subscriptionModel = _mapper.Map<SubscriptionViewModel>(newSubscription);
+
+            return PartialView("_SubscriptionRow", subscriptionModel);
+
         }
 
         private async Task<SubscriberFormViewModel> PopulateViewModel(SubscriberFormViewModel? model = null)
@@ -268,7 +325,7 @@ namespace Bookify.Web.Controllers
                         Type = "body",
                         Parameters = new List<object>()
                         {
-                            new WhatsAppTextParameter { Text = "Ahmed" }
+                            new WhatsAppTextParameter { Text = $"{model.FirstName}" }
                         }
                     }
                 };
@@ -281,6 +338,8 @@ namespace Bookify.Web.Controllers
                     WhatsAppTemplates.statement_available_2,
                     components
                 );
+
+
             }
         }
 
@@ -299,6 +358,27 @@ namespace Bookify.Web.Controllers
             );
 
             await _emailSender.SendEmailAsync(model.Email, "Confirm your email", body);
+        }
+
+
+        private Subscription CreateSubscription(int subscriberId, string createdById, DateTime? startDate = null)
+        {
+            startDate ??= DateTime.Now;
+
+            return new Subscription
+            {
+                SubscriberId = subscriberId,
+                CreatedById = createdById,
+                CreatedOn = DateTime.Now,
+                StartDate = startDate.Value,
+                EndDate = startDate.Value.AddYears(1)
+
+            };
+        }
+
+        private string GetCurrentUserId()
+        {
+            return User.FindFirst(ClaimTypes.NameIdentifier)?.Value!;
         }
 
         [HttpGet]

@@ -67,6 +67,7 @@
             CreateMap<Subscriber, SubscriberFormViewModel>()
                 .ReverseMap();
 
+            CreateMap<Subscription, SubscriptionViewModel>();
 
 
 

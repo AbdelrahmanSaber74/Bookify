@@ -3,6 +3,7 @@
     
     public class SubscriberViewModel : BaseViewModel
     {
+        public int Id { get; set; }
         public string? Key { get; set; }
 
         public string FullName { get; set; } = null!;
@@ -32,5 +33,7 @@
         public string Address { get; set; } = null!;
 
         public bool IsBlackListed { get; set; }
+
+        public IEnumerable<SubscriptionViewModel> Subscriptions { get; set; } = new List<SubscriptionViewModel>();
     }
 }

@@ -1,4 +1,5 @@
-﻿using Bookify.Web.Seetings;
+﻿using Bookify.Web.Repositories.Subscription;
+using Bookify.Web.Seetings;
 using Microsoft.AspNetCore.DataProtection;
 
 
@@ -16,7 +17,8 @@ namespace Bookify.Web.Extensions
                     .AddScoped<IBookCopyRepo, BookCopyRepo>()
                     .AddScoped<ISubscribersRepo, SubscribersRepo>()
                     .AddScoped<IGovernorateRepo, GovernorateRepo>()
-                    .AddScoped<IAreaRepo, AreaRepo>();
+                    .AddScoped<IAreaRepo, AreaRepo>()
+                    .AddScoped<ISubscriptionRepo, SubscriptionRepo>();
 
             // Register Email Services
             services.AddTransient<IEmailSender, EmailSender>()
