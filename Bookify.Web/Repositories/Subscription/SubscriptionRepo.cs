@@ -26,13 +26,24 @@ namespace Bookify.Web.Repositories.Subscription
             return await _context.Subscriptions
                                  .Where(m => m.SubscriberId == subscriberId)
                                  .OrderByDescending(m => m.EndDate)
-                                 .FirstOrDefaultAsync(); 
+                                 .FirstOrDefaultAsync();
         }
 
         public async Task UpdateSubscription(Core.Models.Subscription subscription)
         {
             _context.Subscriptions.Update(subscription);
             await _context.SaveChangesAsync();
+        }
+
+
+        public async Task<IEnumerable<Core.Models.Subscription>> GetSubscriptionsExpiringInDays(int daysBeforeEndDate)
+        {
+            var targetDate = DateTime.UtcNow.AddDays(daysBeforeEndDate);
+
+            return await _context.Subscriptions
+                   .Where(s => s.EndDate <= targetDate && s.EndDate >= DateTime.UtcNow)
+                   .Include(s => s.Subscriber)
+                   .ToListAsync();
         }
 
     }

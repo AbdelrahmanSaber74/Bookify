@@ -1,6 +1,6 @@
 ﻿using Bookify.Web.Repositories.Subscription;
+using Hangfire;
 using Microsoft.AspNetCore.DataProtection;
-using WhatsAppCloudApi;
 using WhatsAppCloudApi.Services;
 
 namespace Bookify.Web.Controllers
@@ -18,6 +18,8 @@ namespace Bookify.Web.Controllers
         private readonly IEmailBodyBuilder _emailBodyBuilder;
         private readonly IEmailSender _emailSender;
         private readonly ISubscriptionRepo _subscriptionRepo;
+        private readonly NotificationService _notificationService;
+
 
         public SubscribersController(
             ISubscribersRepo subscribersRepo,
@@ -31,7 +33,8 @@ namespace Bookify.Web.Controllers
             IWebHostEnvironment webHostEnvironment,
             IEmailBodyBuilder emailBodyBuilder,
             IEmailSender emailSender,
-            ISubscriptionRepo subscriptionRepo)
+            ISubscriptionRepo subscriptionRepo,
+            NotificationService notificationService)
         {
             _subscribersRepo = subscribersRepo;
             _governorateRepo = governorateRepo;
@@ -44,6 +47,7 @@ namespace Bookify.Web.Controllers
             _emailBodyBuilder = emailBodyBuilder;
             _emailSender = emailSender;
             _subscriptionRepo = subscriptionRepo;
+            _notificationService = notificationService;
         }
 
         public async Task<IActionResult> Index() => View();
@@ -144,8 +148,7 @@ namespace Bookify.Web.Controllers
             var newSubscriber = _mapper.Map<Subscriber>(model);
             newSubscriber.CreatedById = GetCurrentUserId();
             await HandleImageUpload(model, newSubscriber);
-            await SendWhatsAppNotification(model);
-            await SendWelcomeEmail(model);
+
 
 
             // Create and add subscription
@@ -153,6 +156,14 @@ namespace Bookify.Web.Controllers
             newSubscriber.subscriptions.Add(subscription);
 
             await _subscribersRepo.AddAsync(newSubscriber);
+
+
+            model.Image = null;
+            BackgroundJob.Enqueue(() => _notificationService.SendWhatsAppNotification(model));
+            BackgroundJob.Enqueue(() => _notificationService.SendWelcomeEmail(model));
+
+
+
             TempData["SuccessMessage"] = "Subscriber added successfully!";
             return RedirectToAction(nameof(Details), new { id = _dataProtector.Protect(newSubscriber.Id.ToString()) });
         }
@@ -243,8 +254,8 @@ namespace Bookify.Web.Controllers
 
             //Send Email And Whatapp
             var subscriberModel = _mapper.Map<SubscriberFormViewModel>(subscriber);
-            await SendWhatsAppNotification(subscriberModel);
-            await SendWelcomeEmail(subscriberModel);
+            BackgroundJob.Enqueue(() => _notificationService.SendWhatsAppNotification(subscriberModel));
+            BackgroundJob.Enqueue(() => _notificationService.SendWelcomeEmail(subscriberModel));
 
 
             var subscriptionModel = _mapper.Map<SubscriptionViewModel>(newSubscription);
@@ -312,52 +323,6 @@ namespace Bookify.Web.Controllers
                     ModelState.AddModelError(string.Empty, errorMessage);
                 }
             }
-        }
-
-        private async Task SendWhatsAppNotification(SubscriberFormViewModel model)
-        {
-            if (model.HasWhatsApp)
-            {
-                var components = new List<WhatsAppComponent>()
-                {
-                    new WhatsAppComponent
-                    {
-                        Type = "body",
-                        Parameters = new List<object>()
-                        {
-                            new WhatsAppTextParameter { Text = $"{model.FirstName}" }
-                        }
-                    }
-                };
-
-                var mobileNumber = _webHostEnvironment.IsDevelopment() ? "01022917856" : model.MobileNumber;
-
-                var result = await _whatsAppClient.SendMessage(
-                    $"2{mobileNumber}",
-                    WhatsAppLanguageCode.English_US,
-                    WhatsAppTemplates.statement_available_2,
-                    components
-                );
-
-
-            }
-        }
-
-        private async Task SendWelcomeEmail(SubscriberFormViewModel model)
-        {
-            var placeholder = new Dictionary<string, string>()
-            {
-                { "imageUrl" , "https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729557070/icon-positive-vote-2_jcxdww_rghb1a.jpg?_s=public-apps"} ,
-                { "header", $"Welcome {model.FirstName}," },
-                { "body", "thanks for joining Bookify 🤩" }
-            };
-
-            var body = await _emailBodyBuilder.GetEmailBodyAsync(
-                EmailTemplates.Notification,
-                placeholder
-            );
-
-            await _emailSender.SendEmailAsync(model.Email, "Confirm your email", body);
         }
 
 

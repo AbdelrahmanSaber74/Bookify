@@ -1,5 +1,6 @@
 ﻿using Bookify.Web.Repositories.Subscription;
 using Bookify.Web.Seetings;
+using Bookify.Web.Tasks;
 using Microsoft.AspNetCore.DataProtection;
 
 
@@ -20,9 +21,13 @@ namespace Bookify.Web.Extensions
                     .AddScoped<IAreaRepo, AreaRepo>()
                     .AddScoped<ISubscriptionRepo, SubscriptionRepo>();
 
+
             // Register Email Services
             services.AddTransient<IEmailSender, EmailSender>()
                     .AddTransient<IEmailBodyBuilder, EmailBodyBuilder>();
+
+            services.AddScoped<NotificationService>();
+            services.AddScoped<HangfireTasks>(); 
 
             // Configure Email Settings
             services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
