@@ -41,7 +41,7 @@ namespace Bookify.Web.Repositories.Subscription
             var targetDate = DateTime.UtcNow.AddDays(daysBeforeEndDate);
 
             return await _context.Subscriptions
-                   .Where(s => s.EndDate <= targetDate && s.EndDate >= DateTime.UtcNow)
+                   .Where(s => s.EndDate <= targetDate && s.EndDate >= DateTime.UtcNow && !s.Subscriber.IsBlackListed)
                    .Include(s => s.Subscriber)
                    .ToListAsync();
         }

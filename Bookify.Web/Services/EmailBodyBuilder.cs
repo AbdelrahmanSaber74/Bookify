@@ -12,7 +12,7 @@ namespace Bookify.Web.Services
 			_webHostEnvironment = webHostEnvironment;
 		}
 
-		public async Task<string> GetEmailBodyAsync(string template, Dictionary<string , string > placeholders)
+		public async Task<string> GetEmailBodyAsync(string template, Dictionary<string , string> placeholders)
 		{
 			// Load the HTML template from file	
 			var filePath = $"{_webHostEnvironment.WebRootPath}/templates/{template}.html";	

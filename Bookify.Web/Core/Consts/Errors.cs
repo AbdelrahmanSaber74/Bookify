@@ -16,7 +16,13 @@ namespace Bookify.Web.Core.Consts
 		public const string InvalidMobileNumber = "Invalid mobile number.";
         public const string ImageSaveFailed = "Failed to save the image. Please try again.";
         public const string InvalidNationalId = "Invalid national ID.";
+        public const string InvalidSerialNumber = "Invalid serial number.";
         public const string EmptyImage = "Please select an image.";
+        public const string BlackListedSubscriber = "This subscriber is blacklisted.";
+        public const string InactiveSubscriber = "This subscriber is inactive.";
+        public const string MaxCopiesReached = "This subscriber has reached the max number for rentals.";
+        public const string CopyIsInRental = "This copy is already rentaled.";
+        public const string SubscriberNotFound = "Subscriber not found.";
 
         // Add image-related error messages
         public const string NoFileProvided = "No file provided.";

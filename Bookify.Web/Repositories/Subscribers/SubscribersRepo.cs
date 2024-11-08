@@ -22,6 +22,8 @@ namespace Bookify.Web.Repositories.Repositories
                 .Include(s => s.Governorate)
                 .Include(s => s.Area)
                 .Include(s => s.subscriptions)
+                .Include(s => s.Rentals)
+                .ThenInclude(s => s.RentalCopies)
                 .FirstOrDefaultAsync(s => s.Id == id);
         }
 

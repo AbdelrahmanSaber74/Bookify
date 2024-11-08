@@ -1,10 +1,6 @@
-﻿using Bookify.Web.Repositories.Subscription;
-using Hangfire;
-using Microsoft.AspNetCore.DataProtection;
-using WhatsAppCloudApi.Services;
-
-namespace Bookify.Web.Controllers
+﻿namespace Bookify.Web.Controllers
 {
+    [Authorize(Roles = AppRoles.Reception)]
     public class SubscribersController : Controller
     {
         private readonly ISubscribersRepo _subscribersRepo;
@@ -26,7 +22,6 @@ namespace Bookify.Web.Controllers
             IGovernorateRepo governorateRepo,
             IAreaRepo areaRepo,
             IMapper mapper,
-            ApplicationDbContext applicationDbContext,
             IImageService imageService,
             IDataProtectionProvider dataProtectionProvider,
             IWhatsAppClient whatsAppClient,
@@ -92,7 +87,8 @@ namespace Bookify.Web.Controllers
 
             var subscriberViewModel = _mapper.Map<SubscriberViewModel>(subscriber);
             subscriberViewModel.Key = id;
-            return View("Details", subscriberViewModel);
+
+            return View(viewName: "Details", subscriberViewModel);
         }
 
         [HttpGet]

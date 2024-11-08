@@ -28,3 +28,8 @@ global using Bookify.Web.Services;
 global using Microsoft.AspNetCore.Identity.UI.Services;
 global using Microsoft.AspNetCore.WebUtilities;
 global using System.Security.Claims;
+global using Bookify.Web.Core.Enums;
+global using Bookify.Web.Repositories.Subscription;
+global using Hangfire;
+global using Microsoft.AspNetCore.DataProtection;
+global using WhatsAppCloudApi.Services;

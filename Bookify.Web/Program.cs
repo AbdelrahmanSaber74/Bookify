@@ -79,7 +79,7 @@ app.UseHangfireDashboard("/Hangfire", new DashboardOptions
 
 });
 
-// Register daily task execution at startup
+// Register daily task execution 
 app.Lifetime.ApplicationStarted.Register(() =>
 {
     using (var scope = app.Services.CreateScope())

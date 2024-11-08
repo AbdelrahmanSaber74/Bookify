@@ -1,5 +1,4 @@
 ﻿namespace Bookify.Web.Repositories.Subscription
-
 {
     public interface ISubscriptionRepo
     {

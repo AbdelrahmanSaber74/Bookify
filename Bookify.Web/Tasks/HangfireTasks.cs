@@ -27,9 +27,7 @@ namespace Bookify.Web.Tasks
                 };
 
 
-                await _notificationService.SendWarningEmailForEndOfSubscription(
-                    model,
-                    subscription.EndDate);
+                await _notificationService.SendWarningEmailForEndOfSubscription(model, subscription.EndDate);
 
             }
         }

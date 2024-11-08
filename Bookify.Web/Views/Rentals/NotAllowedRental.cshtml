@@ -1,0 +1,18 @@
+﻿@model string
+
+
+@{
+    ViewData["Title"] = "Not Allowed Rental";
+}
+
+<div class="container mt-5">
+    <div class="alert alert-danger text-center" role="alert">
+        <h4 class="alert-heading">Rental Not Allowed</h4>
+        <p>@Model</p>
+        <hr>
+        <p>Please contact support if you believe this is an error.</p>
+    </div>
+    <div class="text-center">
+        <a href="@Url.Action("Index", "Home")" class="btn btn-primary">Go to Home</a>
+    </div>
+</div>

@@ -17,6 +17,8 @@ namespace Bookify.Web.Data
         public DbSet<BookCopy> BookCopies { get; set; }      
         public DbSet<Area> Areas { get; set; }                 
         public DbSet<Governorate> Governorates { get; set; } 
+        public DbSet<Rental> Rentals { get; set; } 
+        public DbSet<RentalCopy> RentalCopies { get; set; } 
         public DbSet<Subscriber> Subscribers { get; set; }    
         public DbSet<Subscription> Subscriptions { get; set; }    
 
@@ -34,6 +36,9 @@ namespace Bookify.Web.Data
             // Define a composite key for the BookCategory table (many-to-many relationship between Book and Category)
             builder.Entity<BookCategory>()
                 .HasKey(bc => new { bc.BookId, bc.CategoryId });
+
+            builder.Entity<RentalCopy>()
+              .HasKey(rc => new { rc.RentalId, rc.BookCopyId });
 
             // Create a unique index on the Name column in the Category table to ensure each Category name is unique
             builder.Entity<Category>()

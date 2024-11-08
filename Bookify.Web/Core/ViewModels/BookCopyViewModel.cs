@@ -4,15 +4,17 @@ namespace Bookify.Web.Core.ViewModels
 	{
 		public int Id { get; set; }
 		public int BookId { get; set; }
+        public Book? Book { get; set; }
 
-		[RegularExpression(RegexPatterns.CharactersOnly_Eng, ErrorMessage = Errors.OnlyEnglishLetters)]
+        [RegularExpression(RegexPatterns.CharactersOnly_Eng, ErrorMessage = Errors.OnlyEnglishLetters)]
 		public string? BookTitle { get; set; }
 		public string? SerialNumber { get; set; }
 
 		[Display(Name = "Available for Rental?")]
 		public bool IsAvailableForRental { get; set; }
 		public bool IsDelete { get; set; }
-
+		public string? BookThumbnailUrl { get; set; }
+		public int EditionNumber { get; set; }
 
 
 		[Display(Name = "Editor Number")]

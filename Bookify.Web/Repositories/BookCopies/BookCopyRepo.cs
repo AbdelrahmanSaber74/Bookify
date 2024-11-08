@@ -17,10 +17,7 @@
 			return bookcopy;
 		}
 
-		public Task UpdateBookACopysync(BookCopy book)
-		{
-			throw new NotImplementedException();
-		}
+		
 		public async Task DeleteBookCopyByIdAsync(int id)
 		{
 			var bookCopy = await GetBookCopyByIdAsync(id);
@@ -73,7 +70,15 @@
 			await _context.SaveChangesAsync();
 		}
 
+        public async Task<BookCopy> GetCopyDetails(string serialNumber)
+        {
+            return await _context.BookCopies
+                .Include(c => c.Book)
+                .SingleOrDefaultAsync(c => c.SerialNumber.ToString() == serialNumber && !c.IsDelete && !c.Book.IsDeleted);
+        }
 
-	}
+
+
+    }
 
 }
