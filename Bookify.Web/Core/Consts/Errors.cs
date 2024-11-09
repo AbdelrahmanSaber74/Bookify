@@ -23,6 +23,10 @@ namespace Bookify.Web.Core.Consts
         public const string MaxCopiesReached = "This subscriber has reached the max number for rentals.";
         public const string CopyIsInRental = "This copy is already rentaled.";
         public const string SubscriberNotFound = "Subscriber not found.";
+        public const string BookCopyUnavailable = "The specified book copy or its main book is not available for rental.";
+        public const string RentalSuccessMessage = "Rental has been successfully created!";
+        public const string BookAlreadyRented = "This book copy has already been rented by you.";
+        public const string InvalidSubscriberId = "The subscriber ID is invalid. Please check the link or contact support.";
 
         // Add image-related error messages
         public const string NoFileProvided = "No file provided.";

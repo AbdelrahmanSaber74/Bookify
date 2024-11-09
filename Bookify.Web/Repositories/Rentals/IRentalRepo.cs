@@ -2,7 +2,12 @@
 {
     public interface IRentalRepo
     {
-
-        Task<Rental> GetCopyDetails(string id);
+        Task<bool> AnyAsync(Expression<Func<Rental, bool>> predicate);
+        Task<Rental> GetByIdAsync(int id);
+        Task<IEnumerable<Rental>> GetAllAsync();
+        Task<IEnumerable<Rental>> GetAllBySubscriberIdAsync(int subscriberId);
+        Task AddAsync(Rental rental);
+        Task UpdateAsync(Rental rental);
+        Task DeleteAsync(int id);
     }
 }

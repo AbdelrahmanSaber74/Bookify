@@ -1,4 +1,5 @@
 ﻿@model RentalFormViewModel
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
 
 @{
     ViewData["Title"] = "Add Rental";
@@ -77,6 +78,9 @@
     </div>
 }
 <!--end::Book Details Card-->
+
+<input type="hidden" name="__RequestVerificationToken" value="@antiforgery.GetAndStoreTokens(Context).RequestToken" />
+
 @section Scripts
 {
     <partial name="_ValidationScriptsPartial" />

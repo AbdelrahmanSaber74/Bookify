@@ -51,14 +51,17 @@
 				.ToListAsync(); // Convert the result to a list asynchronously
 		}
 
-		public async Task<BookCopy> GetBookCopyByIdAsync(int id)
-		{
-			return await _context.BookCopies.FindAsync(id);
-		}
+        public async Task<BookCopy> GetBookCopyByIdAsync(int id)
+        {
+            return await _context.BookCopies
+                .Include(bc => bc.Book) 
+                .FirstOrDefaultAsync(bc => bc.Id == id);  
+        }
 
 
 
-		public async Task<BookCopy> UpdateBookCopyAsync(BookCopy bookCopy)
+
+        public async Task<BookCopy> UpdateBookCopyAsync(BookCopy bookCopy)
 		{
 			_context.BookCopies.Update(bookCopy);
 			await SaveChangesAsync();
