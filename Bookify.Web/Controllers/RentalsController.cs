@@ -1,6 +1,4 @@
-﻿using Bookify.Web.Repositories.RentalCopies;
-using Bookify.Web.Repositories.Rentals;
-
+﻿using Bookify.Web.Core.Models;
 
 namespace Bookify.Web.Controllers
 {
@@ -9,6 +7,7 @@ namespace Bookify.Web.Controllers
     {
         private readonly IBookCopyRepo _bookCopyRepo;
         private readonly IRentalRepo _rentalRepo;
+        private readonly IRentalCopyRepo _rentalCopyRepo;
         private readonly IMapper _mapper;
         private readonly ISubscribersRepo _subscribersRepo;
         private readonly IDataProtector _dataProtector;
@@ -18,13 +17,15 @@ namespace Bookify.Web.Controllers
             IMapper mapper,
             ISubscribersRepo subscribersRepo,
             IDataProtectionProvider dataProtectionProvider,
-            IRentalRepo rentalRepo)
+            IRentalRepo rentalRepo,
+            IRentalCopyRepo rentalCopyRepo)
         {
             _bookCopyRepo = bookCopyRepo;
             _mapper = mapper;
             _subscribersRepo = subscribersRepo;
             _dataProtector = dataProtectionProvider.CreateProtector("MySecureKey");
             _rentalRepo = rentalRepo;
+            _rentalCopyRepo = rentalCopyRepo;
         }
 
         [HttpGet]
@@ -134,7 +135,157 @@ namespace Bookify.Web.Controllers
             return View("Create", rentalFormViewModel);
         }
 
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkAsDeleted(int id)
+        {
+            var rental = await _rentalRepo.GetByIdAsync(id);
+
+            if (rental == null || rental.CreatedOn.Date != DateTime.Today)
+            {
+                return NotFound();
+            }
+
+            rental.IsDeleted = true;
+            rental.LastUpdatedOn = DateTime.Now;
+            rental.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            await _rentalRepo.UpdateAsync(rental);
+
+            var copiesCount = await _rentalCopyRepo.CountRentalCopiesByIdAsync(rental.Id);
+
+            return Ok(new { count = copiesCount });
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+
+            var rental = await _rentalRepo.GetRentalWithCopiesByIdAsync(id);
+
+            if (rental is null) return NotFound();
+
+            var rentalViewModel = _mapper.Map<RentalViewModel>(rental);
+
+
+            return View(rentalViewModel);
+
+        }
+
+
+        [HttpGet]
+        public async Task<IActionResult> Return(int id)
+        {
+            var rental = await GetRentalAsync(id);
+            if (rental == null) return NotFound();
+
+            var subscriber = await _subscribersRepo.GetByIdAsync(rental.SubscriberId);
+            var validationResult = ValidateSubscriber(subscriber);
+            if (validationResult != null) return View("NotAllowedRental", validationResult);
+
+            var viewModel = BuildRentalReturnFormViewModel(id, rental, subscriber);
+
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Return(RentalReturnFormViewModel model)
+        {
+            var rental = await GetRentalAsync(model.Id);
+            if (rental == null) return NotFound();
+
+            if (!ModelState.IsValid)
+            {
+                model.Copies = _mapper.Map<IList<RentalCopyViewModel>>(rental.RentalCopies);
+                return View(model);
+            }
+
+            var subscriber = await _subscribersRepo.GetByIdAsync(rental.SubscriberId);
+            var validationResult = ValidateSubscriber(subscriber);
+            if (validationResult != null) return View("NotAllowedRental", validationResult);
+
+            if (await IsRentalReturnNotAllowedAsync(subscriber, rental, model.SelectedCopies))
+            {
+                model.Copies = _mapper.Map<IList<RentalCopyViewModel>>(rental.RentalCopies);
+                return View(model);
+            }
+
+            return Json(model);
+        }
+
+
+
+
+
+
+
         #region Private Methods
+
+        private async Task<Rental> GetRentalAsync(int id)
+        {
+            return await _rentalRepo.GetRentalWithCopiesByIdAsync(id);
+        }
+
+        private RentalReturnFormViewModel BuildRentalReturnFormViewModel(int id, Rental rental, Subscriber subscriber)
+        {
+            return new RentalReturnFormViewModel
+            {
+                Id = id,
+                Copies = _mapper.Map<IList<RentalCopyViewModel>>(rental.RentalCopies),
+                SelectedCopies = rental.RentalCopies.Select(c => new ReturnCopyViewModel
+                {
+                    Id = c.BookCopyId,
+                    IsReturned = c.ExtendedOn.HasValue ? false : null
+                }).ToList(),
+                AllowExtend = CanExtendRental(subscriber, rental)
+            };
+        }
+
+        private bool CanExtendRental(Subscriber subscriber, Rental rental)
+        {
+            return !subscriber.IsBlackListed
+                   && subscriber.subscriptions.Last().EndDate >= rental.StartDate.AddDays((int)RentalsConfigurations.MaxRentalDuration)
+                   && rental.StartDate.AddDays((int)RentalsConfigurations.MaxRentalDuration) >= DateTime.Today;
+        }
+
+        private async Task<bool> IsRentalReturnNotAllowedAsync(Subscriber subscriber, Rental rental, IList<ReturnCopyViewModel> selectedCopies)
+        {
+            if (selectedCopies.Any(c => c.IsReturned.HasValue && !c.IsReturned.Value))
+            {
+                if (subscriber.IsBlackListed)
+                {
+                    ModelState.AddModelError("", Errors.RentalNotAllowedForBlacklisted);
+                    return true;
+                }
+
+                if (IsSubscriptionInactive(subscriber, rental))
+                {
+                    ModelState.AddModelError(string.Empty, Errors.RentalNotAllowedForInactive);
+                    return true;
+                }
+
+                if (IsRentalOverdue(rental))
+                {
+                    ModelState.AddModelError(string.Empty, Errors.ExtendNotAllowed);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsSubscriptionInactive(Subscriber subscriber, Rental rental)
+        {
+            return subscriber.subscriptions.Last().EndDate < rental.StartDate.AddDays((int)RentalsConfigurations.MaxRentalDuration);
+        }
+
+        private bool IsRentalOverdue(Rental rental)
+        {
+            return rental.StartDate.AddDays((int)RentalsConfigurations.MaxRentalDuration) < DateTime.Today;
+        }
+
 
         private int? DecryptSubscriberId(string sKey)
         {

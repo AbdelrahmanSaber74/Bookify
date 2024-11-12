@@ -3,6 +3,7 @@
     public interface IRentalCopyRepo
     {
         Task<RentalCopy> GetByIdAsync(int id);
+        Task<int> CountRentalCopiesByIdAsync(int id);
         Task<IEnumerable<RentalCopy>> GetAllAsync();
         Task AddAsync(RentalCopy rentalCopy);
         Task UpdateAsync(RentalCopy rentalCopy);

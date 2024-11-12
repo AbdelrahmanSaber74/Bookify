@@ -91,15 +91,15 @@
                     <!--begin::Details item-->
                     <div class="fw-bold mt-5">Date of Birth</div>
                     <div class="text-gray-600">
-                        <p class="text-gray-600 text-hover-primary">@Model.DateOfBirth</p>
+                        <p class="text-gray-600 text-hover-primary">@Model.DateOfBirth.ToString("dd MMM yyyy")</p>
                     </div>
                     <!--begin::Details item-->
                     <!--begin::Details item-->
                     <div class="fw-bold mt-5">Address</div>
                     <div class="text-gray-600">
                         @Model.Address,
-                        <br>@Model.Area
-                        <br>@Model.Governorate
+                        <br>@Model.Area.Name
+                        <br>@Model.Governorate.Name
                     </div>
                     <!--begin::Details item-->
                 </div>
@@ -155,7 +155,9 @@
                                         </span>
                                         <!--end::Svg Icon-->
                                         <div class="ms-2">
-                                            @Model.Rentals.Sum(r => r.NumberOfCopies)
+                                            <span id="rentalCopiesCount">
+                                                @Model.Rentals.Sum(r => r.NumberOfCopies)
+                                            </span>
                                         </div>
                                     </div>
                                     <div class="fs-7 fw-normal text-muted">Total Number Of Copies</div>
@@ -302,7 +304,7 @@
 
 @section Scripts
 {
-    <script src="~/js/renew.js" asp-append-version="true"></script>
+    <script src="~/js/subscriber-details.js" asp-append-version="true"></script>
 }
 
 @section CustomScripts

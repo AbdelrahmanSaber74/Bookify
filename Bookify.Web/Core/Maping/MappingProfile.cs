@@ -81,7 +81,10 @@
 
 
             //Rental 
-            CreateMap<Rental, RentalViewModel>();
+            CreateMap<Rental, RentalViewModel>()
+                .ReverseMap();    
+            CreateMap<Rental, RentalFormViewModel>()
+                .ReverseMap();
             CreateMap<RentalCopy, RentalCopyViewModel>();
 
 

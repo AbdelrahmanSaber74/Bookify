@@ -19,12 +19,13 @@ namespace Bookify.Web.Repositories.Repositories
         public async Task<Subscriber> GetByIdAsync(int id)
         {
             return await _context.Subscribers
-                .Include(s => s.Governorate)
-                .Include(s => s.Area)
-                .Include(s => s.subscriptions)
-                .Include(s => s.Rentals)
-                .ThenInclude(s => s.RentalCopies)
-                .FirstOrDefaultAsync(s => s.Id == id);
+                    .Include(s => s.Governorate)
+                    .Include(s => s.Area)
+                    .Include(s => s.subscriptions)
+                    .Include(s => s.Rentals.Where(r => !r.IsDeleted))
+                        .ThenInclude(r => r.RentalCopies)
+                    .FirstOrDefaultAsync(s => s.Id == id);
+
         }
 
         public async Task AddAsync(Subscriber subscriber)

@@ -33,3 +33,6 @@ global using Bookify.Web.Repositories.Subscription;
 global using Hangfire;
 global using Microsoft.AspNetCore.DataProtection;
 global using WhatsAppCloudApi.Services;
+global using Bookify.Web.Repositories.RentalCopies;
+global using Bookify.Web.Repositories.Rentals;
+

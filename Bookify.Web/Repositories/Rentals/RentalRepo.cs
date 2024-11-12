@@ -14,6 +14,16 @@
             return await _context.Rentals.FindAsync(id);
         }
 
+        public async Task<Rental> GetRentalWithCopiesByIdAsync(int id)
+        {
+            return await _context.Rentals
+                                 .Include(r => r.RentalCopies)
+                                 .ThenInclude(r => r.BookCopy)
+                                 .ThenInclude(r => r!.Book)
+                                 .SingleOrDefaultAsync(r => r.Id == id);
+        }
+
+
         public async Task<IEnumerable<Rental>> GetAllAsync()
         {
             return await _context.Rentals.ToListAsync();
@@ -48,9 +58,9 @@
         public async Task<IEnumerable<Rental>> GetAllBySubscriberIdAsync(int subscriberId)
         {
             return await _context.Rentals
-                                 .Where(r => r.SubscriberId == subscriberId)  
-                                 .Include(r => r.RentalCopies)               
-                                 .ToListAsync();                              
+                                 .Where(r => r.SubscriberId == subscriberId && !r.IsDeleted)
+                                 .Include(r => r.RentalCopies)
+                                 .ToListAsync();
         }
 
 

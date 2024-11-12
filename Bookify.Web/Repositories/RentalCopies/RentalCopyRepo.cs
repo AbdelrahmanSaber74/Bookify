@@ -45,5 +45,11 @@
             return await _context.RentalCopies.AnyAsync(predicate);
         }
 
+        public async Task<int> CountRentalCopiesByIdAsync(int id)
+        {
+            return await _context.RentalCopies.CountAsync(r => r.RentalId == id);
+        }
+
+
     }
 }

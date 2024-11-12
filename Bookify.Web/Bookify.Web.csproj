@@ -10,7 +10,7 @@
   <ItemGroup>
     <Content Remove="wwwroot\js\book.js" />
     <Content Remove="wwwroot\js\profile.js" />
-    <Content Remove="wwwroot\js\reNew.js" />
+    <Content Remove="wwwroot\js\subscriber-details.js" />
     <Content Remove="wwwroot\js\subscriber-form.js" />
     <Content Remove="wwwroot\js\validation-styling.js" />
   </ItemGroup>
@@ -26,7 +26,7 @@
     <None Include="wwwroot\assets\images\Vault-bro.svg" />
     <None Include="wwwroot\assets\images\welocme.svg" />
     <None Include="wwwroot\assets\plugins\fslightbox\fslightbox.bundle.js" />
-    <None Include="wwwroot\js\renew.js" />
+    <None Include="wwwroot\js\subscriber-details.js" />
     <None Include="wwwroot\js\profile.js" />
     <None Include="wwwroot\js\book.js" />
     <None Include="wwwroot\js\subscriber-form.js" />
