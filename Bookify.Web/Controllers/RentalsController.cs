@@ -198,7 +198,7 @@ namespace Bookify.Web.Controllers
 
             if (!ModelState.IsValid)
             {
-                model.Copies = _mapper.Map<IList<RentalCopyViewModel>>(rental.RentalCopies);
+                model.Copies = _mapper.Map<IList<RentalCopyViewModel>>(rental.RentalCopies.Where(r => !r.ReturnDate.HasValue).ToList());
                 return View(model);
             }
 
@@ -208,11 +208,58 @@ namespace Bookify.Web.Controllers
 
             if (await IsRentalReturnNotAllowedAsync(subscriber, rental, model.SelectedCopies))
             {
-                model.Copies = _mapper.Map<IList<RentalCopyViewModel>>(rental.RentalCopies);
+                model.Copies = _mapper.Map<IList<RentalCopyViewModel>>(rental.RentalCopies.Where(c => !c.ReturnDate.HasValue).ToList());
                 return View(model);
             }
 
-            return Json(model);
+
+
+            var isUpdate = false;
+
+            foreach (var rentalCopy in model.SelectedCopies)
+            {
+                var currentCopy = await _rentalCopyRepo.GetByBookCopyIdAsync(rental.Id, rentalCopy.Id);
+
+
+
+                if (rentalCopy.IsReturned.HasValue && rentalCopy.IsReturned.Value)
+                {
+                    if (currentCopy.ReturnDate.HasValue) continue;
+
+                    currentCopy.ReturnDate = DateTime.Now;
+                    isUpdate = true;
+                    await _rentalCopyRepo.UpdateAsync(currentCopy);
+
+                }
+
+                if (rentalCopy.IsReturned.HasValue && !rentalCopy.IsReturned.Value)
+                {
+                    if (currentCopy.ExtendedOn.HasValue) continue;
+
+                    currentCopy.ExtendedOn = DateTime.Now;
+                    currentCopy.EndDate = currentCopy.RentalDate.AddDays((int)RentalsConfigurations.MaxRentalDuration);
+                    isUpdate = true;
+
+                    await _rentalCopyRepo.UpdateAsync(currentCopy);
+
+                }
+
+
+            }
+
+
+            if (isUpdate)
+            {
+                rental.LastUpdatedOn = DateTime.Now;
+                rental.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)!.Value;
+                rental.PenaltyPaid = model.PenaltyPaid;
+                await _rentalRepo.UpdateAsync(rental);
+            }
+
+
+
+            return RedirectToAction(nameof(Details), new { id = rental.Id });
+
         }
 
 
@@ -233,7 +280,7 @@ namespace Bookify.Web.Controllers
             return new RentalReturnFormViewModel
             {
                 Id = id,
-                Copies = _mapper.Map<IList<RentalCopyViewModel>>(rental.RentalCopies),
+                Copies = _mapper.Map<IList<RentalCopyViewModel>>(rental.RentalCopies.Where(r => !r.ReturnDate.HasValue).ToList()),
                 SelectedCopies = rental.RentalCopies.Select(c => new ReturnCopyViewModel
                 {
                     Id = c.BookCopyId,

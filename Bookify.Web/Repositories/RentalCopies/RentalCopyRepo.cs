@@ -1,4 +1,6 @@
-﻿namespace Bookify.Web.Repositories.RentalCopies
+﻿using Bookify.Web.Core.Models;
+
+namespace Bookify.Web.Repositories.RentalCopies
 {
     public class RentalCopyRepo : IRentalCopyRepo
     {
@@ -50,6 +52,27 @@
             return await _context.RentalCopies.CountAsync(r => r.RentalId == id);
         }
 
+        public async Task<IEnumerable<RentalCopy>> GetRentalHistoryAsync(int id)
+        {
+            return await _context.RentalCopies
+                .Include(r => r.Rental)
+                .ThenInclude(r => r!.Subscriber)
+                .Where(r => r.BookCopyId == id)
+                .OrderByDescending(r => r.RentalDate)
+                .ToListAsync();
+        }
+        public async Task<IEnumerable<RentalCopy>> GetAllByRentalIdAsync(int rentalId)
+        {
+            return await _context.RentalCopies
+                .Where(r => r.RentalId == rentalId)
+                .ToListAsync();
+        }
 
+        public async Task<RentalCopy> GetByBookCopyIdAsync(int rentalId, int bookCopId)
+        {
+            return await _context.RentalCopies
+                            .Where(r => r.RentalId == rentalId && r.BookCopyId == bookCopId)
+                            .FirstOrDefaultAsync();
+        }
     }
 }
