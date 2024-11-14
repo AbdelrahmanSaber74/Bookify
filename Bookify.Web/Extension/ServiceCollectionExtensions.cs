@@ -1,6 +1,4 @@
-﻿using Bookify.Web.Repositories.RentalCopies;
-using Bookify.Web.Repositories.Rentals;
-using Bookify.Web.Seetings;
+﻿using Bookify.Web.Seetings;
 using Bookify.Web.Tasks;
 
 

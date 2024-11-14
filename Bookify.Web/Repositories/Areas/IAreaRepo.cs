@@ -2,9 +2,9 @@
 {
     public interface IAreaRepo
     {
-        Task<IEnumerable<Area>> GetAllAreasAsync(); 
+        Task<IEnumerable<Area>> GetAllAreasAsync();
 
-        Task<IEnumerable<Area>> GetAreasByGovernorateIdAsync(int governorateId); 
+        Task<IEnumerable<Area>> GetAreasByGovernorateIdAsync(int governorateId);
 
     }
 }

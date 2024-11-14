@@ -6,7 +6,7 @@
         public BookCopyViewModel? BookCopyDetails { get; set; }
 
         public int BookCopyId { get; set; }
-        public IEnumerable<Book>? Books { get; set; } 
+        public IEnumerable<Book>? Books { get; set; }
 
     }
 }

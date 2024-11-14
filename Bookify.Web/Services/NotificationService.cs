@@ -1,5 +1,4 @@
 ﻿using WhatsAppCloudApi;
-using WhatsAppCloudApi.Services;
 
 namespace Bookify.Web.Services
 {

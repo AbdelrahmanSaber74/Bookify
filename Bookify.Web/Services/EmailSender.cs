@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Identity.UI.Services;
+﻿using Bookify.Web.Seetings;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
-using Bookify.Web.Seetings;
 
 namespace Bookify.Web.Services
 {

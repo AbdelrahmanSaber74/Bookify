@@ -3,25 +3,25 @@ using System.Text.Encodings.Web;
 
 namespace Bookify.Web.Services
 {
-	public class EmailBodyBuilder : IEmailBodyBuilder
-	{
-		private readonly IWebHostEnvironment _webHostEnvironment;
+    public class EmailBodyBuilder : IEmailBodyBuilder
+    {
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-		public EmailBodyBuilder(IWebHostEnvironment webHostEnvironment )
-		{
-			_webHostEnvironment = webHostEnvironment;
-		}
+        public EmailBodyBuilder(IWebHostEnvironment webHostEnvironment)
+        {
+            _webHostEnvironment = webHostEnvironment;
+        }
 
-		public async Task<string> GetEmailBodyAsync(string template, Dictionary<string , string> placeholders)
-		{
-			// Load the HTML template from file	
-			var filePath = $"{_webHostEnvironment.WebRootPath}/templates/{template}.html";	
-			string body; 
+        public async Task<string> GetEmailBodyAsync(string template, Dictionary<string, string> placeholders)
+        {
+            // Load the HTML template from file	
+            var filePath = $"{_webHostEnvironment.WebRootPath}/templates/{template}.html";
+            string body;
 
-			using (var streamReader = new StreamReader(filePath))
-			{
-				body = await streamReader.ReadToEndAsync();
-			}
+            using (var streamReader = new StreamReader(filePath))
+            {
+                body = await streamReader.ReadToEndAsync();
+            }
 
             // Replace placeholders in the email template
             foreach (var placeholder in placeholders)
@@ -32,6 +32,6 @@ namespace Bookify.Web.Services
             }
 
             return body;
-		}
-	}
+        }
+    }
 }

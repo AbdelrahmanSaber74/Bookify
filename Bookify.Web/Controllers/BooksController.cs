@@ -1,6 +1,4 @@
-﻿using System.Security.Claims;
-
-namespace Bookify.Web.Controllers
+﻿namespace Bookify.Web.Controllers
 {
     [Authorize(Roles = AppRoles.Archive)]
     public class BooksController : Controller
@@ -125,7 +123,7 @@ namespace Bookify.Web.Controllers
                     _imageService.DeleteOldImages(existingBook.ImageUrl, existingBook.ImageThumbnailUrl);
                 }
 
-                var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/books" , true);
+                var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/books", true);
                 if (saveImageResult is OkObjectResult okResult)
                 {
                     var resultData = (dynamic)okResult.Value;

@@ -1,4 +1,4 @@
-﻿    namespace Bookify.Web.Core.ViewModels
+﻿namespace Bookify.Web.Core.ViewModels
 {
     public class RentalViewModel
     {

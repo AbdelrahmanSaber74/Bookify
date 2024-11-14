@@ -1,6 +1,4 @@
-﻿using Bookify.Web.Core.Models;
-
-namespace Bookify.Web.Controllers
+﻿namespace Bookify.Web.Controllers
 {
     [Authorize(Roles = AppRoles.Reception)]
     public class RentalsController : Controller
@@ -87,7 +85,9 @@ namespace Bookify.Web.Controllers
             await _rentalRepo.AddAsync(rental);
 
             TempData["SuccessMessage"] = Errors.RentalSuccessMessage;
-            return RedirectToAction("Create", new { sKey = model.SubscriberKey });
+            return RedirectToAction("Details", "Subscribers", new { id = model.SubscriberKey });
+
+            //return RedirectToAction("Create", new { sKey = model.SubscriberKey });
         }
 
         [HttpPost]
@@ -174,7 +174,6 @@ namespace Bookify.Web.Controllers
 
         }
 
-
         [HttpGet]
         public async Task<IActionResult> Return(int id)
         {
@@ -182,8 +181,7 @@ namespace Bookify.Web.Controllers
             if (rental == null) return NotFound();
 
             var subscriber = await _subscribersRepo.GetByIdAsync(rental.SubscriberId);
-            var validationResult = ValidateSubscriber(subscriber);
-            if (validationResult != null) return View("NotAllowedRental", validationResult);
+           
 
             var viewModel = BuildRentalReturnFormViewModel(id, rental, subscriber);
 
@@ -193,7 +191,7 @@ namespace Bookify.Web.Controllers
         [HttpPost]
         public async Task<IActionResult> Return(RentalReturnFormViewModel model)
         {
-            var rental = await GetRentalAsync(model.Id);
+                var rental = await GetRentalAsync(model.Id);
             if (rental == null) return NotFound();
 
             if (!ModelState.IsValid)
@@ -203,8 +201,7 @@ namespace Bookify.Web.Controllers
             }
 
             var subscriber = await _subscribersRepo.GetByIdAsync(rental.SubscriberId);
-            var validationResult = ValidateSubscriber(subscriber);
-            if (validationResult != null) return View("NotAllowedRental", validationResult);
+           
 
             if (await IsRentalReturnNotAllowedAsync(subscriber, rental, model.SelectedCopies))
             {

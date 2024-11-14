@@ -1,7 +1,7 @@
 ﻿namespace Bookify.Web.Services
 {
-	public interface IEmailBodyBuilder
-	{
-		 Task<string> GetEmailBodyAsync(string template, Dictionary<string, string> placeholders);
-	}
+    public interface IEmailBodyBuilder
+    {
+        Task<string> GetEmailBodyAsync(string template, Dictionary<string, string> placeholders);
+    }
 }

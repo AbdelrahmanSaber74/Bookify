@@ -1,7 +1,4 @@
-﻿using Bookify.Web.Repositories.Subscription;
-using Hangfire;
-
-namespace Bookify.Web.Tasks
+﻿namespace Bookify.Web.Tasks
 {
     public class HangfireTasks
     {

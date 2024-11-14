@@ -1,6 +1,4 @@
-﻿using Bookify.Web.Core.Models;
-
-namespace Bookify.Web.Repositories.RentalCopies
+﻿namespace Bookify.Web.Repositories.RentalCopies
 {
     public class RentalCopyRepo : IRentalCopyRepo
     {

@@ -2,7 +2,7 @@
 
 namespace Bookify.Web.Core.Models
 {
-    
+
     public class SubscriberFormViewModel : BaseViewModel
     {
         public string? Key { get; set; }
@@ -40,7 +40,7 @@ namespace Bookify.Web.Core.Models
         [RequiredIf("Key == null", ErrorMessage = Errors.EmptyImage)]
         public IFormFile? Image { get; set; }
         public string? ImageUrl { get; set; } = null!;
-        public string? ImageThumbnailUrl { get; set; } 
+        public string? ImageThumbnailUrl { get; set; }
 
         [MaxLength(500)]
         public string Address { get; set; } = null!;
@@ -48,11 +48,11 @@ namespace Bookify.Web.Core.Models
         public bool IsBlackListed { get; set; }
 
 
-        public IEnumerable<SelectListItem>? Governorates { get; set; } 
-        public IEnumerable<SelectListItem>? Areas { get; set; } 
+        public IEnumerable<SelectListItem>? Governorates { get; set; }
+        public IEnumerable<SelectListItem>? Areas { get; set; }
 
         public int GovernorateId { get; set; }
-        public int AreaId { get; set; } 
+        public int AreaId { get; set; }
 
     }
 }

@@ -1,5 +1,4 @@
 using Bookify.Web.Tasks;
-using Hangfire;
 using Hangfire.Dashboard;
 using WhatsAppCloudApi.Extensions;
 

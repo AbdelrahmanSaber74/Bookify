@@ -80,8 +80,12 @@
                 .SingleOrDefaultAsync(c => c.SerialNumber.ToString() == serialNumber && !c.IsDelete && !c.Book.IsDeleted);
         }
 
-    
+		public async Task<int> Count()
+		{
+			return await _context.BookCopies.CountAsync();
+		}
 
-    }
+
+	}
 
 }

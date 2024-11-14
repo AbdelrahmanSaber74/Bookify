@@ -1,8 +1,4 @@
-﻿
-using Bookify.Web.Core.Models;
-using Microsoft.EntityFrameworkCore;
-
-namespace Bookify.Web.Repositories.Subscription
+﻿namespace Bookify.Web.Repositories.Subscription
 {
     public class SubscriptionRepo : ISubscriptionRepo
     {

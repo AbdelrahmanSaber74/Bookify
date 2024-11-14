@@ -1,38 +1,32 @@
 ﻿namespace Bookify.Web.Core.Models
 {
-	public class Book : BaseModel
-	{
-		public int Id { get; set; }
+    public class Book : BaseModel
+    {
+        public int Id { get; set; }
 
-		[Required, MaxLength(500)]
-		public string Title { get; set; }
+        [MaxLength(500)]
+        public string Title { get; set; } = null!;
 
-		// Foreign key for Author
-		[Required]
-		public int AuthorId { get; set; }
-		public Author Author { get; set; }
+        public int AuthorId { get; set; }
+        public Author? Author { get; set; }
 
-		[Required, MaxLength(200)]
-		public string Publisher { get; set; }
+        [MaxLength(200)]
+        public string Publisher { get; set; } = null!;
 
-		[Required]
-		public DateTime PublishDate { get; set; }
+        public DateTime PublishingDate { get; set; }
 
-		public string? ImageUrl { get; set; }
-		public string? ImageThumbnailUrl { get; set; }
+        public string? ImageUrl { get; set; }
+        public string? ImageThumbnailUrl { get; set; }
+        public string? ImagePublicId { get; set; }
 
-		// Hall property
-		[MaxLength(200)]
-		public string? Hall { get; set; }
+        [MaxLength(50)]
+        public string Hall { get; set; } = null!;
 
-		// Availability for rental
-		public bool IsAvailableForRental { get; set; }
+        public bool IsAvailableForRental { get; set; }
 
-		// Description property
-		[MaxLength(2000)]
-		public string? Description { get; set; }
+        public string Description { get; set; } = null!;
 
-		// Many-to-Many relationship with Book
-		public ICollection<BookCategory> Books { get; set; } = new List<BookCategory>();
-	}
+        public ICollection<BookCategory> Categories { get; set; } = new List<BookCategory>();
+        public ICollection<BookCopy> Copies { get; set; } = new List<BookCopy>();
+    }
 }

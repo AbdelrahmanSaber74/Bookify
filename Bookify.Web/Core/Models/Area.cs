@@ -6,7 +6,7 @@
 
         [MaxLength(100)]
         public string Name { get; set; } = null!;
-            
+
         public int GovernorateId { get; set; }
 
         public Governorate? Governorate { get; set; }
