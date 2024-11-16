@@ -5,6 +5,7 @@ namespace Bookify.Web.Core.ViewModels
     public class BookViewModel : BaseViewModel
     {
         public int Id { get; set; }
+        public string? Key { get; set; }
 
         [MaxLength(500, ErrorMessage = Errors.MaxLength)]
         [Remote(action: "IsTitleAuthorUnique", controller: "Books", AdditionalFields = nameof(AuthorId) + "," + nameof(Id), ErrorMessage = Errors.Duplicated)]

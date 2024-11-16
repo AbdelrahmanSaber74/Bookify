@@ -23,79 +23,68 @@
                 .ForMember(dest => dest.NameOfCategories, opt => opt.Ignore())
                 .ReverseMap();
 
-
-
             // Maps from BookViewModel to BookCategory
             // Ignoring BookId as it will be set manually when creating BookCategory
             CreateMap<BookViewModel, BookCategory>()
                 .ForMember(dest => dest.BookId, opt => opt.Ignore());
 
-
+            // Mapping from BookCategory to SelectListItem
+            CreateMap<BookCategory, SelectListItem>()
+                .ForMember(dest => dest.Value, opt => opt.MapFrom(src => src.Category.Id.ToString())) // Set the Value to BookCategory Id
+                .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Category.Name)); // Set the Text to BookCategory Name
 
             CreateMap<BookCopyViewModel, BookCopy>()
                 .ForMember(dest => dest.Book, opt => opt.Ignore())
                 .ReverseMap();
 
-
             CreateMap<Book, BookCopyViewModel>()
-             .ForMember(dest => dest.BookTitle, opt => opt.Ignore());
-
+                .ForMember(dest => dest.BookTitle, opt => opt.Ignore());
 
             CreateMap<Book, SelectListItem>()
-            .ForMember(dest => dest.Value, opt => opt.MapFrom(src => src.Id.ToString()))
-            .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Title));
+                .ForMember(dest => dest.Value, opt => opt.MapFrom(src => src.Id.ToString()))
+                .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Title));
 
-
-
-            //Users 
+            // Users
             CreateMap<ApplicationUser, UserViewModel>();
 
             CreateMap<AddEditUserViewModel, ApplicationUser>()
-                  .ForMember(dest => dest.NormalizedEmail, opt => opt.MapFrom(src => src.Email.ToUpper()))
-                  .ForMember(dest => dest.NormalizedUserName, opt => opt.MapFrom(src => src.UserName.ToUpper()))
-                  .ReverseMap();
+                .ForMember(dest => dest.NormalizedEmail, opt => opt.MapFrom(src => src.Email.ToUpper()))
+                .ForMember(dest => dest.NormalizedUserName, opt => opt.MapFrom(src => src.UserName.ToUpper()))
+                .ReverseMap();
 
-
-            // Subscriber 
+            // Subscriber
             CreateMap<Subscriber, SubscriberViewModel>()
-                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"))
+                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"))
                 .ReverseMap();
 
             CreateMap<Subscriber, SubscriberSearchResultViewModel>()
-                     .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"));
+                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"));
 
             CreateMap<Subscriber, SubscriberFormViewModel>()
                 .ReverseMap();
 
             CreateMap<Subscription, SubscriptionViewModel>();
 
-
-
             CreateMap<Governorate, SelectListItem>()
-               .ForMember(dest => dest.Value, opt => opt.MapFrom(src => src.Id))
-               .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Name));
+                .ForMember(dest => dest.Value, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Name));
 
             CreateMap<Area, SelectListItem>()
-               .ForMember(dest => dest.Value, opt => opt.MapFrom(src => src.Id)) // Set the Value to the Category Id
-               .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Name)); // Set the Text to the Category Name
+                .ForMember(dest => dest.Value, opt => opt.MapFrom(src => src.Id)) // Set the Value to the Area Id
+                .ForMember(dest => dest.Text, opt => opt.MapFrom(src => src.Name)); // Set the Text to the Area Name
 
-
-            //Rental 
+            // Rental
             CreateMap<Rental, RentalViewModel>()
                 .ReverseMap();
+
             CreateMap<Rental, RentalFormViewModel>()
                 .ReverseMap();
+
             CreateMap<RentalCopy, RentalCopyViewModel>();
 
             CreateMap<RentalCopy, CopyHistoryViewModel>()
-                 .ForMember(dest => dest.SubscriberName, opt => opt.MapFrom(src => $"{src.Rental!.Subscriber!.FirstName} {src.Rental.Subscriber.LastName}"))
-                 .ForMember(dest => dest.SubscriberMobile, opt => opt.MapFrom(src => src.Rental!.Subscriber!.MobileNumber));
-
-
-
-
-
+                .ForMember(dest => dest.SubscriberName, opt => opt.MapFrom(src => $"{src.Rental!.Subscriber!.FirstName} {src.Rental.Subscriber.LastName}"))
+                .ForMember(dest => dest.SubscriberMobile, opt => opt.MapFrom(src => src.Rental!.Subscriber!.MobileNumber));
         }
-
     }
 }

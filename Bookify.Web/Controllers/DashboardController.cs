@@ -3,6 +3,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Bookify.Web.Controllers
 {
+    [Authorize]
     public class DashboardController : Controller
     {
 
@@ -38,28 +39,20 @@ namespace Bookify.Web.Controllers
                 TopBooks = _mapper.Map<IEnumerable<BookViewModel>>(topBooks)
             };
 
-
             return View(model);
-
 
         }
 
         public async Task<IActionResult> GetRentalsPerDay(DateTime? startDate, DateTime? endDate)
         {
             var data = await _rentalCopy.GetRentalsPerDayAsync(startDate, endDate);
-
-
             return Ok(data);
-
-
         }
 
 		public async Task<IActionResult> GetSubscribersPerCity()
 		{
             var data = await _subscribersRepo.GetSubscribersPerCity();
-
 			return Ok(data);
-
 
 		}
 

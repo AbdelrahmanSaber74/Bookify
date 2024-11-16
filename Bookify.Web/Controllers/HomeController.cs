@@ -1,31 +1,43 @@
-
-
 namespace Bookify.Web.Controllers
 {
-    public class HomeController : Controller
-    {
-        private readonly ILogger<HomeController> _logger;
+	public class HomeController : Controller
+	{
+		private readonly ILogger<HomeController> _logger;
+		private readonly IMapper _mapper;
+		private readonly IBookRepo _bookRepo;
+		private readonly IDataProtector _dataProtector;
 
-        public HomeController(ILogger<HomeController> logger)
-        {
-            _logger = logger;
-        }
+		public HomeController(ILogger<HomeController> logger, IMapper mapper, IBookRepo bookRepo , IDataProtectionProvider dataProtectionProvider)
+		{
+			_logger = logger;
+			_mapper = mapper;
+			_bookRepo = bookRepo;
+			_dataProtector = dataProtectionProvider.CreateProtector("MySecureKey");
+		}
 
-        public IActionResult Index()
-        {
-            return View();
-        }
+		public async Task<IActionResult> Index()
+		{
 
-        public IActionResult Privacy()
-        {
+			if (User.Identity!.IsAuthenticated)
+			{
+				return RedirectToAction("Index" , "Dashboard");
+			}
 
-            return View();
-        }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
-    }
+			var books = await _bookRepo.LastAddedBooks();
+
+			var viewModel = _mapper.Map<IEnumerable<BookViewModel>>(books);
+
+            foreach (var book in viewModel)
+            {
+                book.Key = _dataProtector.Protect(book.Id.ToString());
+			}
+
+			return View(viewModel);
+		}
+
+
+
+
+	}
 }

@@ -1,12 +1,16 @@
 ﻿
+using Bookify.Web.Core.DTO;
+
 namespace Bookify.Web.Repositories.Books
 {
     public interface IBookRepo
     {
         Task<IEnumerable<Book>> GetAllBooksAsync();
         Task<IEnumerable<Book>> GetAllBooksIncludeAuthorAsync();
+        Task<IEnumerable<BookDTO>> FindBooks(string query);
         Task<IEnumerable<Book>> TopBooks();
         Task<IEnumerable<Book>> LastAddedBooks();
+        Task<Book> GetBookByIdWithDetailsAsync(int id);
         Task<Book> GetBookByIdAsync(int id);
         Task AddBookAsync(Book book);
         Task UpdateBookAsync(Book book);

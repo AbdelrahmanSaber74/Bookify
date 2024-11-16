@@ -1,4 +1,7 @@
-﻿namespace Bookify.Web.Repositories.Books
+﻿using Bookify.Web.Core.DTO;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+
+namespace Bookify.Web.Repositories.Books
 {
     public class BookRepo : IBookRepo
     {
@@ -16,7 +19,9 @@
 
         public async Task<Book> GetBookByIdAsync(int id)
         {
-            return await _context.Books.FindAsync(id); // Find a book by ID
+            return await _context.Books
+                   .Include(b => b.Author)
+                   .FirstOrDefaultAsync(b => b.Id == id);
         }
 
         public async Task AddBookAsync(Book book)
@@ -76,7 +81,7 @@
         {
             return await _context.Books
                 .Where(b => b.Title == title && b.AuthorId == authorId)
-				.FirstOrDefaultAsync();
+                .FirstOrDefaultAsync();
         }
 
         public async Task<IQueryable<Book>> GetAllBooksAsQueryableAsync()
@@ -84,21 +89,56 @@
             return _context.Books.Include(b => b.Author); // Returning IQueryable directly
         }
 
-		public async Task<IEnumerable<Book>> TopBooks()
-		{
-			return await _context.Books
-				.OrderByDescending(b => b.CreatedOn)
-				.Take(10)
-				.ToListAsync();
-		}
+        public async Task<IEnumerable<Book>> TopBooks()
+        {
+            return await _context.Books
+                .Include(a => a.Author)
+                .Where(r => !r.IsDeleted)
+                .OrderByDescending(b => b.CreatedOn)
+                .Take(10)
+                .ToListAsync();
+        }
 
 
-		public async Task<IEnumerable<Book>> LastAddedBooks()
-		{
-			return await _context.Books
-							.OrderBy(b => b.CreatedOn)
-							.Take(12)
-							.ToListAsync();
-		}
-	}
+        public async Task<IEnumerable<Book>> LastAddedBooks()
+        {
+            return await _context.Books
+                            .Include(a => a.Author)
+                            .Where(r => !r.IsDeleted)
+                            .OrderBy(b => b.CreatedOn)
+                            .Take(12)
+                            .ToListAsync();
+        }
+
+        public async Task<Book> GetBookByIdWithDetailsAsync(int id)
+        {
+            return await _context.Books
+                              .Include(b => b.Author)
+                              .Include(b => b.Copies)
+                              .Include(b => b.Categories)
+                              .ThenInclude(b => b.Category)
+                              .SingleOrDefaultAsync(b => b.Id == id && !b.IsDeleted);
+        }
+
+        public async Task<IEnumerable<BookDTO>> FindBooks(string query)
+        {
+            // Retrieve the books matching the query criteria and map them to BookDTO
+            var books = await _context.Books
+                .Where(b => (b.Title.Contains(query) || b.Author!.Name.Contains(query)) && !b.IsDeleted)
+                .Select(b => new BookDTO
+                {
+                    Id = b.Id,
+                    Title = b.Title,
+                    AuthorName = b.Author!.Name
+                })
+                .ToListAsync();
+
+            return books;
+        }
+
+
+
+
+
+    }
 }

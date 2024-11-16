@@ -36,7 +36,7 @@
             _areaRepo = areaRepo;
             _mapper = mapper;
             _imageService = imageService;
-            _dataProtector = dataProtectionProvider.CreateProtector("MySecureKey");
+            _dataProtector = dataProtectionProvider.CreateProtector(purpose: "MySecureKey");
             _whatsAppClient = whatsAppClient;
             _webHostEnvironment = webHostEnvironment;
             _emailBodyBuilder = emailBodyBuilder;

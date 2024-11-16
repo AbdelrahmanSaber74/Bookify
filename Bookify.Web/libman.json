@@ -73,6 +73,17 @@
     {
       "library": "fslightbox@3.4.2",
       "destination": "wwwroot/lib/fslightbox/"
+    },
+    {
+      "library": "typeahead.js@0.11.1",
+      "destination": "wwwroot/lib/typeahead.js/"
+    },
+    {
+      "library": "handlebars.js@4.7.8",
+      "destination": "wwwroot/lib/handlebars.js/",
+      "files": [
+        "handlebars.min.js"
+      ]
     }
   ]
 }
