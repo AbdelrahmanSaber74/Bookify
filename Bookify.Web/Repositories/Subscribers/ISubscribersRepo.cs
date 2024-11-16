@@ -5,6 +5,7 @@ namespace Bookify.Web.Repositories.Repositories
 	{
 		Task<IEnumerable<Subscriber>> GetAllAsync();
 		Task<Subscriber> GetByIdAsync(int id);
+		Task<List<ChartItemViewModel>> GetSubscribersPerCity();
 		Task<Subscriber> FindSubscriberAsync(Expression<Func<Subscriber, bool>> predicate);
 		Task AddAsync(Subscriber subscriber);
 		Task UpdateAsync(Subscriber subscriber);

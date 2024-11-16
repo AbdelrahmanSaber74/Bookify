@@ -72,5 +72,23 @@
                             .Where(r => r.RentalId == rentalId && r.BookCopyId == bookCopId)
                             .FirstOrDefaultAsync();
         }
+
+        public async Task<List<ChartItemViewModel>> GetRentalsPerDayAsync(DateTime? startDate, DateTime? endDate)
+        {
+            startDate ??= DateTime.Today.AddDays(-29);
+            endDate ??= DateTime.Today;
+
+            var data = await _context.RentalCopies
+                .Where(c => c.RentalDate >= startDate && c.RentalDate <= endDate) 
+                .GroupBy(c => new { Date = c.RentalDate.Date }) 
+                .Select(g => new ChartItemViewModel
+                {
+                    Label = g.Key.Date.ToString("d MMM"), 
+                    Value = g.Count().ToString()
+                })
+                .ToListAsync();
+
+            return data;
+        }
     }
 }

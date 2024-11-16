@@ -17,7 +17,6 @@
 
   <ItemGroup>
     <None Include="Views\Home\Index.cshtml" />
-    <None Include="Views\Home\Privacy.cshtml" />
     <None Include="wwwroot\assets\images\401.svg" />
     <None Include="wwwroot\assets\images\avatar-blank.svg" />
     <None Include="wwwroot\assets\images\login.svg" />

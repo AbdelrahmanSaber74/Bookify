@@ -1,4 +1,5 @@
-﻿namespace Bookify.Web.Repositories.Repositories
+﻿
+namespace Bookify.Web.Repositories.Repositories
 {
 	public class SubscribersRepo : ISubscribersRepo
 	{
@@ -67,5 +68,20 @@
 		{
 			return await _context.Subscribers.CountAsync();
 		}
+
+		public async Task<List<ChartItemViewModel>> GetSubscribersPerCity()
+		{
+			return await _context.Subscribers
+				.Include(s => s.Area)
+				.GroupBy(s => s.Area!.Name)
+				.Select(group => new ChartItemViewModel
+				{
+					Label = group.Key,
+					Value = Convert.ToString(group.Count())
+				})
+				.ToListAsync();
+		}
+
+		
 	}
 }
