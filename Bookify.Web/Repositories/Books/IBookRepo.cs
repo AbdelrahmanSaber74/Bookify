@@ -11,6 +11,7 @@ namespace Bookify.Web.Repositories.Books
         Task<IEnumerable<Book>> TopBooks();
         Task<IEnumerable<Book>> LastAddedBooks();
         Task<Book> GetBookByIdWithDetailsAsync(int id);
+        Task<List<Book>> GetBooksWithDetailsAsync();
         Task<Book> GetBookByIdAsync(int id);
         Task AddBookAsync(Book book);
         Task UpdateBookAsync(Book book);
