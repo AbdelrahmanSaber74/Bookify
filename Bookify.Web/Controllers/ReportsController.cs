@@ -1,4 +1,5 @@
 ﻿using Bookify.Web.Core.Utilities;
+using ClosedXML.Excel;
 
 
 namespace Bookify.Web.Controllers
@@ -56,6 +57,81 @@ namespace Bookify.Web.Controllers
             }
 
             return View(model);
+        }
+
+
+        public async Task<IActionResult> ExportBooksToExcel(IList<int>? Authors, IList<int>? categories)
+        {
+            var books = (await _bookRepo.GetBooksWithDetailsAsync()).AsQueryable();
+
+            // Filter books by selected authors if provided
+            if (Authors != null && Authors.Any())
+            {
+                books = books.Where(b => Authors.Contains(b.AuthorId));
+            }
+
+            // Filter books by selected categories if provided
+            if (categories != null && categories.Any())
+            {
+                books = books.Where(b => b.Categories.Any(c => categories.Contains(c.CategoryId)));
+            }
+
+            // Convert to list for iteration
+            var filteredBooks = books.ToList();
+
+            using var workBook = new XLWorkbook();
+            var sheet = workBook.AddWorksheet("Books");
+
+
+            // Set header row with formatting
+            var headerRow = sheet.Row(1);
+            headerRow.Style.Font.Bold = true; // Make the font bold
+            headerRow.Style.Fill.BackgroundColor = XLColor.LightGray; // Set background color
+            headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center; // Center alignment
+
+
+            var headers = new[]
+                    {
+                        "Title", "Author", "Categories", "Publisher",
+                        "Publishing Date", "Hall", "Available for Rental", "Status"
+                    };
+
+            for (int col = 0; col < headers.Length; col++)
+            {
+                sheet.Cell(1, col + 1).SetValue(headers[col]);
+            }
+
+
+            // Populate rows with book data
+            for (int i = 0; i < filteredBooks.Count; i++)
+            {
+                var book = filteredBooks[i];
+                sheet.Cell(i + 2, 1).SetValue(book.Title);
+                sheet.Cell(i + 2, 2).SetValue(book.Author?.Name ?? "Unknown");
+                sheet.Cell(i + 2, 3).SetValue(string.Join(", ", book.Categories.Select(c => c.Category.Name)));
+                sheet.Cell(i + 2, 4).SetValue(book.Publisher ?? "Unknown");
+                sheet.Cell(i + 2, 5).SetValue(book.PublishingDate.ToShortDateString() ?? "N/A");
+                sheet.Cell(i + 2, 6).SetValue(book.Hall ?? "N/A");
+                sheet.Cell(i + 2, 7).SetValue(book.IsAvailableForRental ? "Yes" : "No");
+                sheet.Cell(i + 2, 8).SetValue(book.IsDeleted ? "Deleted" : "Available");
+            }
+
+            sheet.ColumnsUsed().AdjustToContents();
+
+            sheet.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            sheet.CellsUsed().Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            sheet.CellsUsed().Style.Border.OutsideBorderColor = XLColor.Black;
+
+
+            // Save the workbook to a memory stream
+            var stream = new MemoryStream();
+            workBook.SaveAs(stream);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            // Return the file as a downloadable response
+            var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            var fileName = "Books.xlsx";
+            return File(stream, contentType, fileName);
         }
 
 
