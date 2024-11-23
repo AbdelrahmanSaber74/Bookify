@@ -1,5 +1,6 @@
 ﻿using Bookify.Web.Seetings;
 using Bookify.Web.Tasks;
+using ViewToHTML.Extensions;
 
 
 namespace Bookify.Web.Extensions
@@ -20,6 +21,7 @@ namespace Bookify.Web.Extensions
                     .AddScoped<ISubscriptionRepo, SubscriptionRepo>()
                     .AddScoped<IRentalRepo, RentalRepo>()
                     .AddScoped<IRentalCopyRepo, RentalCopyRepo>();
+
 
 
             // Register Email Services

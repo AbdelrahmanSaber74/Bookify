@@ -1,5 +1,7 @@
 ﻿using Bookify.Web.Core.Utilities;
 using ClosedXML.Excel;
+using OpenHtmlToPdf;
+using ViewToHTML.Services;
 
 
 namespace Bookify.Web.Controllers
@@ -11,13 +13,15 @@ namespace Bookify.Web.Controllers
         private readonly IAuthorRepo _authorRepo;
         private readonly ICategoriesRepo _categoriesRepo;
         private readonly IMapper _mapper;
+        private readonly IViewRendererService _viewRendererService;
 
-        public ReportsController(IBookRepo bookRepo, IAuthorRepo authorRepo, ICategoriesRepo categoriesRepo, IMapper mapper)
+        public ReportsController(IBookRepo bookRepo, IAuthorRepo authorRepo, ICategoriesRepo categoriesRepo, IMapper mapper, IViewRendererService viewRendererService)
         {
             _bookRepo = bookRepo;
             _authorRepo = authorRepo;
             _categoriesRepo = categoriesRepo;
             _mapper = mapper;
+            _viewRendererService = viewRendererService;
         }
 
         // Index Action
@@ -134,6 +138,36 @@ namespace Bookify.Web.Controllers
             return File(stream, contentType, fileName);
         }
 
+
+        public async Task<IActionResult> ExportBooksToPDF(IList<int>? Authors, IList<int>? categories)
+        {
+            var books = (await _bookRepo.GetBooksWithDetailsAsync()).AsQueryable();
+
+            // Filter books by selected authors if provided
+            if (Authors != null && Authors.Any())
+            {
+                books = books.Where(b => Authors.Contains(b.AuthorId));
+            }
+
+            // Filter books by selected categories if provided
+            if (categories != null && categories.Any()) 
+            {
+                books = books.Where(b => b.Categories.Any(c => categories.Contains(c.CategoryId)));
+            }
+
+            // Convert to list for iteration
+            var filteredBooks = _mapper.Map<IEnumerable<BookViewModel>>(books.ToList());
+
+            var templetePAth = "~/Views/Reports/BooksTemplate.cshtml";
+            var html = await _viewRendererService.RenderViewToStringAsync(ControllerContext, templetePAth, filteredBooks);
+
+          var pdf = Pdf.From(html).Content();
+
+            // Return the file as a downloadable response
+            var contentType = "application/pdf";
+            var fileName = "Books.pdf";
+            return File(pdf, contentType, fileName);
+        }
 
     }
 }

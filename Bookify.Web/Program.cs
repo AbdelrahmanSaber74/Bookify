@@ -1,5 +1,6 @@
 using Bookify.Web.Tasks;
 using Hangfire.Dashboard;
+using ViewToHTML.Extensions;
 using WhatsAppCloudApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +28,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 builder.Services.AddHangfire(config => config.UseSqlServerStorage(connectionString));
 builder.Services.AddHangfireServer();
 
+
+builder.Services.AddViewToHTML();
 // Register additional services
 builder.Services.AddWhatsAppApiClient(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
