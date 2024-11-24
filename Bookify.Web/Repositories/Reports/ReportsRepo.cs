@@ -15,5 +15,15 @@ namespace Bookify.Web.Repositories.Reports
         {
             throw new NotImplementedException();
         }
+
+
+
+        public async Task<IEnumerable<RentalCopy>> GetRentalCopiesAsync(DateTime startDate, DateTime endDate)
+        {
+            return await _context.RentalCopies
+                .Where(copy => copy.RentalDate >= startDate && copy.EndDate <= endDate)
+                .ToListAsync();
+        }
+
     }
 }

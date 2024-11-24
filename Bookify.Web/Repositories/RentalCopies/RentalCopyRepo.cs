@@ -16,7 +16,14 @@
 
         public async Task<IEnumerable<RentalCopy>> GetAllAsync()
         {
-            return await _context.RentalCopies.ToListAsync();
+            return await _context.RentalCopies
+                        .Include(c => c.BookCopy)
+                        .ThenInclude(r => r!.Book)
+                        .ThenInclude(b => b!.Author)
+                        .Include(c => c.Rental)
+                        .ThenInclude(c => c!.Subscriber)
+                        .ToListAsync();
+
         }
 
         public async Task AddAsync(RentalCopy rentalCopy)
@@ -79,16 +86,27 @@
             endDate ??= DateTime.Today;
 
             var data = await _context.RentalCopies
-                .Where(c => c.RentalDate >= startDate && c.RentalDate <= endDate) 
-                .GroupBy(c => new { Date = c.RentalDate.Date }) 
+                .Where(c => c.RentalDate >= startDate && c.RentalDate <= endDate)
+                .GroupBy(c => new { Date = c.RentalDate.Date })
                 .Select(g => new ChartItemViewModel
                 {
-                    Label = g.Key.Date.ToString("d MMM"), 
+                    Label = g.Key.Date.ToString("d MMM"),
                     Value = g.Count().ToString()
                 })
                 .ToListAsync();
 
             return data;
         }
+
+        public async Task<IEnumerable<RentalCopy>> GetRentalsCopyForReport(DateTime startDate, DateTime endDate)
+        {
+            var result = await _context.RentalCopies
+                .Where(copy => copy.RentalDate >= startDate && copy.EndDate <= endDate)
+                .ToListAsync();
+
+            return result;
+        }
+
+
     }
 }
