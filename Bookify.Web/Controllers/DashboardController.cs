@@ -25,6 +25,7 @@ namespace Bookify.Web.Controllers
         public async Task<IActionResult> Index()
         {
 
+            throw new Exception("My Ex");
 
             var numberOfCopies = await _copyRepo.Count();
             var numberOfSubscribers = await _subscribersRepo.Count();

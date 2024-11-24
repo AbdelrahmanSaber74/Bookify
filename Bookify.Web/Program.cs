@@ -1,5 +1,7 @@
 using Bookify.Web.Tasks;
 using Hangfire.Dashboard;
+using Serilog;
+using Serilog.Context;
 using ViewToHTML.Extensions;
 using WhatsAppCloudApi.Extensions;
 
@@ -30,6 +32,13 @@ builder.Services.AddHangfireServer();
 
 
 builder.Services.AddViewToHTML();
+
+// Add Serilog
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration) // From appsettings.json
+    .CreateLogger();
+builder.Host.UseSerilog();
+
 // Register additional services
 builder.Services.AddWhatsAppApiClient(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
@@ -54,9 +63,12 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler(errorHandlingPath: "/Home/Error");
     app.UseHsts();
 }
+
+app.UseExceptionHandler(errorHandlingPath: "/Home/Error");
+app.UseStatusCodePagesWithReExecute("/Home/Error" , "?StatusCode={0}");
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -90,6 +102,23 @@ app.Lifetime.ApplicationStarted.Register(() =>
     }
 });
 
+
+// Middleware to add UserId and UserName to LogContext
+app.Use(async (context, next) =>
+{
+    // Get user details from HttpContext or Authentication system (placeholder logic)
+    string userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Anonymous";
+    string userName = context.User?.FindFirst(ClaimTypes.Name)?.Value ?? "Anonymous";
+
+    // Add values to Serilog's LogContext
+    LogContext.PushProperty("UserId", userId);
+    LogContext.PushProperty("UserName", userName);
+
+    await next();
+
+});
+
+app.UseSerilogRequestLogging();
 
 // Set up default route for MVC controllers
 app.MapControllerRoute(

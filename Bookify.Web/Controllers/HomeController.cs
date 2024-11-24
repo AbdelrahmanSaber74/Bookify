@@ -1,4 +1,4 @@
-namespace Bookify.Web.Controllers
+﻿namespace Bookify.Web.Controllers
 {
 	public class HomeController : Controller
 	{
@@ -36,8 +36,13 @@ namespace Bookify.Web.Controllers
 			return View(viewModel);
 		}
 
+        public IActionResult Error(int StatusCode = 500 )
+        {
+            return View(new ErrorViewModel{ErrorCode = StatusCode, ErrorDescription = ReasonPhrases.GetReasonPhrase(StatusCode) });
+        }
 
 
 
-	}
+
+    }
 }
