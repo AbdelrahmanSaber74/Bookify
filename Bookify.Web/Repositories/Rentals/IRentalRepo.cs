@@ -10,5 +10,7 @@
         Task AddAsync(Rental rental);
         Task UpdateAsync(Rental rental);
         Task DeleteAsync(int id);
+        Task<List<RentalCopy>> GetDelayedRentalsAsync();
+
     }
 }

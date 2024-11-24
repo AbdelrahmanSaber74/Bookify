@@ -63,6 +63,18 @@
                                  .ToListAsync();
         }
 
+        public async Task<List<RentalCopy>> GetDelayedRentalsAsync()
+        {
+            var rentals = await _context.RentalCopies
+                .Include(c => c.BookCopy)
+                    .ThenInclude(r => r.Book)
+                .Include(c => c.Rental)
+                    .ThenInclude(c => c.Subscriber)
+                .Where(c => !c.ReturnDate.HasValue && c.EndDate < DateTime.Today)
+                .ToListAsync();
+
+            return rentals;
+        }
 
 
     }

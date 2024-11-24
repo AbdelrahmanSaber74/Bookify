@@ -11,13 +11,14 @@ namespace Bookify.Web.Controllers
     public class ReportsController : Controller
     {
         private readonly IBookRepo _bookRepo;
+        private readonly IRentalRepo _rentalRepo;
         private readonly IRentalCopyRepo _rentalCopyRepo;
         private readonly IAuthorRepo _authorRepo;
         private readonly ICategoriesRepo _categoriesRepo;
         private readonly IMapper _mapper;
         private readonly IViewRendererService _viewRendererService;
 
-        public ReportsController(IBookRepo bookRepo, IAuthorRepo authorRepo, ICategoriesRepo categoriesRepo, IMapper mapper, IViewRendererService viewRendererService, IRentalCopyRepo rentalCopyRepo)
+        public ReportsController(IBookRepo bookRepo, IAuthorRepo authorRepo, ICategoriesRepo categoriesRepo, IMapper mapper, IViewRendererService viewRendererService, IRentalCopyRepo rentalCopyRepo, IRentalRepo rentalRepo)
         {
             _bookRepo = bookRepo;
             _authorRepo = authorRepo;
@@ -25,6 +26,7 @@ namespace Bookify.Web.Controllers
             _mapper = mapper;
             _viewRendererService = viewRendererService;
             _rentalCopyRepo = rentalCopyRepo;
+            _rentalRepo = rentalRepo;
         }
 
         // Index Action
@@ -166,12 +168,6 @@ namespace Bookify.Web.Controllers
         }
 
         #endregion
-
-
-
-
-
-
 
         #region Rentals
 
@@ -358,6 +354,106 @@ namespace Bookify.Web.Controllers
             var fileName = "Rentals.pdf";
             return File(pdf, contentType, fileName);
         }
+
+
+        #endregion
+
+        #region DelayedRentals
+
+        [HttpGet]
+        public async Task<IActionResult> DelayedRentals()
+        {
+            var delayedRentals = await _rentalRepo.GetDelayedRentalsAsync();
+            var model = _mapper.Map<IEnumerable<RentalCopyViewModel>>(delayedRentals);
+            
+            return View(model);
+        }
+
+        public async Task<IActionResult> ExportDelayedRentalsToExcel()
+        {
+            // Fetch delayed rentals from the repository
+            var delayedRentals = await _rentalRepo.GetDelayedRentalsAsync();
+            var rentalViewModels = _mapper.Map<IEnumerable<RentalCopyViewModel>>(delayedRentals);
+
+            // Create an Excel workbook and worksheet
+            using var workBook = new XLWorkbook();
+            var sheet = workBook.AddWorksheet("DelayedRentals");
+
+            // Set header row style and alignment
+            var headerRow = sheet.Row(1);
+            headerRow.Style.Font.Bold = true;
+            headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
+            headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            // Define the headers for the Excel file
+            var headerCells = new[]
+            {
+                "Subscriber ID", "Subscriber Name", "Subscriber Mobile",
+                "Book Title", "Serial Number", "Rental Date",
+                "End Date", "Extended On", "Delay in Days"
+            };
+
+            // Add headers to the worksheet
+            for (int i = 0; i < headerCells.Length; i++)
+            {
+                sheet.Cell(1, i + 1).Value = headerCells[i];
+            }
+
+            // Populate the sheet with rental data
+            for (int i = 0; i < rentalViewModels.Count(); i++)
+            {
+                var rental = rentalViewModels.ElementAt(i);
+
+                // Fill in the data for each rental row
+                sheet.Cell(i + 2, 1).Value = rental.Rental!.Subscriber!.Id;
+                sheet.Cell(i + 2, 2).Value = rental.Rental.Subscriber!.FullName;
+                sheet.Cell(i + 2, 3).Value = rental.Rental.Subscriber!.MobileNumber;
+                sheet.Cell(i + 2, 4).Value = rental.BookCopy!.BookTitle;
+                sheet.Cell(i + 2, 5).Value = rental.BookCopy.SerialNumber;
+                sheet.Cell(i + 2, 6).Value = rental.RentalDate.ToString("d MMM, yyyy");
+                sheet.Cell(i + 2, 7).Value = rental.EndDate.ToString("d MMM, yyyy");
+                sheet.Cell(i + 2, 8).Value = rental.ExtendedOn?.ToString("d MMM, yyyy");
+                sheet.Cell(i + 2, 9).Value = rental.DelayInDays;
+            }
+
+            // Adjust column widths for readability
+            sheet.Columns().AdjustToContents();
+
+            // Save the workbook to a memory stream
+            var stream = new MemoryStream();
+            workBook.SaveAs(stream);
+
+            // Reset the stream position to the beginning
+            stream.Seek(0, SeekOrigin.Begin);
+
+            // Return the file as a downloadable response
+            var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            var fileName = "DelayedRentals.xlsx";
+
+            // Do not dispose the stream until after it is written to the response
+            return File(stream, contentType, fileName);
+        }
+
+
+        public async Task<IActionResult> ExportDelayedRentalsToPDF(IList<int>? Authors, IList<int>? categories)
+        {
+            var delayedRentals = await _rentalRepo.GetDelayedRentalsAsync();
+            var rentalViewModels = _mapper.Map<IEnumerable<RentalCopyViewModel>>(delayedRentals);
+
+            var templatePath = "~/Views/Reports/DelayedRentalsTemplate.cshtml";
+            var html = await _viewRendererService.RenderViewToStringAsync(ControllerContext, templatePath, rentalViewModels);
+
+            var pdf = Pdf.From(html).Content();
+
+            // Return the file as a downloadable response
+            var contentType = "application/pdf";
+            var fileName = "Books.pdf";
+            return File(pdf, contentType, fileName);
+        }
+
+
+
+
 
 
         #endregion
