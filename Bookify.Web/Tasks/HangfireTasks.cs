@@ -19,7 +19,7 @@
             {
                 var model = new SubscriberFormViewModel()
                 {
-                    Email = subscription.Subscriber.Email,
+                    Email = subscription.Subscriber!.Email,
                     FirstName = subscription.Subscriber.FirstName
                 };
 

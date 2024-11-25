@@ -32,7 +32,6 @@ builder.Services.AddHangfireServer();
 
 
 builder.Services.AddViewToHTML();
-
 // Add Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration) // From appsettings.json
@@ -68,10 +67,22 @@ else
 }
 
 app.UseExceptionHandler(errorHandlingPath: "/Home/Error");
-app.UseStatusCodePagesWithReExecute("/Home/Error" , "?StatusCode={0}");
+app.UseStatusCodePagesWithReExecute("/Home/Error", "?StatusCode={0}");
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+app.UseCookiePolicy(new CookiePolicyOptions
+{
+    Secure = CookieSecurePolicy.Always
+});
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Add("X-Frame-Options", "DENY"); 
+    await next();
+});
+
 
 app.UseRouting();
 
