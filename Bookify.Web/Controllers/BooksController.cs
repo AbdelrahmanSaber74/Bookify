@@ -110,10 +110,8 @@
                 return View("EditBook", model);
             }
 
-            // Update the existing book properties
-            _mapper.Map(model, existingBook);
-            existingBook.LastUpdatedOn = DateTime.Now;
-            existingBook.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            // Use the private method to map properties
+            MapBookViewModelToBook(model, existingBook);
 
             // Handle image update
             if (model.Image != null)
@@ -138,21 +136,13 @@
                 }
             }
 
-            if (!model.IsAvailableForRental)
-            {
-                foreach (var copy in model.Copies)
-                {
-                    copy.IsAvailableForRental = false;
-                    await _bookCopyRepo.UpdateBookCopyAsync(copy);
-                }
-            }
-
+            // Update book categories and handle rental status
             await _bookRepo.UpdateBookAsync(existingBook);
-            await UpdateBookCategoriesAsync(model.SelectedCategoryIds, existingBook.Id);
 
             TempData["SuccessMessage"] = "Book updated successfully!";
             return RedirectToAction(nameof(Details), new { id = existingBook.Id });
         }
+
 
         // POST method to delete a book
         [HttpPost]
@@ -272,6 +262,20 @@
         {
             var viewModel = await PopulateViewModelAsync();
             return View("AddBook", viewModel);
+        }
+
+        private void MapBookViewModelToBook(BookViewModel model, Book existingBook)
+        {
+            existingBook.Title = model.Title;
+            existingBook.Publisher = model.Publisher;
+            existingBook.PublishingDate = model.PublishDate;
+            existingBook.ImageUrl = model.ImageUrl;
+            existingBook.ImageThumbnailUrl = model.ImageThumbnailUrl;
+            existingBook.Hall = model.Hall;
+            existingBook.IsAvailableForRental = model.IsAvailableForRental;
+            existingBook.Description = model.Description;
+            existingBook.LastUpdatedOn = DateTime.Now;
+            existingBook.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         }
     }
 }

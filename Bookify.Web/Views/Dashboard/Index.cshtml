@@ -102,7 +102,7 @@
 									<!--begin::Title-->
 									<h5 class="text-gray-800 text-hover-primary fs-3 fw-bold d-block mb-2">@book.Title</h5>
 									<!--end::Title-->
-									<span class="fw-bold fs-6 text-gray-400 d-block lh-1">@book.Author.Name</span>
+									<span class="fw-bold fs-6 text-gray-400 d-block lh-1">@((book.Author != null && book.Author.Name != null) ? book.Author.Name : "Unknown Author")</span>
 								</div>
 								<!--end::Info-->
 							</div>
@@ -144,7 +144,7 @@
 							<!--begin:Author-->
 							<div class="flex-grow-1 me-2">
 								<h5 class="text-gray-800 text-hover-primary fs-5 fw-bolder">@book.Title</h5>
-								<span class="text-gray-400 fw-semibold d-block fs-6">@book.Author!.Name</span>
+								<span class="fw-bold fs-6 text-gray-400 d-block lh-1">@((book.Author != null && book.Author.Name != null) ? book.Author.Name : "Unknown Author")</span>
 							</div>
 							<!--end:Author-->
 						</div>

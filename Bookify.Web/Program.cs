@@ -66,8 +66,8 @@ else
     app.UseHsts();
 }
 
-app.UseExceptionHandler(errorHandlingPath: "/Home/Error");
-app.UseStatusCodePagesWithReExecute("/Home/Error", "?StatusCode={0}");
+//app.UseExceptionHandler(errorHandlingPath: "/Home/Error");
+//app.UseStatusCodePagesWithReExecute("/Home/Error", "?StatusCode={0}");
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

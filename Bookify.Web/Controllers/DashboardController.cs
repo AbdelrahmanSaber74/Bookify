@@ -24,9 +24,6 @@ namespace Bookify.Web.Controllers
 
         public async Task<IActionResult> Index()
         {
-
-            throw new Exception("My Ex");
-
             var numberOfCopies = await _copyRepo.Count();
             var numberOfSubscribers = await _subscribersRepo.Count();
             var lastAddedBooks = await _book.LastAddedBooks();
@@ -39,6 +36,7 @@ namespace Bookify.Web.Controllers
                 LastAddedBooks = _mapper.Map<IEnumerable<BookViewModel>>(lastAddedBooks),
                 TopBooks = _mapper.Map<IEnumerable<BookViewModel>>(topBooks)
             };
+
 
             return View(model);
 

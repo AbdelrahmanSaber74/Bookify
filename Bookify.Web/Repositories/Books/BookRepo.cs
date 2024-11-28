@@ -35,9 +35,21 @@ namespace Bookify.Web.Repositories.Books
 
         public async Task UpdateBookAsync(Book book)
         {
-            _context.Books.Update(book);
-            await SaveChangesAsync();
+            var existingBook = await _context.Books.FirstOrDefaultAsync(b => b.Id == book.Id);
+            if (existingBook != null)
+            {
+                // Retain the original AuthorId if not provided
+                book.AuthorId = existingBook.AuthorId;
+
+                // Attach the entity to the context and mark only the modified properties
+                _context.Books.Update(book);
+                await SaveChangesAsync();
+            }
         }
+
+
+
+
 
         public async Task DeleteBookAsync(int id)
         {
