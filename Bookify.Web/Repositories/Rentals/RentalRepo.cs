@@ -2,9 +2,9 @@
 {
     public class RentalRepo : IRentalRepo
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IApplicationDbContext _context;
 
-        public RentalRepo(ApplicationDbContext context)
+        public RentalRepo(IApplicationDbContext context)
         {
             _context = context;
         }

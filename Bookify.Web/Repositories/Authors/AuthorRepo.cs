@@ -1,10 +1,11 @@
-﻿namespace Bookify.Web.Repositories.Authors
+﻿
+namespace Bookify.Web.Repositories.Authors
 {
     public class AuthorRepo : IAuthorRepo
     {
-        private readonly ApplicationDbContext _context;
-
-        public AuthorRepo(ApplicationDbContext context)
+        private readonly IApplicationDbContext _context;
+        
+        public AuthorRepo(IApplicationDbContext context)
         {
             _context = context;
         }

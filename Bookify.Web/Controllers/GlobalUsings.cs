@@ -1,10 +1,10 @@
 // GlobalUsings.cs
 global using AutoMapper;
-global using Bookify.Web.Core.Consts;
-global using Bookify.Web.Core.Enums;
+global using Bookify.Domain.Enums;
+global using Bookify.Domain.Entities;
+global using Bookify.Domain.Consts;
 global using Bookify.Web.Core.Models;
 global using Bookify.Web.Core.ViewModels;
-global using Bookify.Web.Data;
 global using Bookify.Web.Extensions;
 global using Bookify.Web.Helpers;
 global using Bookify.Web.Repositories.Areas;
@@ -35,4 +35,8 @@ global using System.Linq.Expressions;
 global using System.Security.Claims;
 global using UoN.ExpressiveAnnotations.NetCore.DependencyInjection;
 global using WhatsAppCloudApi.Services;
-
+global using Bookify.Application.Common.Models;
+global using ClosedXML.Excel;
+global using OpenHtmlToPdf;
+global using ViewToHTML.Services;
+global using Bookify.Application.Common.Interfaces;

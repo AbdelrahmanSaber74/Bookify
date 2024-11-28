@@ -1,5 +1,4 @@
-﻿
-using Bookify.Web.Core.DTO;
+﻿using Bookify.Domain.DTO;
 
 namespace Bookify.Web.Repositories.Books
 {

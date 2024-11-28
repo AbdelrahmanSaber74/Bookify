@@ -2,21 +2,21 @@
 {
     public class SubscriptionRepo : ISubscriptionRepo
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IApplicationDbContext _context;
 
-        public SubscriptionRepo(ApplicationDbContext context)
+        public SubscriptionRepo(IApplicationDbContext context)
         {
             _context = context;
         }
 
-        public async Task AddSubscription(Core.Models.Subscription subscription)
+        public async Task AddSubscription(Bookify.Domain.Entities.Subscription subscription)
         {
             await _context.Subscriptions.AddAsync(subscription);
             await _context.SaveChangesAsync();
         }
 
 
-        public async Task<Core.Models.Subscription> GetLastSubscriptionBySubscriberId(int subscriberId)
+        public async Task<Bookify.Domain.Entities.Subscription> GetLastSubscriptionBySubscriberId(int subscriberId)
         {
 
             return await _context.Subscriptions
@@ -25,14 +25,14 @@
                                  .FirstOrDefaultAsync();
         }
 
-        public async Task UpdateSubscription(Core.Models.Subscription subscription)
+        public async Task UpdateSubscription(Bookify.Domain.Entities.Subscription subscription)
         {
             _context.Subscriptions.Update(subscription);
             await _context.SaveChangesAsync();
         }
 
 
-        public async Task<IEnumerable<Core.Models.Subscription>> GetSubscriptionsExpiringInDays(int daysBeforeEndDate)
+        public async Task<IEnumerable<Bookify.Domain.Entities.Subscription>> GetSubscriptionsExpiringInDays(int daysBeforeEndDate)
         {
             var targetDate = DateTime.UtcNow.AddDays(daysBeforeEndDate);
 

@@ -2,10 +2,10 @@
 {
     public interface ISubscriptionRepo
     {
-        Task<Bookify.Web.Core.Models.Subscription> GetLastSubscriptionBySubscriberId(int subscriberId);
-        Task UpdateSubscription(Bookify.Web.Core.Models.Subscription subscription);
-        Task AddSubscription(Bookify.Web.Core.Models.Subscription subscription);
-        Task<IEnumerable<Bookify.Web.Core.Models.Subscription>> GetSubscriptionsExpiringInDays(int daysBeforeEndDate);
+        Task<Bookify.Domain.Entities.Subscription> GetLastSubscriptionBySubscriberId(int subscriberId);
+        Task UpdateSubscription(Bookify.Domain.Entities.Subscription subscription);
+        Task AddSubscription(Bookify.Domain.Entities.Subscription subscription);
+        Task<IEnumerable<Bookify.Domain.Entities.Subscription>> GetSubscriptionsExpiringInDays(int daysBeforeEndDate);
 
     }
 }

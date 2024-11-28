@@ -1,4 +1,4 @@
-﻿using Bookify.Web.Seetings;
+﻿using Bookify.Domain.Coomon;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;

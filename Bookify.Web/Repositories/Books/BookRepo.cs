@@ -1,4 +1,4 @@
-﻿using Bookify.Web.Core.DTO;
+﻿using Bookify.Domain.DTO;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -6,9 +6,9 @@ namespace Bookify.Web.Repositories.Books
 {
     public class BookRepo : IBookRepo
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IApplicationDbContext _context;
 
-        public BookRepo(ApplicationDbContext context)
+        public BookRepo(IApplicationDbContext context)
         {
             _context = context;
         }

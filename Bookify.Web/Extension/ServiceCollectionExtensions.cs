@@ -1,4 +1,4 @@
-﻿using Bookify.Web.Seetings;
+﻿using Bookify.Domain.Coomon;
 using Bookify.Web.Tasks;
 using ViewToHTML.Extensions;
 

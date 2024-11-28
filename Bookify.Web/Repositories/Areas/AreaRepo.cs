@@ -1,10 +1,11 @@
-﻿namespace Bookify.Web.Repositories.Areas
+﻿using Bookify.Application.Common.Interfaces;
+namespace Bookify.Web.Repositories.Areas
 {
     public class AreaRepo : IAreaRepo
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IApplicationDbContext _context;
 
-        public AreaRepo(ApplicationDbContext context)
+        public AreaRepo(IApplicationDbContext context)
         {
             _context = context;
         }

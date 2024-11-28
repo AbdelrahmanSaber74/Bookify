@@ -2,9 +2,9 @@
 {
     public class BookCopyRepo : IBookCopyRepo
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IApplicationDbContext _context;
 
-        public BookCopyRepo(ApplicationDbContext context)
+        public BookCopyRepo(IApplicationDbContext context)
         {
             _context = context;
         }

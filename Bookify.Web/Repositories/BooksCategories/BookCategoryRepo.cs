@@ -3,9 +3,9 @@
     public class BookCategoryRepo : IBookCategoryRepo
     {
 
-        private readonly ApplicationDbContext _context;
+        private readonly IApplicationDbContext _context;
 
-        public BookCategoryRepo(ApplicationDbContext context)
+        public BookCategoryRepo(IApplicationDbContext context)
         {
             _context = context;
         }

@@ -2,9 +2,9 @@
 {
     public class RentalCopyRepo : IRentalCopyRepo
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IApplicationDbContext _context;
 
-        public RentalCopyRepo(ApplicationDbContext context)
+        public RentalCopyRepo(IApplicationDbContext context)
         {
             _context = context;
         }

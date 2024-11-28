@@ -1,11 +1,4 @@
-﻿using Bookify.Web.Core.Utilities;
-using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Wordprocessing;
-using OpenHtmlToPdf;
-using ViewToHTML.Services;
-
-
-namespace Bookify.Web.Controllers
+﻿namespace Bookify.Web.Controllers
 {
     [Authorize(Roles = AppRoles.Admin)]
     public class ReportsController : Controller
