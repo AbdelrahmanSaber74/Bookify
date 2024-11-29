@@ -40,3 +40,4 @@ global using ClosedXML.Excel;
 global using OpenHtmlToPdf;
 global using ViewToHTML.Services;
 global using Bookify.Application.Common.Interfaces;
+global using FluentValidation;

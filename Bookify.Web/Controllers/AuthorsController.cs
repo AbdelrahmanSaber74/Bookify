@@ -5,15 +5,17 @@
     {
         private readonly IAuthorRepo _authorRepo;
         private readonly IMapper _mapper;
+        private readonly IValidator<AuthorViewModel> _validator;
 
-        public AuthorsController(IAuthorRepo authorRepo, IMapper mapper)
-        {
-            _authorRepo = authorRepo;
-            _mapper = mapper;
-        }
+		public AuthorsController(IAuthorRepo authorRepo, IMapper mapper, IValidator<AuthorViewModel> validator)
+		{
+			_authorRepo = authorRepo;
+			_mapper = mapper;
+			_validator = validator;
+		}
 
-        // GET: Authors
-        public async Task<IActionResult> Index()
+		// GET: Authors
+		public async Task<IActionResult> Index()
         {
             var authors = await _authorRepo.GetAllAuthorsAsync();
             var authorViewModels = _mapper.Map<IEnumerable<AuthorViewModel>>(authors);
@@ -31,6 +33,8 @@
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddAuthor(AuthorViewModel model)
         {
+            var validationREsult = _validator.Validate(model);
+
             if (!ModelState.IsValid)
             {
                 return View("AddAuthor", model);

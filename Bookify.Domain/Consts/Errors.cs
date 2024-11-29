@@ -4,7 +4,7 @@ namespace Bookify.Domain.Consts
     {
         // General validation errors
         public const string RequiredField = "{0} is a required field.";
-        public const string MaxLength = "{0} cannot be more than {1} characters.";
+        public const string MaxLength = "{PropertyName} cannot be more than {MaxLength} characters.";
         public const string MinLength = "{0} must be at least {1} characters long.";
         public const string MaxMinLength = "The {0} must be at least {1} and at max {2} characters long.";
         public const string InvalidRange = "{0} should be between {1} and {2}!";

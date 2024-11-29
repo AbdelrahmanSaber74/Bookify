@@ -8,8 +8,9 @@ using Serilog.Context;
 var builder = WebApplication.CreateBuilder(args);
 
 
-builder.Services.AddWebServices(builder);
-builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services
+    .AddWebServices(builder)
+    .AddInfrastructureServices(builder.Configuration);
 
 // Add Serilog
 Log.Logger = new LoggerConfiguration()

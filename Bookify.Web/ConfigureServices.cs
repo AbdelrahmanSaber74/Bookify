@@ -6,6 +6,8 @@ using WhatsAppCloudApi.Extensions;
 using Bookify.Web.Tasks;
 using Bookify.Domain.Coomon;
 using Bookify.Web.Core.Maping;
+using FluentValidation.AspNetCore;
+using Bookify.Web.Validators;
 
 namespace Bookify.Web
 {
@@ -91,6 +93,12 @@ namespace Bookify.Web.Extensions
 					.AddScoped<ISubscriptionRepo, SubscriptionRepo>()
 					.AddScoped<IRentalRepo, RentalRepo>()
 					.AddScoped<IRentalCopyRepo, RentalCopyRepo>();
+
+			// Add FluentValidation
+			services.AddFluentValidationAutoValidation(); // Enable automatic validation
+			services.AddFluentValidationClientsideAdapters(); // Enable client-side adapters for front-end validation
+			services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly()); // Register validators in the current assembly
+
 
 			// Email Services
 			services.AddTransient<IEmailSender, EmailSender>()
