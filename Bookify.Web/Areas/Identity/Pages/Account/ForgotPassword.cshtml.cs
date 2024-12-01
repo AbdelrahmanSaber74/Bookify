@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
+using System.Text.Encodings.Web;
 
 namespace Bookify.Web.Areas.Identity.Pages.Account
 {
@@ -11,6 +15,7 @@ namespace Bookify.Web.Areas.Identity.Pages.Account
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IEmailSender _emailSender;
+
         private readonly IEmailBodyBuilder _emailBodyBuilder;
 
         public ForgotPasswordModel(UserManager<ApplicationUser> userManager, IEmailSender emailSender, IEmailBodyBuilder emailBodyBuilder)
@@ -53,8 +58,9 @@ namespace Bookify.Web.Areas.Identity.Pages.Account
                     return RedirectToPage("./ForgotPasswordConfirmation");
                 }
 
+                // For more information on how to enable account confirmation and password reset please
+                // visit https://go.microsoft.com/fwlink/?LinkID=532713
                 var code = await _userManager.GeneratePasswordResetTokenAsync(user);
-
                 code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
                 var callbackUrl = Url.Page(
                     "/Account/ResetPassword",
@@ -62,23 +68,21 @@ namespace Bookify.Web.Areas.Identity.Pages.Account
                     values: new { area = "Identity", code },
                     protocol: Request.Scheme);
 
-
-
-                var placeholder = new Dictionary<string, string>()
+                var placeholders = new Dictionary<string, string>()
                 {
-                    { "imageUrl" , "https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729557070/icon-positive-vote-2_jcxdww_rghb1a.jpg?_s=public-apps"} ,
-                    { "header" , $"Hello {user.FullName},"} ,
-                    { "body" , "We received a request to reset your password. If you didn't make this request, you can ignore this email."} ,
-                    { "url" , callbackUrl } ,
-                    { "linkTitle" , "Reset Your Password"} ,
+                    { "imageUrl", "https://res.cloudinary.com/devcreed/image/upload/v1668739431/icon-positive-vote-2_jcxdww.svg" },
+                    { "header", $"Hey {user.FullName}," },
+                    { "body", "please click the below button to reset you password" },
+                    { "url", $"{HtmlEncoder.Default.Encode(callbackUrl!)}" },
+                    { "linkTitle", "Reset Password" }
                 };
 
-                var body = await _emailBodyBuilder.GetEmailBodyAsync(
-                                EmailTemplates.Email,
-                                placeholder
-                            );
+                var body = _emailBodyBuilder.GetEmailBody(EmailTemplates.Email, placeholders);
 
-                await _emailSender.SendEmailAsync(user.Email, "Confirm your email", body);
+                await _emailSender.SendEmailAsync(
+                    Input.Email,
+                    "Reset Password",
+                    body);
 
                 return RedirectToPage("./ForgotPasswordConfirmation");
             }

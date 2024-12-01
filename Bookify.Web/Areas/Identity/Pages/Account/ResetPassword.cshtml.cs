@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
 
 namespace Bookify.Web.Areas.Identity.Pages.Account
@@ -42,9 +44,10 @@ namespace Bookify.Web.Areas.Identity.Pages.Account
             ///     directly from your code. This API may change or be removed in future releases.
             /// </summary>
             [Required]
-            [DataType(DataType.Password)]
-            [StringLength(100, ErrorMessage = Errors.MaxMinLength, MinimumLength = 6)]
+            [StringLength(100, ErrorMessage = Errors.MaxMinLength, MinimumLength = 8)]
             [RegularExpression(RegexPatterns.Password, ErrorMessage = Errors.WeakPassword)]
+            [DataType(DataType.Password)]
+            [Display(Name = "New password")]
             public string Password { get; set; }
 
             /// <summary>
@@ -52,8 +55,8 @@ namespace Bookify.Web.Areas.Identity.Pages.Account
             ///     directly from your code. This API may change or be removed in future releases.
             /// </summary>
             [DataType(DataType.Password)]
-            [Display(Name = "Confirm password")]
-            [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+            [Display(Name = "Confirm new password")]
+            [Compare("Password", ErrorMessage = Errors.ConfirmPasswordNotMatch)]
             public string ConfirmPassword { get; set; }
 
             /// <summary>

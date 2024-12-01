@@ -1,27 +1,17 @@
 ﻿@page
 @model IndexModel
 @inject IWebHostEnvironment WebHostEnvironment
-@inject UserManager<ApplicationUser> _userMnager;
-@using System.Security.Claims;
 
 @{
 	ViewData["Title"] = "Account Settings";
 	Layout = "/Views/Shared/_Layout.cshtml";
 
-	// Get the user's imageUrl and thumbnailUrl from claims
-	var identity = (ClaimsIdentity)User.Identity;
-	var imageUrlClaim = identity.FindFirst("imageUrl");
-	var thumbnailUrlClaim = identity.FindFirst("thumbnailUrl");
- 
-	// Use the imageUrl or fallback to a default avatar
-	var imageUrl = imageUrlClaim != null && !string.IsNullOrEmpty(imageUrlClaim.Value)
-		? imageUrlClaim.Value
-		: "/assets/images/avatar.png";
-
+	var avatarUrl = $"{WebHostEnvironment.WebRootPath}/images/users/{User.FindFirst(ClaimTypes.NameIdentifier)!.Value}.png";
 	
-
+	avatarUrl = System.IO.File.Exists(avatarUrl) 
+		? $"/images/users/{User.FindFirst(ClaimTypes.NameIdentifier)!.Value}.png" 
+		: "/assets/images/avatar.png";
 }
-
 
 <h3>@ViewData["Title"]</h3>
 <div class="content flex-column-fluid" id="kt_content">
@@ -33,7 +23,7 @@
 				<!--begin: Pic-->
 				<div class="me-7 mb-4">
 					<div class="symbol symbol-50px symbol-lg-60px symbol-fixed position-relative">
-						<img src="@imageUrl" alt="image">
+						<img src="@avatarUrl" alt="image">
 						<div class="position-absolute translate-middle bottom-0 start-100 mb-6 bg-success rounded-circle border border-4 border-body h-20px w-20px"></div>
 					</div>
 				</div>
@@ -46,7 +36,7 @@
 						<div class="d-flex flex-column">
 							<!--begin::Name-->
 							<div class="d-flex align-items-center mb-2">
-								<a href="#" class="text-gray-900 text-hover-primary fs-2 fw-bold me-1">@User.FindFirst(ClaimTypes.GivenName)!.Value</a>
+								<a href="#" class="text-gray-900 text-hover-primary fs-2 fw-bold me-1">@User.FindFirst(ClaimTypes.GivenName)!.Value</a>								
 							</div>
 							<!--end::Name-->
 							<!--begin::Info-->
@@ -76,9 +66,6 @@
 	</div>
 	<!--end::Navbar-->
 	<!--begin::Basic info-->
-
-	<div asp-validation-summary="All" class="validation-summary w-50" role="alert"></div>
-
 	<div class="card mb-5 mb-xl-10">
 		<!--begin::Card header-->
 		<div class="card-header border-0 cursor-pointer" role="button" data-bs-toggle="collapse" data-bs-target="#kt_account_profile_details" aria-expanded="true" aria-controls="kt_account_profile_details">
@@ -86,8 +73,6 @@
 			<div class="card-title m-0">
 				<h3 class="fw-bold m-0">Profile Details</h3>
 			</div>
-
-
 			<!--end::Card title-->
 		</div>
 		<!--begin::Card header-->
@@ -107,16 +92,16 @@
 						<!--begin::Col-->
 						<div class="col-lg-8">
 							<!--begin::Image input-->
-							<div class="image-input image-input-outline" data-kt-image-input="true" style="background-image: url('@imageUrl')">
+							<div class="image-input image-input-outline" data-kt-image-input="true" style="background-image: url('/assets/images/avatar-blank.svg')">
 								<!--begin::Preview existing avatar-->
-								<div class="image-input-wrapper w-125px h-125px" style="background-image: url(@imageUrl)"></div>
+								<div class="image-input-wrapper w-125px h-125px" style="background-image: url(@avatarUrl)"></div>
 								<!--end::Preview existing avatar-->
 								<!--begin::Label-->
 								<label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="change" data-bs-toggle="tooltip" aria-label="Change avatar" data-kt-initialized="1">
 									<i class="bi bi-pencil-fill fs-7"></i>
 									<!--begin::Inputs-->
 									<input type="file" asp-for="Input.Avatar" accept=".png, .jpg, .jpeg">
-									<input type="hidden" asp-for="Input.ImageRemoved">
+									<input type="hidden" name="avatar_remove">
 									<!--end::Inputs-->
 								</label>
 								<!--end::Label-->
@@ -286,7 +271,6 @@
 </div>
 
 @section Scripts {
-	<partial name="_ValidationScriptsPartial" />
-	
+    <partial name="_ValidationScriptsPartial" />
     <script src="~/js/profile.js" asp-append-version="true"></script>
 }

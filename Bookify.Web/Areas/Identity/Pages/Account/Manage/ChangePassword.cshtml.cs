@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
@@ -56,9 +57,9 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
             ///     directly from your code. This API may change or be removed in future releases.
             /// </summary>
             [Required]
-            [DataType(DataType.Password)]
-            [StringLength(100, ErrorMessage = Errors.MaxMinLength, MinimumLength = 6)]
+            [StringLength(100, ErrorMessage = Errors.MaxMinLength, MinimumLength = 8)]
             [RegularExpression(RegexPatterns.Password, ErrorMessage = Errors.WeakPassword)]
+            [DataType(DataType.Password)]
             [Display(Name = "New password")]
             public string NewPassword { get; set; }
 
@@ -66,13 +67,9 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
             ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
             ///     directly from your code. This API may change or be removed in future releases.
             /// </summary>
-            [Required]
             [DataType(DataType.Password)]
-            [StringLength(100, ErrorMessage = Errors.MaxMinLength, MinimumLength = 6)]
-            [RegularExpression(RegexPatterns.Password, ErrorMessage = Errors.WeakPassword)]
-            [Display(Name = "New password")]
-            [Compare("NewPassword", ErrorMessage = Errors.PasswordMismatchMessage)]
-
+            [Display(Name = "Confirm new password")]
+            [Compare("NewPassword", ErrorMessage = Errors.ConfirmPasswordNotMatch)]
             public string ConfirmPassword { get; set; }
         }
 

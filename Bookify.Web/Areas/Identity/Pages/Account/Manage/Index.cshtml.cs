@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #nullable disable
 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
@@ -22,26 +23,44 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
             _imageService = imageService;
         }
 
+        /// <summary>
+        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public string Username { get; set; }
+
+        /// <summary>
+        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
         [TempData]
         public string StatusMessage { get; set; }
 
-        public string Username { get; set; }
-
+        /// <summary>
+        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
         [BindProperty]
         public InputModel Input { get; set; }
 
+        /// <summary>
+        ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
         public class InputModel
         {
-            [Required(ErrorMessage = "Full Name is required.")]
-            [MaxLength(100, ErrorMessage = Errors.MaxLength)]
-            [Display(Name = "Full Name")]
-            [RegularExpression(RegexPatterns.CharactersOnly_Eng, ErrorMessage = Errors.OnlyEnglishLetters)]
+            /// <summary>
+            ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
+            ///     directly from your code. This API may change or be removed in future releases.
+            /// </summary>
+
+            [Required, MaxLength(100, ErrorMessage = Errors.MaxLength), Display(Name = "Full Name"),
+            RegularExpression(RegexPatterns.CharactersOnly_Eng, ErrorMessage = Errors.OnlyEnglishLetters)]
             public string FullName { get; set; } = null!;
 
             [Phone]
-            [Display(Name = "Phone number")]
-            [MaxLength(11, ErrorMessage = Errors.MaxLength)]
-            [RegularExpression(RegexPatterns.MobileNumber, ErrorMessage = Errors.InvalidMobileNumber)]
+            [Display(Name = "Phone number"), MaxLength(11, ErrorMessage = Errors.MaxLength),
+                RegularExpression(RegexPatterns.MobileNumber, ErrorMessage = Errors.InvalidMobileNumber)]
             public string PhoneNumber { get; set; }
 
             public IFormFile Avatar { get; set; }
@@ -51,11 +70,15 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
 
         private async Task LoadAsync(ApplicationUser user)
         {
-            Username = await _userManager.GetUserNameAsync(user);
+            var userName = await _userManager.GetUserNameAsync(user);
+            var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
+
+            Username = userName;
+
             Input = new InputModel
             {
                 FullName = user.FullName,
-                PhoneNumber = await _userManager.GetPhoneNumberAsync(user)
+                PhoneNumber = phoneNumber
             };
         }
 
@@ -73,7 +96,6 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
 
         public async Task<IActionResult> OnPostAsync()
         {
-
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
@@ -86,48 +108,24 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
                 return Page();
             }
 
-            // Handle Avatar upload
-            if (Input.Avatar != null)
+            if (Input.Avatar is not null)
             {
-                // Delete old image
-                _imageService.DeleteOldImages(user.ImageUrl, null);
+                _imageService.Delete($"/images/users/{user.Id}.png");
 
-                // Save new image
-                var result = await _imageService.SaveImageAsync(Input.Avatar, "images/users", false);
+                var (isUploaded, errorMessage) = await _imageService.UploadAsync(Input.Avatar, $"{user.Id}.png", "/images/users", hasThumbnail: false);
 
-                if (result is OkObjectResult okResult)
+                if (!isUploaded)
                 {
-                    // Extract the result data
-                    var resultData = okResult.Value as dynamic;
-
-                    // Make sure resultData contains the expected properties
-                    if (resultData != null)
-                    {
-                        user.ImageUrl = resultData.relativePath; // Assuming these are the keys you used in SaveImageAsync
-
-                        // Update the user in the database
-                        await _userManager.UpdateAsync(user);
-                    }
-                }
-
-                else if (result is BadRequestObjectResult badRequestResult)
-                {
-                    var errorMessage = badRequestResult.Value?.ToString() ?? Errors.ImageSaveFailed;
-                    ModelState.AddModelError(string.Empty, errorMessage);
+                    ModelState.AddModelError("Input.Avatar", errorMessage);
+                    await LoadAsync(user);
                     return Page();
                 }
-
-
-
             }
             else if (Input.ImageRemoved)
-            {
-                _imageService.DeleteOldImages(user.ImageUrl, null);
-                user.ImageUrl = null;
-                await _userManager.UpdateAsync(user);
-            }
-            // Update Phone Number
-            if (Input.PhoneNumber != await _userManager.GetPhoneNumberAsync(user))
+                _imageService.Delete($"/images/users/{user.Id}.png");
+
+            var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
+            if (Input.PhoneNumber != phoneNumber)
             {
                 var setPhoneResult = await _userManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
                 if (!setPhoneResult.Succeeded)
@@ -137,12 +135,11 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
                 }
             }
 
-            // Update Full Name
             if (Input.FullName != user.FullName)
             {
                 user.FullName = Input.FullName;
-                var setFullNameResult = await _userManager.UpdateAsync(user);
-                if (!setFullNameResult.Succeeded)
+                var setFullName = await _userManager.UpdateAsync(user);
+                if (!setFullName.Succeeded)
                 {
                     StatusMessage = "Unexpected error when trying to set full name.";
                     return RedirectToPage();
@@ -153,7 +150,5 @@ namespace Bookify.Web.Areas.Identity.Pages.Account.Manage
             StatusMessage = "Your profile has been updated";
             return RedirectToPage();
         }
-
-
     }
 }
