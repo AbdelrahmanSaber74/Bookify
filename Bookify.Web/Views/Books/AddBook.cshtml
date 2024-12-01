@@ -1,0 +1,215 @@
+﻿    @model BookViewModel
+
+@{
+    ViewData["Title"] = "Add Book";
+}
+@section Styles
+{
+    <link href="~/lib/select2/css/select2.css" rel="stylesheet" />
+    <link href="~/lib/select2/css/select2.min.css" rel="stylesheet" />
+
+
+}
+
+<div class="alert bg-light-primary border border-primary border-3 border-dashed d-flex justify-content-between w-100 p-5 mb-10">
+    <div class="d-flex align-items-center">
+        <div class="symbol symbol-40px me-4">
+            <div class="symbol-label fs-2 fw-semibold text-success">
+                <span class="svg-icon svg-icon-2 svg-icon-primary">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path opacity="0.3" d="M21.25 18.525L13.05 21.825C12.35 22.125 11.65 22.125 10.95 21.825L2.75 18.525C1.75 18.125 1.75 16.725 2.75 16.325L4.04999 15.825L10.25 18.325C10.85 18.525 11.45 18.625 12.05 18.625C12.65 18.625 13.25 18.525 13.85 18.325L20.05 15.825L21.35 16.325C22.35 16.725 22.35 18.125 21.25 18.525Z" fill="currentColor"></path>
+                        <path d="M11.05 11.025L2.84998 7.725C1.84998 7.325 1.84998 5.925 2.84998 5.525L11.05 2.225C11.75 1.925 12.45 1.925 13.15 2.225L21.35 5.525C22.35 5.925 22.35 7.325 21.35 7.725L13.05 11.025C12.45 11.325 11.65 11.325 11.05 11.025Z" fill="currentColor"></path>
+                    </svg>
+                </span>
+            </div>
+        </div>
+        <div class="d-flex flex-column pe-0 pe-sm-10">
+            <h5 class="mb-1">Add Book</h5>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <form method="post" asp-controller="Books" asp-action="AddBook" enctype="multipart/form-data"
+                      data-ajax="true"
+                      data-ajax-method="POST"
+                      data-ajax-begin="onModalBegin()"
+                      data-ajax-complete="onModalComplete()"
+                      data-ajax-success="onModalSuccess"
+                      data-ajax-failure="onFailure">
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                    }
+
+
+                    <!-- Image URL -->
+                    <!--begin::Image input-->
+                    <div class="mb-8 mt-10">
+
+                        <div class="image-input image-input-empty " data-kt-image-input="true" style="background-image: url(/images/default/image-placeholder.jpg) " )>
+                            <!--begin::Image preview wrapper-->
+                            <div class="image-input-wrapper w-125px h-200px"></div>
+                            <!--end::Image preview wrapper-->
+                            <!--begin::Edit button-->
+                            <label class="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-40px h-25px bg-body shadow"
+                                   data-kt-image-input-action="change"
+                                   data-bs-dismiss="click">
+                                <i class="bi bi-pencil-fill fs-7"></i>
+
+                                <!--begin::Inputs-->
+                                <input type="file" asp-for="Image" accept=".png, .jpg, .jpeg" />
+                                <input type="hidden" asp-for="ImageUrl" />
+                                <!--end::Inputs-->
+                            </label>
+                            <!--end::Edit button-->
+                            <!--begin::Cancel button-->
+                            <span class="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-25px h-25px bg-body shadow"
+                                  data-kt-image-input-action="cancel"
+                                  data-bs-dismiss="click">
+                                <i class="bi bi-x fs-2"></i>
+                            </span>
+                            <!--end::Cancel button-->
+                            <!--begin::Remove button-->
+                            <span class="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-25px h-25px bg-body shadow"
+                                  data-kt-image-input-action="remove"
+                                  data-bs-dismiss="click">
+                                <i class="bi bi-x fs-2"></i>
+                            </span>
+                            <!--end::Remove button-->
+                        </div>
+                        <div class="form-text">Allowed file types: png, jpg, jpeg and cannot be more that 2 MB</div>
+                        <span asp-validation-for="Image" class="text-danger d-block"></span>
+                        <!--end::Image input-->
+                    </div>
+
+                    <!-- Title -->
+                    <div class="mb-5">
+                        <div class="form-floating mb-2">
+                            <input type="text" class="form-control form-control-solid" placeholder="Title" asp-for="Title" required />
+                            <label asp-for="Title"></label>
+                        </div>
+                        <span asp-validation-for="Title" class="text-danger"></span>
+                    </div>
+
+
+                    <!-- Author -->
+                    <div class="mb-5">
+                        <div class="form-floating mb-2">
+                            <select class="form-select form-select-solid js-select2" asp-for="AuthorId" required asp-items="@Model.Authors">
+                                <option value="" disabled selected>Select Author</option>
+                                <label asp-for="AuthorId"></label>
+
+                            </select>
+                        </div>
+                        <span asp-validation-for="AuthorId" class="text-danger"></span>
+                    </div>
+
+
+                    <!-- Publisher -->
+                    <div class="mb-5">
+                        <div class="form-floating mb-2">
+                            <input type="text" class="form-control form-control-solid" placeholder="Publisher" asp-for="Publisher" />
+                            <label asp-for="Publisher"></label>
+                        </div>
+                        <span asp-validation-for="Publisher" class="text-danger"></span>
+                    </div>
+
+                    <!-- Publisher Date-->
+                    <div class="mb-5">
+                        <div class="form-floating mb-2">
+                            <input type="text" class="form-control form-control-solid js-rangepicker" placeholder="PublishDate" asp-for="PublishDate" />
+                            <label asp-for="PublishDate"></label>
+                        </div>
+                        <span asp-validation-for="PublishDate" class="text-danger"></span>
+                    </div>
+
+
+                    <!-- Hall -->
+                    <div class="mb-5">
+                        <div class="form-floating mb-2">
+                            <input type="text" class="form-control form-control-solid" placeholder="Hall" asp-for="Hall" required />
+                            <label asp-for="Hall"></label>
+                        </div>
+                        <span asp-validation-for="Hall" class="text-danger"></span>
+                    </div>
+
+                    <!-- Availability -->
+                    <div class="mb-5">
+                        <div class="col mb-2">
+                            <div class="form-check form-switch form-check-solid form-check-custom mb-2">
+                                <input class="form-check-input" type="checkbox" asp-for="IsAvailableForRental">
+                                <label class="form-check-label" asp-for="IsAvailableForRental"></label>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Categories -->
+                    <div class="mb-5">
+                        <div class="m-2">
+                            <label asp-for="Categories" class="form-label"></label>
+                            <select asp-for="SelectedCategoryIds" data-placeholder="Select Categories" class="form-select form-select-solid  js-select2" multiple="multiple" required asp-items="@Model.Categories">
+                            </select>
+                        </div>
+                        <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span>
+                    </div>
+
+
+
+                    <!-- Description -->
+                    <div class="mb-5">
+                        <div class="form-floating mb-2">
+                            <textarea class="form-control form-control-solid" placeholder="Description" asp-for="Description"></textarea>
+                            <label asp-for="Description"></label>
+                        </div>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+
+
+                    <!-- Submit Button -->
+                    <div class="card-footer">
+                        <div class="ml-n25">
+                            <button type="submit" class="btn btn-primary btn-sm " id="submitsBtn">
+                                <i class="bi bi-check2"></i>
+                                Save
+                            </button>
+                            <a class="btn btn-light text-primary ms-3" asp-action="Index">Cancel</a>
+                        </div>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+@section CustomScripts
+{
+    <script src="~/lib/select2/js/select2.js"></script>
+    <script src="~/lib/select2/js/select2.min.js"></script>
+
+    <script src="~/lib/bootstrap-daterangepicker/moment.min.js"></script>
+    <script src="~/lib/bootstrap-daterangepicker/daterangepicker.min.js"></script>
+}
+
+
+
+@section Scripts
+{
+
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+}
+

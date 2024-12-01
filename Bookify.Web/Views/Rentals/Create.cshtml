@@ -1,0 +1,91 @@
+﻿@model RentalFormViewModel
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery antiforgery
+
+@{
+    ViewData["Title"] = "Add Rental";
+
+    var searchFormModel = new SearchFormViewModel
+            {
+                SubscriberKey = Model.SubscriberKey
+            };
+
+    var combinedModel = new SearchFormWithKeyViewModel
+            {
+                SearchForm = searchFormModel,
+                SubscriberKey = Model.SubscriberKey
+            };
+}
+
+<!--begin::Card-->
+<div class="card mb-7">
+    <div class="card-header">
+        <h3 class="card-title">Add Rental</h3>
+    </div>
+    <div class="card-body">
+        <!-- Pass the combined model to the partial view -->
+        <partial name="_SearchForm" model="combinedModel" />
+    </div>
+</div>
+
+<!--begin::Book Details Card-->
+@if (Model.BookCopyDetails != null)
+{
+    <div class="card mb-5 mb-xl-8">
+        <div class="card-header border-0 pt-5">
+            <h3 class="card-title align-items-start flex-column">
+                <span class="card-label fw-bold text-dark">Book Copy Details</span>
+            </h3>
+        </div>
+        <div class="card-body pt-5">
+            <div class="row">
+                <div class="col-md-4">
+                    <img src="@Model.BookCopyDetails.Book.ImageThumbnailUrl" alt="Book Image" class="img-fluid rounded-circle shadow-sm border" style="border: 4px solid #f1f1f1;" />
+                </div>
+                <div class="col-md-8">
+                    <!-- Title -->
+                    <h5 class="fw-bold text-primary mb-3" style="font-size: 1.5rem; text-transform: capitalize;">
+                        @Model.BookCopyDetails.Book.Title
+                    </h5>
+
+                    <!-- Availability -->
+                    <p class="lead">
+                        <strong class="text-success">Available for Rental:</strong>
+                        <span class="badge @(Model.BookCopyDetails.IsAvailableForRental ? "bg-success" : "bg-danger")">
+                            @(Model.BookCopyDetails.IsAvailableForRental ? "Yes" : "No")
+                        </span>
+                    </p>
+
+                    <!-- Description -->
+                    <p class="text-muted" style="font-size: 1.1rem; line-height: 1.6;">
+                        <strong>Description:</strong>
+                        @Model.BookCopyDetails.Book.Description
+                    </p>
+                </div>
+            </div>
+
+            <form asp-action="Create" id="CopiesForm">
+                <input type="hidden" asp-for="SubscriberKey" />
+                <input type="hidden" asp-for="BookCopyId" />
+
+                <button type="submit" class="btn btn-primary mt-3">
+                    <span class="indicator-label">Save</span>
+                    <span class="indicator-progress">
+                        Please wait... <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                    </span>
+                </button>
+            </form>
+        </div>
+    </div>
+}
+<!--end::Book Details Card-->
+
+<input type="hidden" name="__RequestVerificationToken" value="@antiforgery.GetAndStoreTokens(Context).RequestToken" />
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        var maxAllowedCopies = @((int)RentalsConfigurations.MaxAllowedCopies);
+    </script>
+    <script src="/js/rental-form.js" asp-append-version="true"></script>
+}
