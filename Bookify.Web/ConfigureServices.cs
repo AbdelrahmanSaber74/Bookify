@@ -1,142 +1,86 @@
-﻿using Bookify.Infrastructure;
-using Serilog;
+﻿using Bookify.Web.Core.Mapping;
+using Bookify.Web.Helpers;
+using FluentValidation.AspNetCore;
+using Hangfire;
+using HashidsNet;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using System.Reflection;
+using UoN.ExpressiveAnnotations.NetCore.DependencyInjection;
 using ViewToHTML.Extensions;
 using WhatsAppCloudApi.Extensions;
-using Bookify.Web.Tasks;
-using Bookify.Domain.Coomon;
-using Bookify.Web.Core.Maping;
-using FluentValidation.AspNetCore;
-using Bookify.Web.Validators;
 
 namespace Bookify.Web
 {
-	public static class ConfigureServices
-	{
-		public static IServiceCollection AddWebServices(this IServiceCollection services, WebApplicationBuilder builder)
-		{
-			var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    public static class DependencyInjection
+    {
+        public static IServiceCollection AddWebServices(this IServiceCollection services,
+            WebApplicationBuilder builder)
+        {
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlServer(connectionString!));
 
-			// Configure DbContext
-			services.AddDbContext<ApplicationDbContext>(options =>
-				options.UseSqlServer(connectionString!));
+            services.AddDatabaseDeveloperPageExceptionFilter();
 
-			// Add Identity
-			services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-				options.SignIn.RequireConfirmedAccount = true)
-				.AddEntityFrameworkStores<ApplicationDbContext>()
-				.AddDefaultUI()
-				.AddDefaultTokenProviders()
-				.AddSignInManager<SignInManager<ApplicationUser>>();
+            services.AddIdentity<ApplicationUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultUI()
+                .AddDefaultTokenProviders()
+                .AddSignInManager<SignInManager<ApplicationUser>>();
 
-			// Application-specific services
-			services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
+            services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
 
-			// Configure Identity options
-			services.Configure<IdentityOptions>(options =>
-			{
-				options.Password.RequiredLength = 8;
-				options.User.RequireUniqueEmail = true;
-			});
+            services.Configure<SecurityStampValidatorOptions>(options =>
+                options.ValidationInterval = TimeSpan.Zero);
 
-			services.Configure<SecurityStampValidatorOptions>(options =>
-				options.ValidationInterval = TimeSpan.Zero);
+            services.Configure<IdentityOptions>(options =>
+            {
+                options.Password.RequiredLength = 8;
 
-			// Add additional services
-			services.AddDataProtection().SetApplicationName(nameof(Bookify));
-			services.AddTransient<IImageService, ImageService>();
-			services.AddTransient<IEmailSender, EmailSender>();
-			services.AddTransient<IEmailBodyBuilder, EmailBodyBuilder>();
-			services.AddAutoMapper(Assembly.GetAssembly(typeof(MappingProfile)));
-			services.AddWhatsAppApiClient(builder.Configuration);
-			services.AddExpressiveAnnotations();
-			services.AddViewToHTML();
+                options.User.RequireUniqueEmail = true;
+            });
 
-			// Add Hangfire
-			services.AddHangfire(config => config.UseSqlServerStorage(connectionString));
-			services.AddHangfireServer();
+            services.AddDataProtection().SetApplicationName(nameof(Bookify));
+            services.AddSingleton<IHashids>(_ => new Hashids("f1nd1ngn3m0", minHashLength: 11));
 
-			// Configure Authorization Policies
-			services.Configure<AuthorizationOptions>(options =>
-				options.AddPolicy("AdminsOnly", policy =>
-				{
-					policy.RequireAuthenticatedUser();
-					policy.RequireRole(AppRoles.Admin);
-				}));
+            services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, ApplicationUserClaimsPrincipalFactory>();
 
-			// Enable Serilog
-			services.AddSerilog();
+            services.AddTransient<IImageService, ImageService>();
+            services.AddTransient<IEmailSender, EmailSender>();
+            services.AddTransient<IEmailBodyBuilder, EmailBodyBuilder>();
 
-			// Register application services
-			services.AddApplicationServices(builder.Configuration);
+            services.AddControllersWithViews();
 
-			return services;
-		}
-	}
-}
+            services.AddAutoMapper(Assembly.GetAssembly(typeof(MappingProfile)));
+            services.Configure<CloudinarySettings>(builder.Configuration.GetSection(nameof(CloudinarySettings)));
+            services.Configure<MailSettings>(builder.Configuration.GetSection(nameof(MailSettings)));
 
-namespace Bookify.Web.Extensions
-{
-	public static class ServiceCollectionExtensions
-	{
-		public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
-		{
-			// Repositories
-			services.AddScoped<ICategoriesRepo, CategoriesRepo>()
-					.AddScoped<IAuthorRepo, AuthorRepo>()
-					.AddScoped<IBookRepo, BookRepo>()
-					.AddScoped<IBookCategoryRepo, BookCategoryRepo>()
-					.AddScoped<IBookCopyRepo, BookCopyRepo>()
-					.AddScoped<ISubscribersRepo, SubscribersRepo>()
-					.AddScoped<IGovernorateRepo, GovernorateRepo>()
-					.AddScoped<IAreaRepo, AreaRepo>()
-					.AddScoped<ISubscriptionRepo, SubscriptionRepo>()
-					.AddScoped<IRentalRepo, RentalRepo>()
-					.AddScoped<IRentalCopyRepo, RentalCopyRepo>();
+            services.AddWhatsAppApiClient(builder.Configuration);
 
-			// Add FluentValidation
-			services.AddFluentValidationAutoValidation(); // Enable automatic validation
-			services.AddFluentValidationClientsideAdapters(); // Enable client-side adapters for front-end validation
-			services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly()); // Register validators in the current assembly
+            services.AddExpressiveAnnotations();
 
+            services.AddHangfire(x => x.UseSqlServerStorage(connectionString));
+            services.AddHangfireServer();
 
-			// Email Services
-			services.AddTransient<IEmailSender, EmailSender>()
-					.AddTransient<IEmailBodyBuilder, EmailBodyBuilder>();
+            services.Configure<AuthorizationOptions>(options =>
+            options.AddPolicy("AdminsOnly", policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.RequireRole(AppRoles.Admin);
+            }));
 
-			// Notifications and Tasks
-			services.AddScoped<NotificationService>();
-			services.AddScoped<HangfireTasks>();
+            services.AddViewToHTML();
 
-			// Configure Email Settings
-			services.Configure<EmailSettings>(configuration.GetSection("EmailSettings"));
+            services.AddFluentValidationAutoValidation();
+            services.AddFluentValidationClientsideAdapters();
+            services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 
-			// Security and Data Protection
-			services.AddDataProtection().SetApplicationName(nameof(Bookify));
-			services.Configure<SecurityStampValidatorOptions>(options =>
-				options.ValidationInterval = TimeSpan.FromSeconds(0));
+            services.AddMvc(options =>
+                options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute())
+            );
 
-			// Image Services
-			services.AddTransient<IImageService, ImageService>();
-
-			// Claims Principal Factory
-			services.AddScoped<IUserClaimsPrincipalFactory<ApplicationUser>, CustomUserClaimsPrincipalFactory>();
-
-			// AutoMapper
-			services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
-			// MVC and Razor Pages
-			services.AddControllersWithViews()
-					.AddNewtonsoftJson(options =>
-					{
-						options.SerializerSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
-						options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
-					});
-			services.AddRazorPages();
-			services.AddDatabaseDeveloperPageExceptionFilter();
-			services.AddExpressiveAnnotations();
-
-			return services;
-		}
-	}
+            return services;
+        }
+    }
 }

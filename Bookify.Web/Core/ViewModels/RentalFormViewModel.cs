@@ -2,11 +2,14 @@
 {
     public class RentalFormViewModel
     {
+        public int? Id { get; set; }
+
         public string SubscriberKey { get; set; } = null!;
-        public BookCopyViewModel? BookCopyDetails { get; set; }
 
-        public int BookCopyId { get; set; }
-        public IEnumerable<Book>? Books { get; set; }
+        public IList<int> SelectedCopies { get; set; } = new List<int>();
 
+        public IEnumerable<BookCopyViewModel> CurrentCopies { get; set; } = new List<BookCopyViewModel>();
+
+        public int? MaxAllowedCopies { get; set; }
     }
 }

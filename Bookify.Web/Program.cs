@@ -1,24 +1,61 @@
+using Bookify.Application;
 using Bookify.Infrastructure;
 using Bookify.Web;
+using Bookify.Web.Seeds;
 using Bookify.Web.Tasks;
+using Hangfire;
 using Hangfire.Dashboard;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Serilog;
 using Serilog.Context;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
+// Add services to the container.
 builder.Services
-    .AddWebServices(builder)
-    .AddInfrastructureServices(builder.Configuration);
+    .AddApplicationServices()
+    .AddInfrastructureServices(builder.Configuration)
+    .AddWebServices(builder);
 
-// Add Serilog
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration) // From appsettings.json
-    .CreateLogger();
-
+//Add Serilog
+Log.Logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configuration).CreateLogger();
+builder.Host.UseSerilog();
 
 var app = builder.Build();
+
+
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Add("X-Frame-Options", "Deny");
+
+    await next();
+});
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseMigrationsEndPoint();
+}
+else
+{
+    app.UseStatusCodePagesWithReExecute("/Home/Error", "?statusCode={0}");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+//app.UseCookiePolicy(new CookiePolicyOptions
+//{
+//    Secure = CookieSecurePolicy.Always
+//});
+
+app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
 
@@ -27,93 +64,46 @@ using var scope = scopeFactory.CreateScope();
 var roleManger = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 var userManger = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-// Seed default roles and admin user
-await SeedRoles.AddDefaultRolesAsync(roleManger);
-await DefaultUser.SeedAdminUser(userManger);
+await DefaultRoles.SeedAsync(roleManger);
+await DefaultUsers.SeedAdminUserAsync(userManger);
 
-
-
-// Configure HTTP request pipeline
-if (app.Environment.IsDevelopment())
+//hangfire
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
-    app.UseMigrationsEndPoint();
-}
-else
-{
-    app.UseExceptionHandler(errorHandlingPath: "/Home/Error");
-    app.UseHsts();
-}
-
-//app.UseExceptionHandler(errorHandlingPath: "/Home/Error");
-//app.UseStatusCodePagesWithReExecute("/Home/Error", "?StatusCode={0}");
-
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-
-app.UseCookiePolicy(new CookiePolicyOptions
-{
-    Secure = CookieSecurePolicy.Always
-});
-
-app.Use(async (context, next) =>
-{
-    context.Response.Headers.Add("X-Frame-Options", "DENY"); 
-    await next();
-});
-
-
-app.UseRouting();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Configure Hangfire dashboard
-app.UseHangfireDashboard("/Hangfire", new DashboardOptions
-{
-    AppPath = "/home",
-    DashboardTitle = "My Custom Hangfire Dashboard",
-    StatsPollingInterval = 1000,
-    IgnoreAntiforgeryToken = false,
+    DashboardTitle = "Bookify Dashboard",
     IsReadOnlyFunc = (DashboardContext context) => true,
     Authorization = new IDashboardAuthorizationFilter[]
     {
-        new HangfireAuthorizationFilter()
-    }
-
-});
-
-// Register daily task execution 
-app.Lifetime.ApplicationStarted.Register(() =>
-{
-    using (var scope = app.Services.CreateScope())
-    {
-        HangfireTasks.ConfigureDailyTasks();
+        new HangfireAuthorizationFilter("AdminsOnly")
     }
 });
 
-// Middleware to add UserId and UserName to LogContext
+var subscriberService = scope.ServiceProvider.GetRequiredService<ISubscriberService>();
+var rentalService = scope.ServiceProvider.GetRequiredService<IRentalService>();
+var webHostEnvironment = scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>();
+var whatsAppClient = scope.ServiceProvider.GetRequiredService<IWhatsAppClient>();
+var emailBodyBuilder = scope.ServiceProvider.GetRequiredService<IEmailBodyBuilder>();
+var emailSender = scope.ServiceProvider.GetRequiredService<IEmailSender>();
+
+var hangfireTasks = new HangfireTasks(subscriberService, rentalService, webHostEnvironment, whatsAppClient,
+    emailBodyBuilder, emailSender);
+
+RecurringJob.AddOrUpdate(() => hangfireTasks.PrepareExpirationAlert(), "0 14 * * *");
+RecurringJob.AddOrUpdate(() => hangfireTasks.RentalsExpirationAlert(), "0 14 * * *");
+
 app.Use(async (context, next) =>
 {
-    // Get user details from HttpContext or Authentication system (placeholder logic)
-    string userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Anonymous";
-    string userName = context.User?.FindFirst(ClaimTypes.Name)?.Value ?? "Anonymous";
-
-    // Add values to Serilog's LogContext
-    LogContext.PushProperty("UserId", userId);
-    LogContext.PushProperty("UserName", userName);
+    LogContext.PushProperty("UserId", context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+    LogContext.PushProperty("UserName", context.User.FindFirst(ClaimTypes.Name)?.Value);
 
     await next();
-
 });
 
 app.UseSerilogRequestLogging();
 
-// Set up default route for MVC controllers
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-
-// Ensure Razor Pages are mapped
 app.MapRazorPages();
 
 app.Run();

@@ -1,8 +1,5 @@
-﻿@model SearchFormWithKeyViewModel
+﻿@model SearchFormViewModel
 
-@{
-    var sKey = Model.SubscriberKey;
-}
 <form asp-action="GetCopyDetails"
       data-ajax-method="post"
       data-ajax="true"
@@ -23,21 +20,21 @@
                 </svg>
             </span>
             <!--end::Svg Icon-->
-            <input type="hidden" asp-for="SubscriberKey" />
-            <input type="text" class="form-control form-control-solid ps-10" placeholder="Search by serial number" asp-for="SearchForm.Value" required>
+            <input type="text" class="form-control form-control-solid ps-10" placeholder="Search by serial number" asp-for="Value">
         </div>
         <!--end::Input group-->
         <!--begin:Action-->
         <div class="d-flex align-items-center">
-            <button type="submit" class="btn btn-primary me-5 js-search">Search</button>
+            <button type="submit" class="btn btn-primary  js-search">
+                <span class="indicator-label">
+                    Search
+                </span>
+                <span class="indicator-progress">
+                    Please wait... <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                </span>
+            </button>
         </div>
         <!--end:Action-->
     </div>
     <!--end::Compact form-->
 </form>
-
-@section Scripts
-{
-    <partial name="_ValidationScriptsPartial" />
-
-}

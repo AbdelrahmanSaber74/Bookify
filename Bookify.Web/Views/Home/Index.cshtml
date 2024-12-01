@@ -1,16 +1,8 @@
 ﻿@model IEnumerable<BookViewModel>
 
 @{
-	ViewData["Title"] = "Home Page";
-	Layout = "";
+    ViewData["Title"] = "Home Page";
 }
-<!--begin::Global Stylesheets Bundle(used by all pages)-->
-<link rel="stylesheet" href="~/assets/css/plugins.bundle.css" type="text/css" />
-<link rel="stylesheet" href="~/assets/css/style.bundle.css" type="text/css" />
-<!--end::Global Stylesheets Bundle-->
-<link rel="stylesheet" href="~/lib/animate.css/animate.min.css">
-<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-<link rel="stylesheet" href="~/Bookify.Web.styles.css" asp-append-version="true" />
 
 <div class="d-flex flex-column flex-root page-bg">
 	<!--begin::Page-->
@@ -118,7 +110,6 @@
 					<div class="pb-20">
 						@foreach (var book in Model)
 						{
-							
 							<!--begin::Item-->
 							<a class="d-flex flex-stack" asp-controller="Search" asp-action="Details" asp-route-bKey="@book.Key">
 								<!--begin::Symbol-->
@@ -131,7 +122,7 @@
 									<!--begin:Author-->
 									<div class="flex-grow-1 me-2">
 										<h5 class="text-white text-hover-primary fs-5 fw-bolder">@book.Title</h5>
-										<span class="text-gray-400 fw-semibold d-block fs-6">@book.Author!.Name</span>
+										<span class="text-gray-400 fw-semibold d-block fs-6">@book.Author</span>
 									</div>
 									<!--end:Author-->
 								</div>

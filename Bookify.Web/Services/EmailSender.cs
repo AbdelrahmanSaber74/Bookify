@@ -1,4 +1,4 @@
-﻿using Bookify.Domain.Coomon;
+﻿using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
@@ -7,48 +7,38 @@ namespace Bookify.Web.Services
 {
     public class EmailSender : IEmailSender
     {
-        private readonly EmailSettings _emailSettings;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly MailSettings _mailSettings;
 
-        public EmailSender(IOptions<EmailSettings> emailSettings, IWebHostEnvironment webHostEnvironment)
+        public EmailSender(IWebHostEnvironment webHostEnvironment,
+            IOptions<MailSettings> mailSettings)
         {
-            _emailSettings = emailSettings.Value;
             _webHostEnvironment = webHostEnvironment;
+            _mailSettings = mailSettings.Value;
         }
 
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            using (var smtpClient = new SmtpClient(_emailSettings.SmtpServer))
+            MailMessage message = new()
             {
-                smtpClient.Port = _emailSettings.Port;
-                smtpClient.Credentials = new NetworkCredential(_emailSettings.Username, _emailSettings.Password);
-                smtpClient.EnableSsl = _emailSettings.EnableSSL;
+                From = new MailAddress(_mailSettings.Email!, _mailSettings.DisplayName),
+                Body = htmlMessage,
+                Subject = subject,
+                IsBodyHtml = true
+            };
 
-                var mailMessage = new MailMessage
-                {
-                    From = new MailAddress(_emailSettings.SenderEmail, _emailSettings.SenderName),
-                    Subject = subject,
-                    Body = htmlMessage,
-                    IsBodyHtml = true
-                };
+            message.To.Add(_webHostEnvironment.IsDevelopment() ? "dev.creed@outlook.com" : email);
 
+            SmtpClient smtpClient = new(_mailSettings.Host)
+            {
+                Port = _mailSettings.Port,
+                Credentials = new NetworkCredential(_mailSettings.Email, _mailSettings.Password),
+                EnableSsl = true
+            };
 
+            await smtpClient.SendMailAsync(message);
 
-                mailMessage.To.Add(_webHostEnvironment.IsDevelopment() ? "tech.abdelrahman.s@gmail.com" : email);
-
-                try
-                {
-                    await smtpClient.SendMailAsync(mailMessage);
-                }
-                catch (SmtpException smtpEx)
-                {
-                    throw new InvalidOperationException($"SMTP Error: {smtpEx.StatusCode} - {smtpEx.Message}");
-                }
-                catch (Exception ex)
-                {
-                    throw new InvalidOperationException($"Error sending email: {ex.Message}", ex);
-                }
-            }
+            smtpClient.Dispose();
         }
     }
 }

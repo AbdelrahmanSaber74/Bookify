@@ -1,62 +1,63 @@
-﻿using Microsoft.EntityFrameworkCore;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-
-namespace Bookify.Web.Controllers
+﻿namespace Bookify.Web.Controllers
 {
     [Authorize]
     public class DashboardController : Controller
     {
-
-        private readonly IBookCopyRepo _copyRepo;
-        private readonly ISubscribersRepo _subscribersRepo;
-        private readonly IBookRepo _book;
-        private readonly IRentalCopyRepo _rentalCopy;
         private readonly IMapper _mapper;
+        private readonly IBookService _bookService;
+        private readonly ISubscriberService _subscriberService;
+        private readonly IRentalService _rentalService;
 
-        public DashboardController(IBookCopyRepo copyRepo, ISubscribersRepo subscribersRepo, IMapper mapper, IBookRepo book, IRentalCopyRepo rentalCopy)
+        public DashboardController(IMapper mapper,
+                IBookService bookService,
+                ISubscriberService subscriberService,
+                IRentalService rentalService)
         {
-            _copyRepo = copyRepo;
-            _subscribersRepo = subscribersRepo;
             _mapper = mapper;
-            _book = book;
-            _rentalCopy = rentalCopy;
+            _bookService = bookService;
+            _subscriberService = subscriberService;
+            _rentalService = rentalService;
         }
 
-        public async Task<IActionResult> Index()
-        {
-            var numberOfCopies = await _copyRepo.Count();
-            var numberOfSubscribers = await _subscribersRepo.Count();
-            var lastAddedBooks = await _book.LastAddedBooks();
-            var topBooks = await _book.TopBooks();
 
-            var model = new DashboardViewModel
+        public IActionResult Index()
+        {
+            var numberOfCopies = _bookService.GetActiveBooksCount();
+
+            numberOfCopies = numberOfCopies <= 10 ? numberOfCopies : numberOfCopies / 10 * 10;
+
+            var numberOfsubscribers = _subscriberService.GetActiveSubscribersCount();
+            var lastAddedBooks = _bookService.GetLastAddedBooks(8);
+            var topBooks = _bookService.GetTopBooks(6);
+
+            var viewModel = new DashboardViewModel
             {
                 NumberOfCopies = numberOfCopies,
-                NumberOfSubscribers = numberOfSubscribers,
+                NumberOfSubscribers = numberOfsubscribers,
                 LastAddedBooks = _mapper.Map<IEnumerable<BookViewModel>>(lastAddedBooks),
                 TopBooks = _mapper.Map<IEnumerable<BookViewModel>>(topBooks)
             };
 
-
-            return View(model);
-
+            return View(viewModel);
         }
 
-        public async Task<IActionResult> GetRentalsPerDay(DateTime? startDate, DateTime? endDate)
+        [AjaxOnly]
+        public IActionResult GetRentalsPerDay(DateTime? startDate, DateTime? endDate)
         {
-            var data = await _rentalCopy.GetRentalsPerDayAsync(startDate, endDate);
-            return Ok(data);
+            startDate ??= DateTime.Today.AddDays(-29);
+            endDate ??= DateTime.Today;
+
+            var data = _rentalService.GetRentalsPerDay(startDate, endDate);
+
+            return Ok(_mapper.Map<IEnumerable<ChartItemViewModel>>(data));
         }
 
-		public async Task<IActionResult> GetSubscribersPerCity()
-		{
-            var data = await _subscribersRepo.GetSubscribersPerCity();
-			return Ok(data);
+        [AjaxOnly]
+        public IActionResult GetSubscribersPerCity()
+        {
+            var data = _subscriberService.GetSubscribersPerCity();
 
-		}
-
-
-
-
-	}
+            return Ok(_mapper.Map<IEnumerable<ChartItemViewModel>>(data));
+        }
+    }
 }

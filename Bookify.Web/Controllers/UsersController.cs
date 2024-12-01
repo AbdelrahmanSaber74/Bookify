@@ -1,310 +1,205 @@
-﻿using System.Text;
+﻿using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Text;
+using System.Text.Encodings.Web;
 
 namespace Bookify.Web.Controllers
 {
     [Authorize(Roles = AppRoles.Admin)]
     public class UsersController : Controller
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly IMapper _mapper;
+        private readonly IAuthService _authService;
+        private readonly IValidator<UserFormViewModel> _validator;
         private readonly IEmailSender _emailSender;
-        private readonly ILogger<UsersController> _logger;
-        private readonly IWebHostEnvironment _webHostEnvironment;
-        private readonly string _resetPassword;
+        private readonly IMapper _mapper;
+
         private readonly IEmailBodyBuilder _emailBodyBuilder;
 
-        public UsersController(IEmailBodyBuilder emailBodyBuilder, UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole> roleManager, IMapper mapper, IConfiguration configuration, IEmailSender emailSender, ILogger<UsersController> logger, IWebHostEnvironment webHostEnvironment)
+        public UsersController(
+            IAuthService authService,
+            IValidator<UserFormViewModel> validator,
+            IEmailSender emailSender,
+            IMapper mapper,
+            IEmailBodyBuilder emailBodyBuilder)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _roleManager = roleManager;
-            _mapper = mapper;
+            _authService = authService;
+            _validator = validator;
             _emailSender = emailSender;
-            _logger = logger;
-            _webHostEnvironment = webHostEnvironment;
+            _mapper = mapper;
             _emailBodyBuilder = emailBodyBuilder;
-            _resetPassword = configuration["ResetPassword"]!;
         }
 
-        [HttpGet]
+
         public async Task<IActionResult> Index()
         {
-            var users = await _userManager.Users.ToListAsync();
-            var viewModel = _mapper.Map<IEnumerable<UserViewModel>>(users);
-            return View(viewModel);
+            var users = await _authService.GetUsersAsync();
+            return View(_mapper.Map<IEnumerable<UserViewModel>>(users));
         }
 
         [HttpGet]
+        [AjaxOnly]
         public async Task<IActionResult> Create()
         {
-            return await ReturnFormViewWithError(null);
-        }
+            var roles = await _authService.GetRolesAsync();
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddUser(AddEditUserViewModel model)
-        {
-            if (!ModelState.IsValid)
+            var viewModel = new UserFormViewModel
             {
-                return await ReturnFormViewWithError(model);
-            }
-
-            var newUser = CreateUser(model);
-            var result = await _userManager.CreateAsync(newUser, model.Password!);
-
-            if (result.Succeeded)
-            {
-                await SendConfirmationEmail(newUser, model.FullName, model.Email);
-                await _userManager.AddToRolesAsync(newUser, model.SelectedRoles);
-                TempData["SuccessMessage"] = "User added successfully!";
-                return RedirectToAction(nameof(Index));
-            }
-
-            AddErrorsToModelState(result.Errors);
-            return await ReturnFormViewWithError(model);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Edit(string id)
-        {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
-
-            var userRoles = await _userManager.GetRolesAsync(user);
-            var allRoles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
-            var roleItems = allRoles.Select(role => new SelectListItem
-            {
-                Value = role,
-                Text = role,
-            }).ToList();
-
-            var viewModel = new AddEditUserViewModel
-            {
-                Id = user.Id,
-                FullName = user.FullName,
-                UserName = user.UserName,
-                PhoneNumber = user.PhoneNumber,
-                Email = user.Email,
-                Roles = roleItems,
-                SelectedRoles = userRoles.ToList()
+                Roles = roles.Select(r => new SelectListItem { Text = r.Name, Value = r.Name })
             };
 
-            return View("Form", viewModel);
+            return PartialView("_Form", viewModel);
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditUser(AddEditUserViewModel model)
+        public async Task<IActionResult> Create(UserFormViewModel model)
         {
-            if (!ModelState.IsValid)
+            var validationResult = _validator.Validate(model);
+
+            if (!validationResult.IsValid)
+                return BadRequest();
+
+            var dto = _mapper.Map<CreateUserDto>(model);
+
+            var result = await _authService.AddUserAsync(dto, User.GetUserId());
+
+            if (result.IsSucceeded)
             {
-                return await ReturnFormViewWithError(model);
-            }
+                var user = result.User;
 
-            var user = await _userManager.FindByIdAsync(model.Id!);
-            if (user == null)
-            {
-                TempData["ErrorMessage"] = "User not found.";
-                return RedirectToAction(nameof(Index));
-            }
+                var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(result.VerificationCode!));
 
-            _mapper.Map(model, user);
-            user.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            user.LastUpdatedOn = DateTime.Now;
-
-            var updateUserResult = await _userManager.UpdateAsync(user);
-            if (!updateUserResult.Succeeded)
-            {
-                TempData["WarningMessage"] = "Failed to update user details.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            await UpdateUserRoles(user, model.SelectedRoles);
-            await _userManager.UpdateSecurityStampAsync(user);
-
-            TempData["SuccessMessage"] = "User updated successfully!";
-            return RedirectToAction(nameof(Index));
-        }
-
-        [AllowAnonymous]
-        public async Task<IActionResult> LogOut()
-        {
-            await _signInManager.SignOutAsync();
-            return RedirectToAction("Index", "Home");
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleStatus(string id)
-        {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
-
-            user.IsDeleted = !user.IsDeleted;
-            user.LastUpdatedOn = DateTime.Now;
-            user.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            await _userManager.UpdateAsync(user);
-            if (user.IsDeleted) await _userManager.UpdateSecurityStampAsync(user);
-
-            return Json(new { success = true, lastUpdatedOn = user.LastUpdatedOn.ToString() });
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> ResetPassword(string id)
-        {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
-
-            var currentPassword = user.PasswordHash;
-            var removeResult = await _userManager.RemovePasswordAsync(user);
-            if (!removeResult.Succeeded)
-            {
-                TempData["WarningMessage"] = "Unable to remove the current password.";
-                return RedirectToAction(nameof(Index));
-            }
-
-            var result = await _userManager.AddPasswordAsync(user, _resetPassword);
-            if (result.Succeeded)
-            {
-                user.LastUpdatedOn = DateTime.Now;
-                user.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                await _userManager.UpdateAsync(user);
-                TempData["SuccessMessage"] = "Password has been reset successfully!";
-                return RedirectToAction(nameof(Index));
-            }
-
-            await _userManager.AddPasswordAsync(user, currentPassword!);
-            await _userManager.UpdateAsync(user);
-
-            var errorMessages = result.Errors.Select(e => e.Description).ToArray();
-            TempData["WarningMessage"] = "Password was not reset successfully! " + string.Join(", ", errorMessages);
-            return RedirectToAction(nameof(Index));
-        }
-
-        [AcceptVerbs("Get", "Post")]
-        public async Task<IActionResult> AllowUserName(string userName, string id)
-        {
-            var user = await _userManager.FindByNameAsync(userName);
-            if (user != null && user.Id != id)
-            {
-                return Json(string.Format(Errors.Duplicated, "User"));
-            }
-
-            return Json(true);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> AllowEmail(string id, string email)
-        {
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user != null && user.Id != id)
-            {
-                return Json(string.Format(Errors.Duplicated, "User"));
-            }
-
-            return Json(true);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Unlock(string id)
-        {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
-
-            if (await _userManager.IsLockedOutAsync(user))
-            {
-                await _userManager.SetLockoutEndDateAsync(user, null);
-            }
-
-            return Ok();
-        }
-
-        private async Task<IActionResult> ReturnFormViewWithError(AddEditUserViewModel? model)
-        {
-            model ??= new AddEditUserViewModel();
-
-            var roles = await _roleManager.Roles
-                .Select(r => new SelectListItem
-                {
-                    Value = r.Name,
-                    Text = r.Name
-                })
-                .ToListAsync();
-
-            model.Roles = roles;
-            return View("Form", model);
-        }
-
-        private ApplicationUser CreateUser(AddEditUserViewModel model)
-        {
-            return new ApplicationUser
-            {
-                UserName = model.FullName,
-                NormalizedUserName = model.Email.ToUpper(),
-                FullName = model.FullName,
-                Email = model.Email,
-                NormalizedEmail = model.Email.ToUpper(),
-                CreatedOn = DateTime.Now,
-                CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)!.Value,
-                PhoneNumber = model.PhoneNumber,
-            };
-        }
-
-        private async Task SendConfirmationEmail(ApplicationUser newUser, string fullName, string email)
-        {
-
-            // Generate the email confirmation token and callback URL
-            var code = await _userManager.GenerateEmailConfirmationTokenAsync(newUser);
-            code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-
-            var callbackUrl = Url.Page(
+                var callbackUrl = Url.Page(
                     "/Account/ConfirmEmail",
                     pageHandler: null,
-                    values: new { area = "Identity", userId = newUser.Id, code },
+                    values: new { area = "Identity", userId = user!.Id, code },
                     protocol: Request.Scheme);
 
-
-
-
-            var placeholder = new Dictionary<string, string>()
+                var placeholders = new Dictionary<string, string>()
                 {
-                    { "imageUrl" , "https://res.cloudinary.com/dkbsaseyc/image/upload/fl_preserve_transparency/v1729535424/icon-positive-vote-1_rdexez_ii8um2.jpg?_s=public-apps"} ,
-                    { "header" , $"Hey {fullName}"} ,
-                    { "body" , "Please Confirm your account"} ,
-                    { "url" , callbackUrl!} ,
-                    { "linkTitle" , "Active Account" } ,
+                    { "imageUrl", "https://res.cloudinary.com/devcreed/image/upload/v1668732314/icon-positive-vote-1_rdexez.svg" },
+                    { "header", $"Hey {user.FullName}, thanks for joining us!" },
+                    { "body", "please confirm your email" },
+                    { "url", $"{HtmlEncoder.Default.Encode(callbackUrl!)}" },
+                    { "linkTitle", "Active Account!" }
                 };
 
-            var body = await _emailBodyBuilder.GetEmailBodyAsync(
-                            EmailTemplates.Email,
-                            placeholder
-                        );
+                var body = _emailBodyBuilder.GetEmailBody(EmailTemplates.Email, placeholders);
 
-            await _emailSender.SendEmailAsync(email, "Confirm your email", body);
+                await _emailSender.SendEmailAsync(user.Email!, "Confirm your email", body);
 
-        }
-
-
-        private void AddErrorsToModelState(IEnumerable<IdentityError> errors)
-        {
-            foreach (var error in errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
+                var viewModel = _mapper.Map<UserViewModel>(user);
+                return PartialView("_UserRow", viewModel);
             }
+
+            return BadRequest(string.Join(',', result.Errors!));
         }
 
-        private async Task UpdateUserRoles(ApplicationUser user, IList<string> selectedRoles)
+        [HttpGet]
+        [AjaxOnly]
+        public async Task<IActionResult> Edit(string id)
         {
-            var currentRoles = await _userManager.GetRolesAsync(user);
-            var rolesToAdd = selectedRoles.Except(currentRoles).ToList();
-            var rolesToRemove = currentRoles.Except(selectedRoles).ToList();
+            var user = await _authService.GetUsersByIdAsync(id);
 
-            await _userManager.AddToRolesAsync(user, rolesToAdd);
-            await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+            if (user is null)
+                return NotFound();
+
+            var roles = await _authService.GetRolesAsync();
+
+            var viewModel = _mapper.Map<UserFormViewModel>(user);
+
+            viewModel.SelectedRoles = await _authService.GetUsersRolesAsync(user);
+            viewModel.Roles = roles.Select(r => new SelectListItem { Text = r.Name, Value = r.Name });
+
+            return PartialView("_Form", viewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(UserFormViewModel model)
+        {
+            var validationResult = _validator.Validate(model);
+
+            if (!validationResult.IsValid)
+                return BadRequest();
+
+            var user = await _authService.GetUsersByIdAsync(model.Id!);
+
+            if (user is null)
+                return NotFound();
+
+            user = _mapper.Map(model, user);
+
+            var result = await _authService.UpdateUserAsync(user, model.SelectedRoles, User.GetUserId());
+
+            if (result.IsSucceeded)
+            {
+                var viewModel = _mapper.Map<UserViewModel>(result.User);
+                return PartialView("_UserRow", viewModel);
+            }
+
+            return BadRequest(string.Join(',', result.Errors!));
+        }
+
+        [HttpGet]
+        [AjaxOnly]
+        public async Task<IActionResult> ResetPassword(string id)
+        {
+            var user = await _authService.GetUsersByIdAsync(id);
+
+            if (user is null)
+                return NotFound();
+
+            var viewModel = new ResetPasswordFormViewModel { Id = user.Id };
+
+            return PartialView("_ResetPasswordForm", viewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword(ResetPasswordFormViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest();
+
+            var user = await _authService.GetUsersByIdAsync(model.Id);
+
+            if (user is null)
+                return NotFound();
+
+            var result = await _authService.ResetPasswordAsync(user, model.Password, User.GetUserId());
+
+            if (result.IsSucceeded)
+            {
+                var viewModel = _mapper.Map<UserViewModel>(result.User);
+                return PartialView("_UserRow", viewModel);
+            }
+
+            return BadRequest(string.Join(',', result.Errors!));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ToggleStatus(string id)
+        {
+            var user = await _authService.ToggleUserStatusAsync(id, User.GetUserId());
+
+            return user is null ? NotFound() : Ok(user.LastUpdatedOn.ToString());
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Unlock(string id)
+        {
+            var user = await _authService.UnlockUserAsync(id);
+
+            return user is null ? NotFound() : Ok();
+        }
+
+        public async Task<IActionResult> AllowUserName(UserFormViewModel model)
+        {
+            return Json(await _authService.AllowUserNameAsync(model.Id, model.UserName));
+        }
+
+        public async Task<IActionResult> AllowEmail(UserFormViewModel model)
+        {
+            return Json(await _authService.AllowEmailAsync(model.Id, model.Email));
         }
     }
 }

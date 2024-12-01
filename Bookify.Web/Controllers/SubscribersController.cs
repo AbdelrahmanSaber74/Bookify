@@ -1,353 +1,350 @@
-﻿namespace Bookify.Web.Controllers
+﻿using FluentValidation.AspNetCore;
+using Hangfire;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Mvc.Rendering;
+
+namespace Bookify.Web.Controllers
 {
     [Authorize(Roles = AppRoles.Reception)]
     public class SubscribersController : Controller
     {
-        private readonly ISubscribersRepo _subscribersRepo;
-        private readonly IGovernorateRepo _governorateRepo;
-        private readonly IAreaRepo _areaRepo;
-        private readonly IMapper _mapper;
-        private readonly IImageService _imageService;
-        private readonly IDataProtector _dataProtector;
-        private readonly IWhatsAppClient _whatsAppClient;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IDataProtector _dataProtector;
+        private readonly IMapper _mapper;
+        private readonly IValidator<SubscriberFormViewModel> _validator;
+        private readonly IWhatsAppClient _whatsAppClient;
+        private readonly ISubscriberService _subscriberService;
+        private readonly IAreaService _areaService;
+        private readonly IGovernorateService _governorateService;
+
+        private readonly IImageService _imageService;
         private readonly IEmailBodyBuilder _emailBodyBuilder;
         private readonly IEmailSender _emailSender;
-        private readonly ISubscriptionRepo _subscriptionRepo;
-        private readonly NotificationService _notificationService;
-
 
         public SubscribersController(
-            ISubscribersRepo subscribersRepo,
-            IGovernorateRepo governorateRepo,
-            IAreaRepo areaRepo,
-            IMapper mapper,
-            IImageService imageService,
-            IDataProtectionProvider dataProtectionProvider,
-            IWhatsAppClient whatsAppClient,
             IWebHostEnvironment webHostEnvironment,
+            IDataProtectionProvider dataProtector,
+            IMapper mapper,
+            IValidator<SubscriberFormViewModel> validator,
+            IWhatsAppClient whatsAppClient,
+            ISubscriberService subscriberService,
+            IAreaService areaService,
+            IGovernorateService governorateService,
+            IImageService imageService,
             IEmailBodyBuilder emailBodyBuilder,
-            IEmailSender emailSender,
-            ISubscriptionRepo subscriptionRepo,
-            NotificationService notificationService)
+            IEmailSender emailSender)
         {
-            _subscribersRepo = subscribersRepo;
-            _governorateRepo = governorateRepo;
-            _areaRepo = areaRepo;
-            _mapper = mapper;
-            _imageService = imageService;
-            _dataProtector = dataProtectionProvider.CreateProtector(purpose: "MySecureKey");
-            _whatsAppClient = whatsAppClient;
             _webHostEnvironment = webHostEnvironment;
+            _dataProtector = dataProtector.CreateProtector("MySecureKey");
+            _mapper = mapper;
+            _validator = validator;
+            _whatsAppClient = whatsAppClient;
+            _subscriberService = subscriberService;
+            _areaService = areaService;
+            _governorateService = governorateService;
+            _imageService = imageService;
             _emailBodyBuilder = emailBodyBuilder;
             _emailSender = emailSender;
-            _subscriptionRepo = subscriptionRepo;
-            _notificationService = notificationService;
         }
 
-        public async Task<IActionResult> Index() => View();
 
+        public IActionResult Index()
+        {
+            return View();
+        }
 
         [HttpPost]
-        public async Task<IActionResult> Search(string value)
+        public IActionResult Search(SearchFormViewModel model)
         {
-            if (string.IsNullOrEmpty(value))
-            {
-                return View("Index", null);
-            }
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            var subscriber = await _subscribersRepo.Search(value);
-            if (subscriber != null)
-            {
-                var viewModel = _mapper.Map<SubscriberSearchResultViewModel>(subscriber);
-                viewModel.Key = _dataProtector.Protect(subscriber.Id.ToString());
-                return View("Index", viewModel);
-            }
+            var query = _subscriberService.GetQueryable();
 
-            return View("Index", null);
+            var subscriber = _mapper.ProjectTo<SubscriberSearchResultViewModel>(query)
+                                    .SingleOrDefault(s =>
+                                                       s.Email == model.Value
+                                                    || s.NationalId == model.Value
+                                                    || s.MobileNumber == model.Value);
+
+            if (subscriber is not null)
+                subscriber.Key = _dataProtector.Protect(subscriber.Id.ToString());
+
+            return PartialView("_Result", subscriber);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Details(string id)
+        public IActionResult Details(string id)
         {
             var subscriberId = int.Parse(_dataProtector.Unprotect(id));
-            var subscriber = await _subscribersRepo.GetByIdAsync(subscriberId);
 
-            if (subscriber == null)
-            {
-                return RedirectToAction(actionName: "Index");
-            }
+            var query = _subscriberService.GetQueryableDetails();
 
-            if (subscriber.IsDeleted)
-            {
-                TempData["WarningMessage"] = "Subscriber Is Deleted!";
-                return RedirectToAction(actionName: "Index");
+            var viewModel = _mapper.ProjectTo<SubscriberViewModel>(query).SingleOrDefault(s => s.Id == subscriberId);
 
-            }
-
-            var subscriberViewModel = _mapper.Map<SubscriberViewModel>(subscriber);
-            subscriberViewModel.Key = id;
-
-            return View(viewName: "Details", subscriberViewModel);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> Create() => View("Form", await PopulateViewModel());
-
-        [HttpGet]
-        public async Task<IActionResult> Edit(string id)
-        {
-            var subscriberId = int.Parse(_dataProtector.Unprotect(id));
-            var existingSubscriber = await _subscribersRepo.GetByIdAsync(subscriberId);
-
-            if (existingSubscriber == null)
-            {
+            if (viewModel is null)
                 return NotFound();
-            }
 
-            var viewModel = _mapper.Map<SubscriberFormViewModel>(existingSubscriber);
             viewModel.Key = id;
-            return View("Form", await PopulateViewModel(viewModel));
+
+            return View(viewModel);
+        }
+
+        public IActionResult Create()
+        {
+            var viewModel = PopulateViewModel();
+            return View("Form", viewModel);
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(SubscriberFormViewModel model)
+        public async Task<IActionResult> Create(SubscriberFormViewModel model)
         {
-            var subscriberId = int.Parse(_dataProtector.Unprotect(model.Key));
-            var existingSubscriber = await _subscribersRepo.GetByIdAsync(subscriberId);
+            var validationResult = _validator.Validate(model);
+
+            if (!validationResult.IsValid)
+                validationResult.AddToModelState(ModelState);
 
             if (!ModelState.IsValid)
+                return View("Form", PopulateViewModel(model));
+
+            var subscriber = _mapper.Map<Subscriber>(model);
+
+            var imageName = $"{Guid.NewGuid()}{Path.GetExtension(model.Image!.FileName)}";
+            var imagePath = "/images/Subscribers";
+
+            var (isUploaded, errorMessage) = await _imageService.UploadAsync(model.Image, imageName, imagePath, hasThumbnail: true);
+
+            if (!isUploaded)
             {
-                return View("Form", await PopulateViewModel(model));
+                ModelState.AddModelError("Image", errorMessage!);
+                return View("Form", PopulateViewModel(model));
             }
 
-            _mapper.Map(model, existingSubscriber);
-            await HandleImageUpdate(model, existingSubscriber);
-            existingSubscriber.LastUpdatedOn = DateTime.Now;
-            existingSubscriber.LastUpdatedById = GetCurrentUserId();
+            subscriber = _subscriberService.Add(subscriber, imagePath, imageName, User.GetUserId());
 
-            await _subscribersRepo.UpdateAsync(existingSubscriber);
-            TempData["SuccessMessage"] = "Subscriber Updated successfully!";
+            //Send welcome email
+            var placeholders = new Dictionary<string, string>()
+            {
+                { "imageUrl", "https://res.cloudinary.com/devcreed/image/upload/v1668739431/icon-positive-vote-2_jcxdww.svg" },
+                { "header", $"Welcome {model.FirstName}," },
+                { "body", "thanks for joining Bookify 🤩" }
+            };
+
+            var body = _emailBodyBuilder.GetEmailBody(EmailTemplates.Notification, placeholders);
+
+            BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(
+                model.Email,
+                "Welcome to Bookify", body));
+
+            //Send welcome message using WhatsApp
+            //You can logic to  whatsApp service
+            if (model.HasWhatsApp)
+            {
+                var components = new List<WhatsAppComponent>()
+                {
+                    new WhatsAppComponent
+                    {
+                        Type = "body",
+                        Parameters = new List<object>()
+                        {
+                            new WhatsAppTextParameter { Text = model.FirstName }
+                        }
+                    }
+                };
+
+                var mobileNumber = _webHostEnvironment.IsDevelopment() ? "Add Your Number" : model.MobileNumber;
+
+                //Change 2 with your country code
+                BackgroundJob.Enqueue(() => _whatsAppClient
+                    .SendMessage($"2{mobileNumber}", WhatsAppLanguageCode.English_US,
+                    WhatsAppTemplates.WelcomeMessage, components));
+            }
+
+            var subscriberId = _dataProtector.Protect(subscriber.Id.ToString());
+
+            return RedirectToAction(nameof(Details), new { id = subscriberId });
+        }
+
+        public IActionResult Edit(string id)
+        {
+            var subscriberId = int.Parse(_dataProtector.Unprotect(id));
+            var subscriber = _subscriberService.GetById(subscriberId);
+
+            if (subscriber is null)
+                return NotFound();
+
+            var model = _mapper.Map<SubscriberFormViewModel>(subscriber);
+            var viewModel = PopulateViewModel(model);
+            viewModel.Key = id;
+
+            return View("Form", viewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(SubscriberFormViewModel model)
+        {
+            var validationResult = _validator.Validate(model);
+
+            if (!validationResult.IsValid)
+                validationResult.AddToModelState(ModelState);
+
+            if (!ModelState.IsValid)
+                return View("Form", PopulateViewModel(model));
+
+            var subscriberId = int.Parse(_dataProtector.Unprotect(model.Key!));
+
+            var subscriber = _subscriberService.GetById(subscriberId);
+
+            if (subscriber is null)
+                return NotFound();
+
+            if (model.Image is not null)
+            {
+                if (!string.IsNullOrEmpty(subscriber.ImageUrl))
+                    _imageService.Delete(subscriber.ImageUrl, subscriber.ImageThumbnailUrl);
+
+                var imageName = $"{Guid.NewGuid()}{Path.GetExtension(model.Image.FileName)}";
+                var imagePath = "/images/Subscribers";
+
+                var (isUploaded, errorMessage) = await _imageService.UploadAsync(model.Image, imageName, imagePath, hasThumbnail: true);
+
+                if (!isUploaded)
+                {
+                    ModelState.AddModelError("Image", errorMessage!);
+                    return View("Form", PopulateViewModel(model));
+                }
+
+                model.ImageUrl = $"{imagePath}/{imageName}";
+                model.ImageThumbnailUrl = $"{imagePath}/thumb/{imageName}";
+            }
+
+            else if (!string.IsNullOrEmpty(subscriber.ImageUrl))
+            {
+                model.ImageUrl = subscriber.ImageUrl;
+                model.ImageThumbnailUrl = subscriber.ImageThumbnailUrl;
+            }
+
+            subscriber = _mapper.Map(model, subscriber);
+            _subscriberService.Update(subscriber, User.GetUserId());
+
             return RedirectToAction(nameof(Details), new { id = model.Key });
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(SubscriberFormViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(" Form", await PopulateViewModel(model));
-            }
-
-            var newSubscriber = _mapper.Map<Subscriber>(model);
-            newSubscriber.CreatedById = GetCurrentUserId();
-            await HandleImageUpload(model, newSubscriber);
-
-
-
-            // Create and add subscription
-            var subscription = CreateSubscription(newSubscriber.Id, GetCurrentUserId());
-            newSubscriber.subscriptions.Add(subscription);
-
-            await _subscribersRepo.AddAsync(newSubscriber);
-
-
-            model.Image = null;
-            BackgroundJob.Enqueue(() => _notificationService.SendWhatsAppNotification(model));
-            BackgroundJob.Enqueue(() => _notificationService.SendWelcomeEmail(model));
-
-
-
-            TempData["SuccessMessage"] = "Subscriber added successfully!";
-            return RedirectToAction(nameof(Details), new { id = _dataProtector.Protect(newSubscriber.Id.ToString()) });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> ToggleStatus(int id)
-        {
-            var subscriber = await _subscribersRepo.GetByIdAsync(id);
-            if (subscriber == null)
-            {
-                return NotFound();
-            }
-
-            subscriber.IsDeleted = !subscriber.IsDeleted;
-            subscriber.LastUpdatedOn = DateTime.Now;
-            subscriber.LastUpdatedById = GetCurrentUserId();
-
-            await _subscribersRepo.UpdateAsync(subscriber);
-            TempData["SuccessMessage"] = "Subscriber status updated successfully!";
-            return RedirectToAction(nameof(Index));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var existingSubscriber = await _subscribersRepo.GetByIdAsync(id);
-            if (existingSubscriber == null)
-            {
-                return Json(new { success = false, message = "Subscriber not found." });
-            }
-
-            await _subscribersRepo.DeleteAsync(existingSubscriber.Id);
-            return Json(new { success = true });
-        }
-
-        [AcceptVerbs("Get", "Post")]
-        public async Task<IActionResult> AllowEmail(SubscriberFormViewModel model)
-        {
-            var subscriberId = string.IsNullOrEmpty(model.Key) ? 0 : int.Parse(_dataProtector.Unprotect(model.Key));
-            var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.Email == model.Email);
-            return Json(subscriber == null || subscriber.Id.Equals(subscriberId));
-        }
-
-        [AcceptVerbs("Get", "Post")]
-        public async Task<IActionResult> AllowMobileNumber(SubscriberFormViewModel model)
-        {
-            var subscriberId = string.IsNullOrEmpty(model.Key) ? 0 : int.Parse(_dataProtector.Unprotect(model.Key));
-            var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.MobileNumber == model.MobileNumber);
-            return Json(subscriber == null || subscriber.Id.Equals(subscriberId));
-        }
-
-        [AcceptVerbs("Get", "Post")]
-        public async Task<IActionResult> AllowNationalId(SubscriberFormViewModel model)
-        {
-            var subscriberId = string.IsNullOrEmpty(model.Key) ? 0 : int.Parse(_dataProtector.Unprotect(model.Key));
-            var subscriber = await _subscribersRepo.FindSubscriberAsync(s => s.NationalId == model.NationalId);
-            return Json(subscriber == null || subscriber.Id.Equals(subscriberId));
-        }
-
-
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RenewSubscription(string sKey)
+        public IActionResult RenewSubscription(string sKey)
         {
             var subscriberId = int.Parse(_dataProtector.Unprotect(sKey));
 
+            var subscriber = _subscriberService.GetSubscriberWithSubscriptions(subscriberId);
 
-            //  Last end date Subscription
-            var subscription = await _subscriptionRepo.GetLastSubscriptionBySubscriberId(subscriberId);
-
-            var subscriber = await _subscribersRepo.GetByIdAsync(subscriberId);
-
-            if (subscription == null)
-            {
+            if (subscriber is null)
                 return NotFound();
+
+            if (subscriber.IsBlackListed)
+                return BadRequest();
+
+            var lastSubscription = subscriber.Subscriptions.Last();
+
+            var startDate = lastSubscription.EndDate < DateTime.Today
+                            ? DateTime.Today
+                            : lastSubscription.EndDate.AddDays(1);
+
+            var newSubscription = _subscriberService.RenewSubscription(subscriberId, startDate, User.GetUserId());
+
+            //Send email and WhatsApp Message
+            var placeholders = new Dictionary<string, string>()
+            {
+                { "imageUrl", "https://res.cloudinary.com/devcreed/image/upload/v1668739431/icon-positive-vote-2_jcxdww.svg" },
+                { "header", $"Hello {subscriber.FirstName}," },
+                { "body", $"your subscription has been renewed through {newSubscription.EndDate.ToString("d MMM, yyyy")} 🎉🎉" }
+            };
+
+            var body = _emailBodyBuilder.GetEmailBody(EmailTemplates.Notification, placeholders);
+
+            BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(
+                subscriber.Email,
+                "Bookify Subscription Renewal", body));
+
+            if (subscriber.HasWhatsApp)
+            {
+                var components = new List<WhatsAppComponent>()
+                {
+                    new WhatsAppComponent
+                    {
+                        Type = "body",
+                        Parameters = new List<object>()
+                        {
+                            new WhatsAppTextParameter { Text = subscriber.FirstName },
+                            new WhatsAppTextParameter { Text = newSubscription.EndDate.ToString("d MMM, yyyy") },
+                        }
+                    }
+                };
+
+                var mobileNumber = _webHostEnvironment.IsDevelopment() ? "Add Your Number" : subscriber.MobileNumber;
+
+                //Change 2 with your country code
+                BackgroundJob.Enqueue(() => _whatsAppClient
+                    .SendMessage($"2{mobileNumber}", WhatsAppLanguageCode.English,
+                    WhatsAppTemplates.SubscriptionRenew, components));
             }
 
+            var viewModel = _mapper.Map<SubscriptionViewModel>(newSubscription);
 
-            var startDate = subscription.EndDate > DateTime.Now ? subscription.EndDate.AddDays(1) : DateTime.Today;
-
-
-            // Create and add subscription
-            var newSubscription = CreateSubscription(subscriberId, GetCurrentUserId()!, startDate);
-            await _subscriptionRepo.AddSubscription(newSubscription);
-
-
-            //Send Email And Whatapp
-            var subscriberModel = _mapper.Map<SubscriberFormViewModel>(subscriber);
-            BackgroundJob.Enqueue(() => _notificationService.SendWhatsAppNotification(subscriberModel));
-            BackgroundJob.Enqueue(() => _notificationService.SendWelcomeEmail(subscriberModel));
-
-
-            var subscriptionModel = _mapper.Map<SubscriptionViewModel>(newSubscription);
-
-            return PartialView("_SubscriptionRow", subscriptionModel);
-
+            return PartialView("_SubscriptionRow", viewModel);
         }
 
-        private async Task<SubscriberFormViewModel> PopulateViewModel(SubscriberFormViewModel? model = null)
+        [AjaxOnly]
+        public IActionResult GetAreas(int governorateId)
         {
-            var viewModel = model ?? new SubscriberFormViewModel();
-            var governorates = await _governorateRepo.GetAllGovernoratesAsync() ?? new List<Governorate>();
+            var areas = _areaService.GetActiveAreasByGovernorateId(governorateId);
+
+            return Ok(_mapper.Map<IEnumerable<SelectListItem>>(areas));
+        }
+
+        public IActionResult AllowNationalId(SubscriberFormViewModel model)
+        {
+            var subscriberId = 0;
+
+            if (!string.IsNullOrEmpty(model.Key))
+                subscriberId = int.Parse(_dataProtector.Unprotect(model.Key));
+
+            return Json(_subscriberService.AllowNationalId(subscriberId, model.NationalId));
+        }
+
+        public IActionResult AllowMobileNumber(SubscriberFormViewModel model)
+        {
+            var subscriberId = 0;
+
+            if (!string.IsNullOrEmpty(model.Key))
+                subscriberId = int.Parse(_dataProtector.Unprotect(model.Key));
+
+            return Json(_subscriberService.AllowMobileNumber(subscriberId, model.MobileNumber));
+        }
+
+        public IActionResult AllowEmail(SubscriberFormViewModel model)
+        {
+            var subscriberId = 0;
+
+            if (!string.IsNullOrEmpty(model.Key))
+                subscriberId = int.Parse(_dataProtector.Unprotect(model.Key));
+
+            return Json(_subscriberService.AllowEmail(subscriberId, model.Email));
+        }
+
+        private SubscriberFormViewModel PopulateViewModel(SubscriberFormViewModel? model = null)
+        {
+            SubscriberFormViewModel viewModel = model is null ? new SubscriberFormViewModel() : model;
+
+            var governorates = _governorateService.GetActiveGovernorates();
             viewModel.Governorates = _mapper.Map<IEnumerable<SelectListItem>>(governorates);
 
-            if (viewModel.GovernorateId > 0)
+            if (model?.GovernorateId > 0)
             {
-                var areas = await _areaRepo.GetAreasByGovernorateIdAsync(viewModel.GovernorateId);
+                var areas = _areaService.GetActiveAreasByGovernorateId(model.GovernorateId);
+
                 viewModel.Areas = _mapper.Map<IEnumerable<SelectListItem>>(areas);
-            }
-            else
-            {
-                viewModel.Areas = new List<SelectListItem>();
             }
 
             return viewModel;
-        }
-
-        private async Task HandleImageUpdate(SubscriberFormViewModel model, Subscriber existingSubscriber)
-        {
-            if (model.Image != null)
-            {
-                if (!string.IsNullOrEmpty(existingSubscriber.ImageThumbnailUrl) || !string.IsNullOrEmpty(existingSubscriber.ImageUrl))
-                {
-                    _imageService.DeleteOldImages(existingSubscriber.ImageUrl, existingSubscriber.ImageThumbnailUrl);
-                }
-
-                var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/Subscribers", true);
-                if (saveImageResult is OkObjectResult okResult)
-                {
-                    var resultData = (dynamic)okResult.Value;
-                    existingSubscriber.ImageUrl = resultData.relativePath;
-                    existingSubscriber.ImageThumbnailUrl = resultData.thumbnailRelativePath;
-                }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, "Failed to save the image. Please try again.");
-                }
-            }
-        }
-
-        private async Task HandleImageUpload(SubscriberFormViewModel model, Subscriber newSubscriber)
-        {
-            if (model.Image != null)
-            {
-                var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/Subscribers", true);
-                if (saveImageResult is OkObjectResult okResult)
-                {
-                    var resultData = (dynamic)okResult.Value;
-                    newSubscriber.ImageUrl = resultData.relativePath;
-                    newSubscriber.ImageThumbnailUrl = resultData.thumbnailRelativePath;
-                }
-                else if (saveImageResult is BadRequestObjectResult badRequestResult)
-                {
-                    var errorMessage = badRequestResult.Value?.ToString() ?? Errors.ImageSaveFailed;
-                    ModelState.AddModelError(string.Empty, errorMessage);
-                }
-            }
-        }
-
-
-        private Subscription CreateSubscription(int subscriberId, string createdById, DateTime? startDate = null)
-        {
-            startDate ??= DateTime.Now;
-
-            return new Subscription
-            {
-                SubscriberId = subscriberId,
-                CreatedById = createdById,
-                CreatedOn = DateTime.Now,
-                StartDate = startDate.Value,
-                EndDate = startDate.Value.AddYears(1)
-
-            };
-        }
-
-        private string GetCurrentUserId()
-        {
-            return User.FindFirst(ClaimTypes.NameIdentifier)?.Value!;
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetAreasByGovernorate(int governorateId)
-        {
-            var areas = await _areaRepo.GetAreasByGovernorateIdAsync(governorateId);
-            var areaList = _mapper.Map<IEnumerable<SelectListItem>>(areas);
-            return Json(areaList);
         }
     }
 }

@@ -3,7 +3,5 @@
     public class SearchFormViewModel
     {
         public string Value { get; set; } = null!;
-        public string? SubscriberKey { get; set; } = null!;
-
     }
 }

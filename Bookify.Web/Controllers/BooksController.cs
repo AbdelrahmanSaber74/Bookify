@@ -1,281 +1,257 @@
-﻿namespace Bookify.Web.Controllers
+﻿using CloudinaryDotNet;
+using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.Options;
+using SixLabors.ImageSharp;
+
+namespace Bookify.Web.Controllers
 {
     [Authorize(Roles = AppRoles.Archive)]
     public class BooksController : Controller
     {
-        private readonly IBookRepo _bookRepo;
-        private readonly IMapper _mapper;
-        private readonly IAuthorRepo _authorRepo;
-        private readonly ICategoriesRepo _categoriesRepo;
-        private readonly IBookCategoryRepo _bookCategoryRepo;
-        private readonly IBookCopyRepo _bookCopyRepo;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IMapper _mapper;
+        private readonly IValidator<BookFormViewModel> _validator;
+        private readonly Cloudinary _cloudinary;
         private readonly IImageService _imageService;
+        private readonly IBookService _bookService;
+        private readonly IAuthorService _authorService;
+        private readonly ICategoryService _categoryService;
 
-        public BooksController(
-            IBookRepo bookRepo,
+        private List<string> _allowedExtensions = new() { ".jpg", ".jpeg", ".png" };
+        private int _maxAllowedSize = 2097152;
+
+        public BooksController(IWebHostEnvironment webHostEnvironment,
             IMapper mapper,
-            IAuthorRepo authorRepo,
-            ICategoriesRepo categoriesRepo,
-            IBookCategoryRepo bookCategoryRepo,
-            IBookCopyRepo bookCopyRepo,
-            IWebHostEnvironment webHostEnvironment,
-            IImageService imageService)
+            IValidator<BookFormViewModel> validator,
+            IOptions<CloudinarySettings> cloudinary,
+            IImageService imageService,
+            IBookService bookService,
+            IAuthorService authorService,
+            ICategoryService categoryService)
         {
-            _bookRepo = bookRepo;
-            _mapper = mapper;
-            _authorRepo = authorRepo;
-            _categoriesRepo = categoriesRepo;
-            _bookCategoryRepo = bookCategoryRepo;
-            _bookCopyRepo = bookCopyRepo;
             _webHostEnvironment = webHostEnvironment;
-            _imageService = imageService;
-        }
+            _mapper = mapper;
+            _validator = validator;
 
-        // Action method to display all books
-        public async Task<IActionResult> Index()
-        {
-            var books = await _bookRepo.GetAllBooksIncludeAuthorAsync();
-            var bookViewModels = _mapper.Map<IEnumerable<BookViewModel>>(books);
-            return View(bookViewModels);
-        }
-
-        // Action method to display the create book view
-        public async Task<IActionResult> Create()
-        {
-            var viewModel = await PopulateViewModelAsync();
-            return View("AddBook", viewModel);
-        }
-
-        // POST method to add a new book
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddBook(BookViewModel model)
-        {
-            if (!ModelState.IsValid)
-                return await ReturnAddBookViewWithErrorsAsync();
-
-            var newBook = _mapper.Map<Book>(model);
-            var lastBookId = await _bookRepo.GetLatestBookIdAsync();
-
-            // Handle image upload
-            if (model.Image != null)
+            Account account = new()
             {
-                var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/books", true);
-                if (saveImageResult is OkObjectResult okResult)
-                {
-                    var resultData = (dynamic)okResult.Value;
-                    newBook.ImageUrl = resultData.relativePath;
-                    newBook.ImageThumbnailUrl = resultData.thumbnailRelativePath;
-                }
-                else if (saveImageResult is BadRequestObjectResult badRequestResult)
-                {
-                    var errorMessage = badRequestResult.Value?.ToString() ?? Errors.ImageSaveFailed;
-                    ModelState.AddModelError(string.Empty, errorMessage);
-                    return await ReturnAddBookViewWithErrorsAsync();
-                }
-            }
-
-            newBook.CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            await _bookRepo.AddBookAsync(newBook);
-            await AddBookCategoriesAsync(model.SelectedCategoryIds, newBook.Id);
-
-            TempData["SuccessMessage"] = "Book added successfully!";
-            return RedirectToAction(nameof(Details), new { id = newBook.Id });
-        }
-
-        // Action method to display the edit book view
-        public async Task<IActionResult> Edit(int id)
-        {
-            var book = await _bookRepo.GetBookByIdAsync(id);
-            if (book == null) return NotFound();
-
-            var bookView = _mapper.Map<BookViewModel>(book);
-            await PopulateSelectListsAsync(bookView);
-            bookView.SelectedCategoryIds = await _bookCategoryRepo.GetCategoryIdsByBookIdAsync(book.Id);
-            return View("EditBook", bookView);
-        }
-
-        // POST method to update an existing book
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateBook(BookViewModel model)
-        {
-            var existingBook = await _bookRepo.GetBookByIdAsync(model.Id);
-            if (existingBook == null) return NotFound();
-
-            if (!ModelState.IsValid)
-            {
-                await PopulateSelectListsAsync(model);
-                return View("EditBook", model);
-            }
-
-            // Use the private method to map properties
-            MapBookViewModelToBook(model, existingBook);
-
-            // Handle image update
-            if (model.Image != null)
-            {
-                if (!string.IsNullOrEmpty(existingBook.ImageThumbnailUrl) || !string.IsNullOrEmpty(existingBook.ImageUrl))
-                {
-                    _imageService.DeleteOldImages(existingBook.ImageUrl, existingBook.ImageThumbnailUrl);
-                }
-
-                var saveImageResult = await _imageService.SaveImageAsync(model.Image, "images/books", true);
-                if (saveImageResult is OkObjectResult okResult)
-                {
-                    var resultData = (dynamic)okResult.Value;
-                    existingBook.ImageUrl = resultData.relativePath;
-                    existingBook.ImageThumbnailUrl = resultData.thumbnailRelativePath;
-                }
-                else
-                {
-                    await PopulateSelectListsAsync(model);
-                    ModelState.AddModelError(string.Empty, "Failed to save the image. Please try again.");
-                    return View("EditBook", model);
-                }
-            }
-
-            // Update book categories and handle rental status
-            await _bookRepo.UpdateBookAsync(existingBook);
-
-            TempData["SuccessMessage"] = "Book updated successfully!";
-            return RedirectToAction(nameof(Details), new { id = existingBook.Id });
-        }
-
-
-        // POST method to delete a book
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var existingBook = await _bookRepo.GetBookByIdAsync(id);
-            if (existingBook == null) return Json(new { success = false, message = "Book not found." });
-
-            // Delete old images if they exist
-            if (!string.IsNullOrEmpty(existingBook.ImageThumbnailUrl) || !string.IsNullOrEmpty(existingBook.ImageUrl))
-            {
-                _imageService.DeleteOldImages(existingBook.ImageUrl, existingBook.ImageThumbnailUrl);
-            }
-
-            var categoryBookIds = await _bookCategoryRepo.GetCategoryIdsByBookIdAsync(id);
-            if (categoryBookIds.Any())
-            {
-                foreach (var categoryId in categoryBookIds)
-                {
-                    var bookCategory = await _bookCategoryRepo.GetBookCategoryByIdsAsync(id, categoryId);
-                    await _bookCategoryRepo.RemoveAsync(bookCategory);
-                }
-            }
-
-            await _bookRepo.DeleteBookAsync(id);
-            return Json(new { success = true, message = "Book deleted successfully." });
-        }
-
-        // GET method to display book details
-        [HttpGet]
-        public async Task<IActionResult> Details(int id)
-        {
-            var book = await _bookRepo.GetBookByIdAsync(id);
-            if (book == null) return NotFound();
-
-            var bookView = _mapper.Map<BookViewModel>(book);
-            bookView.SelectedCategoryIds = await _bookCategoryRepo.GetCategoryIdsByBookIdAsync(book.Id);
-            var author = await _authorRepo.GetAuthorByIdAsync(book.AuthorId);
-            bookView.AuthorName = author?.Name;
-            bookView.Copies = await _bookCopyRepo.GetBookCopiesByBookIdAsync(id);
-
-            foreach (var categoryId in bookView.SelectedCategoryIds)
-            {
-                var category = await _categoriesRepo.GetCategoryByIdAsync(categoryId);
-                if (category != null)
-                {
-                    bookView.NameOfCategories.Add(category.Name);
-                }
-            }
-
-            return View(bookView);
-        }
-
-        // Validation method for unique title and author
-        [AcceptVerbs("Get", "Post")]
-        public async Task<IActionResult> IsTitleAuthorUnique(BookViewModel model)
-        {
-            var existingBook = await _bookRepo.GetBookByTitleAndAuthor(model.Title, model.AuthorId);
-            if (existingBook == null || existingBook.Id == model.Id)
-            {
-                return Json(true);
-            }
-
-            return Json(string.Format(Errors.DuplicatedBook));
-        }
-
-        // Private methods for handling business logic
-
-        private async Task<BookViewModel> PopulateViewModelAsync()
-        {
-            var authors = await _authorRepo.GetAvailableAuthorsAsync();
-            var categories = await _categoriesRepo.GetAvailableCategoriesAsync();
-
-            return new BookViewModel
-            {
-                Authors = _mapper.Map<IEnumerable<SelectListItem>>(authors).ToList(),
-                Categories = _mapper.Map<IEnumerable<SelectListItem>>(categories).ToList()
+                Cloud = cloudinary.Value.Cloud,
+                ApiKey = cloudinary.Value.ApiKey,
+                ApiSecret = cloudinary.Value.ApiSecret
             };
+
+            _cloudinary = new Cloudinary(account);
+            _imageService = imageService;
+            _bookService = bookService;
+            _authorService = authorService;
+            _categoryService = categoryService;
         }
 
-        private async Task PopulateSelectListsAsync(BookViewModel model)
+        public IActionResult Index()
         {
-            model.Authors = _mapper.Map<IEnumerable<SelectListItem>>(await _authorRepo.GetAvailableAuthorsAsync()).ToList();
-            model.Categories = _mapper.Map<IEnumerable<SelectListItem>>(await _categoriesRepo.GetAvailableCategoriesAsync()).ToList();
+            return View();
         }
 
-        private async Task AddBookCategoriesAsync(IEnumerable<int> selectedCategoryIds, int bookId)
+        [HttpPost, IgnoreAntiforgeryToken]
+        public IActionResult GetBooks()
         {
-            foreach (var categoryId in selectedCategoryIds)
+            var filterDto = Request.Form.GetFilters();
+
+            var (books, recordsTotal) = _bookService.GetFiltered(filterDto);
+
+            var mappedData = _mapper.ProjectTo<BookRowViewModel>(books).ToList();
+
+            var jsonData = new { recordsFiltered = recordsTotal, recordsTotal, data = mappedData };
+
+            return Ok(jsonData);
+        }
+
+        public IActionResult Details(int id)
+        {
+            var query = _bookService.GetDetails();
+
+            var viewModel = _mapper.ProjectTo<BookViewModel>(query)
+                .SingleOrDefault(b => b.Id == id);
+
+            if (viewModel is null)
+                return NotFound();
+
+            return View(viewModel);
+        }
+
+        public IActionResult Create()
+        {
+            return View("Form", PopulateViewModel());
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(BookFormViewModel model)
+        {
+            var validationResult = _validator.Validate(model);
+
+            if (!validationResult.IsValid)
+                validationResult.AddToModelState(ModelState);
+
+            if (!ModelState.IsValid)
+                return View("Form", PopulateViewModel(model));
+
+            var book = _mapper.Map<Book>(model);
+
+            if (model.Image is not null)
             {
-                var exists = await _bookCategoryRepo.GetBookCategoryByIdsAsync(bookId, categoryId);
-                if (exists == null)
+                var imageName = $"{Guid.NewGuid()}{Path.GetExtension(model.Image.FileName)}";
+                var imagePath = "/images/books";
+
+                var (isUploaded, errorMessage) = await _imageService.UploadAsync(model.Image, imageName, imagePath, hasThumbnail: true);
+
+                if (!isUploaded)
                 {
-                    var bookCategory = new BookCategory { CategoryId = categoryId, BookId = bookId };
-                    await _bookCategoryRepo.AddAsync(bookCategory);
+                    ModelState.AddModelError(nameof(Image), errorMessage!);
+                    return View("Form", PopulateViewModel(model));
+
                 }
+
+                book.ImageUrl = $"{imagePath}/{imageName}";
+                book.ImageThumbnailUrl = $"{imagePath}/thumb/{imageName}";
+
+                //using var straem = model.Image.OpenReadStream();
+
+                //var imageParams = new ImageUploadParams
+                //{
+                //    File = new FileDescription(imageName, straem),
+                //    UseFilename = true
+                //};
+
+                //var result = await _cloudinary.UploadAsync(imageParams);
+
+                //book.ImageUrl = result.SecureUrl.ToString();
+                //book.ImageThumbnailUrl = GetThumbnailUrl(book.ImageUrl);
+                //book.ImagePublicId = result.PublicId;
             }
+
+            book = _bookService.Add(book, model.SelectedCategories, User.GetUserId());
+
+            return RedirectToAction(nameof(Details), new { id = book.Id });
         }
 
-        private async Task UpdateBookCategoriesAsync(IEnumerable<int> selectedCategoryIds, int bookId)
+        public IActionResult Edit(int id)
         {
-            var existingBookCategories = await _bookCategoryRepo.GetCategoryIdsByBookIdAsync(bookId);
-            foreach (var categoryId in existingBookCategories)
+            var book = _bookService.GetWithCategories(id);
+
+            if (book is null)
+                return NotFound();
+
+            var model = _mapper.Map<BookFormViewModel>(book);
+            var viewModel = PopulateViewModel(model);
+
+            viewModel.SelectedCategories = book.Categories.Select(c => c.CategoryId).ToList();
+
+            return View("Form", viewModel);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(BookFormViewModel model)
+        {
+            var validationResult = _validator.Validate(model);
+
+            if (!validationResult.IsValid)
+                validationResult.AddToModelState(ModelState);
+
+            if (!ModelState.IsValid)
+                return View("Form", PopulateViewModel(model));
+
+            var book = _bookService.GetWithCategories(model.Id);
+
+            if (book is null)
+                return NotFound();
+
+            //string imagePublicId = null;
+
+            if (model.Image is not null)
             {
-                if (!selectedCategoryIds.Contains(categoryId))
+                if (!string.IsNullOrEmpty(book.ImageUrl))
                 {
-                    var bookCategory = await _bookCategoryRepo.GetBookCategoryByIdsAsync(bookId, categoryId);
-                    await _bookCategoryRepo.RemoveAsync(bookCategory);
+                    _imageService.Delete(book.ImageUrl, book.ImageThumbnailUrl);
+
+                    //await _cloudinary.DeleteResourcesAsync(book.ImagePublicId);
                 }
+
+                var imageName = $"{Guid.NewGuid()}{Path.GetExtension(model.Image.FileName)}";
+                var imagePath = "/images/books";
+
+                var (isUploaded, errorMessage) = await _imageService.UploadAsync(model.Image, imageName, imagePath, hasThumbnail: true);
+
+                if (!isUploaded)
+                {
+                    ModelState.AddModelError(nameof(Image), errorMessage!);
+                    return View("Form", PopulateViewModel(model));
+                }
+
+                model.ImageUrl = $"{imagePath}/{imageName}";
+                model.ImageThumbnailUrl = $"{imagePath}/thumb/{imageName}";
+
+                //using var straem = model.Image.OpenReadStream();
+
+                //var imageParams = new ImageUploadParams
+                //{
+                //    File = new FileDescription(imageName, straem),
+                //    UseFilename = true
+                //};
+
+                //var result = await _cloudinary.UploadAsync(imageParams);
+
+                //model.ImageUrl = result.SecureUrl.ToString();
+                //imagePublicId = result.PublicId;
             }
 
-            await AddBookCategoriesAsync(selectedCategoryIds, bookId);
+            else if (!string.IsNullOrEmpty(book.ImageUrl))
+            {
+                model.ImageUrl = book.ImageUrl;
+                model.ImageThumbnailUrl = book.ImageThumbnailUrl;
+            }
+
+            book = _mapper.Map(model, book);
+
+            book = _bookService.Update(book, model.SelectedCategories, User.GetUserId());
+
+            return RedirectToAction(nameof(Details), new { id = book.Id });
         }
 
-        private async Task<IActionResult> ReturnAddBookViewWithErrorsAsync()
+        [HttpPost]
+        public IActionResult ToggleStatus(int id)
         {
-            var viewModel = await PopulateViewModelAsync();
-            return View("AddBook", viewModel);
+            var book = _bookService.ToggleStatus(id, User.GetUserId());
+
+            return book is null ? NotFound() : Ok();
         }
 
-        private void MapBookViewModelToBook(BookViewModel model, Book existingBook)
+        public IActionResult AllowItem(BookFormViewModel model)
         {
-            existingBook.Title = model.Title;
-            existingBook.Publisher = model.Publisher;
-            existingBook.PublishingDate = model.PublishDate;
-            existingBook.ImageUrl = model.ImageUrl;
-            existingBook.ImageThumbnailUrl = model.ImageThumbnailUrl;
-            existingBook.Hall = model.Hall;
-            existingBook.IsAvailableForRental = model.IsAvailableForRental;
-            existingBook.Description = model.Description;
-            existingBook.LastUpdatedOn = DateTime.Now;
-            existingBook.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            return Json(_bookService.AllowTitle(model.Id, model.Title, model.AuthorId));
+        }
+
+        private BookFormViewModel PopulateViewModel(BookFormViewModel? model = null)
+        {
+            BookFormViewModel viewModel = model is null ? new BookFormViewModel() : model;
+
+            var authors = _authorService.GetActiveAuthors();
+            var categories = _categoryService.GetActiveCategories();
+
+            viewModel.Authors = _mapper.Map<IEnumerable<SelectListItem>>(authors);
+            viewModel.Categories = _mapper.Map<IEnumerable<SelectListItem>>(categories);
+
+            return viewModel;
+        }
+
+        private string GetThumbnailUrl(string url)
+        {
+            var separator = "image/upload/";
+            var urlParts = url.Split(separator);
+
+            var thumbnailUrl = $"{urlParts[0]}{separator}c_thumb,w_200,g_face/{urlParts[1]}";
+
+            return thumbnailUrl;
         }
     }
 }

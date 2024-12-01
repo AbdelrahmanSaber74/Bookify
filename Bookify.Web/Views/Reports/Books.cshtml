@@ -1,7 +1,7 @@
 ﻿@model BooksReportViewModel
 
 @{
-    ViewData["Title"] = "Rentals Report";
+    ViewData["Title"] = "Books Report";
 }
 
 <div class="card mb-4">
@@ -44,12 +44,12 @@
             <div class="card-title">
                 <span>Books</span>
             </div>
-            @if (Model.Books.Any())
+            @if(Model.Books.Any())
             {
-                <div class="card-toolbar gap-3">
-                    <a class="btn btn-light-success" asp-action="ExportBooksToExcel"
-                       asp-route-authors="@Context.Request.Query["SelectedAuthors"]"
-                       asp-route-categories="@Context.Request.Query["SelectedCategories"]">
+                <div class="card-toolbar">
+                    <a class="btn btn-light-success me-2" asp-action="ExportBooksToExcel" 
+                            asp-route-authors="@Context.Request.Query["SelectedAuthors"]"
+                               asp-route-categories="@Context.Request.Query["SelectedCategories"]">
                         <i class="bi bi-file-earmark-excel-fill"></i>
                         Export to Excel
                     </a>
@@ -63,12 +63,10 @@
                 </div>
             }
         </div>
-
-
         <div class="card-body">
             @if (Model.Books.TotalPages > 1)
             {
-                <partial name="_Pagination" model="new PaginationViewModel { TotalPages = Model.Books.TotalPages , PageNumber = Model.Books.PageIndex }" />
+                <partial name="_Pagination" model="new PaginationViewModel { PageNumber = Model.Books.PageNumber, TotalPages = Model.Books.TotalPages }" />
             }
 
             @if (Model.Books.Any())

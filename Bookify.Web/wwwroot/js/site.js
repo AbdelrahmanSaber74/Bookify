@@ -1,10 +1,12 @@
-﻿var updatedRow;
+﻿var table;
+var datatable;
+var updatedRow;
+var exportedCols = [];
 
-// Show success message function
 function showSuccessMessage(message = 'Saved successfully!') {
     Swal.fire({
         icon: 'success',
-        title: 'Success',
+        title: 'Good Job',
         text: message,
         customClass: {
             confirmButton: "btn btn-primary"
@@ -12,283 +14,23 @@ function showSuccessMessage(message = 'Saved successfully!') {
     });
 }
 
-// Show error message function
 function showErrorMessage(message = 'Something went wrong!') {
     Swal.fire({
         icon: 'error',
         title: 'Oops...',
-        text: message,
+        text: message.responseText !== undefined ? message.responseText : message,
         customClass: {
             confirmButton: "btn btn-primary"
         }
     });
 }
 
-// Show warning message function
-function showWarningMessage(message = 'Something went wrong!') {
-    Swal.fire({
-        icon: 'warning',
-        title: 'Warning!',
-        text: message,
-        customClass: {
-            confirmButton: "btn btn-warning"
-        }
-    });
-}
-
-
-// Document ready function to handle displaying success, error, or warning messages
-$(document).ready(function () {
-    var successMessage = $("#SuccessMessage").text().trim();
-    if (successMessage) {
-        showSuccessMessage(successMessage);
-    }
-
-    var errorMessage = $("#ErrorMessage").text().trim();
-    if (errorMessage) {
-        showErrorMessage(errorMessage);
-    }
-
-    var warningMessage = $("#WarningMessage").text().trim();
-    if (warningMessage) {
-        showWarningMessage(warningMessage);
-    }
-
-    // Handle Select2 package use for select and option
-    $(".js-select2").select2({
-        allowClear: true
-    });
-    $('.js-select2').on('select2:select', function (e) {
-        $('form').validate().element('#' + $(this).attr('id'));
-    });
-
-    // Handle rangepicker package use for date calendar
-    $(".js-rangepicker").daterangepicker({
-        dateFormat: "Y-m-d",
-        singleDatePicker: true,
-        autoApply: true,
-        "drops": "up",
-        "showDropdowns": true,
-        "maxDate": new Date(),
-
-    });
-
-
-
-});
-
-// Initialize DataTable with export buttons and functionality
-function initDataTable(varTitle) {
-    $('table').DataTable({
-        dom: 'Bfrtip',
-        pageLength: 10, // Default page length
-        lengthMenu: [10, 25, 50, 100], // Options for row counts
-
-        columnDefs: [
-            {
-                targets: '.js-no-export', // Hide the Action column by class
-                visible: false, // Hide the column in the table
-                searchable: false // Ensure it's not searchable
-            }
-        ],
-        buttons: [
-
-            {
-                extend: 'collection',
-                text: '<i class=" bi bi-file-earmark-text "></i> Export',
-                className: 'btn btn-sm btn-secondary dropdown-toggle',
-                autoClose: true,
-                buttons: [
-                    {
-                        extend: 'copy',
-                        text: 'Copy to Clipboard',
-                        title: varTitle,
-                        className: 'btn btn-sm btn-secondary',
-                        exportOptions: {
-                            columns: ':visible:not(.js-no-export)'
-                        }
-                    },
-                    {
-                        extend: 'pdf',
-                        text: 'Export to PDF',
-                        title: varTitle,
-                        className: 'btn btn-sm btn-secondary',
-                        exportOptions: {
-                            columns: ':visible:not(.js-no-export)' // Exclude the Action column by class
-                        }
-                    },
-                    {
-                        extend: 'excel',
-                        text: 'Export to Excel',
-                        title: varTitle,
-                        className: 'btn btn-sm btn-secondary',
-                        exportOptions: {
-                            columns: ':visible:not(.js-no-export)' // Exclude the Action column by class
-                        },
-                        customize: function (xlsx) {
-                            var sheet = xlsx.xl.worksheets['sheet1.xml'];
-                            $('col', sheet).attr('width', 30); // Adjusting column width
-                        }
-                    },
-                    {
-                        extend: 'csv',
-                        text: 'Export to CSV',
-                        title: varTitle,
-                        className: 'btn btn-sm btn-secondary',
-                        exportOptions: {
-                            columns: ':visible:not(.js-no-export)' // Exclude the Action column by class
-                        }
-                    },
-                    {
-                        extend: 'print',
-                        text: 'Print',
-                        title: varTitle,
-                        className: 'btn btn-sm btn-secondary',
-                        exportOptions: {
-                            columns: ':visible:not(.js-no-export)' // Exclude the Action column by class
-                        }
-                    },
-                    {
-                        extend: 'colvis',
-                        text: 'Column Visibility',
-                        className: 'btn btn-sm btn-secondary'
-                    }
-                ]
-            }
-        ]
-    });
-}
-
-
-
-// Handle Toggle status
-$('body').delegate('.js-toggle-status', 'click', function () {
-    var btn = $(this);
-    var id = btn.data('id'); // Retrieve the data-id attribute value
-
-    bootbox.confirm({
-        message: "Are you sure that you need to toggle this item status?",
-        buttons: {
-            confirm: {
-                label: 'Yes',
-                className: 'btn-danger'
-            },
-            cancel: {
-                label: 'No',
-                className: 'btn-secondary'
-            }
-        },
-        callback: function (result) {
-            if (result) {
-                $.post({
-                    url: btn.data('url'),
-                    data: {
-                        '__RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val(),
-                        id: id // Correctly placed comma here
-                    },
-                    success: function (response) { // Use response instead of lastUpdatedOn
-                        var row = btn.parents('tr');
-                        var status = row.find('.js-status');
-                        var newStatus = status.text().trim() === 'Deleted' ? 'Available' : 'Deleted';
-
-                        // Update the status text and classes
-                        status.text(newStatus).toggleClass('badge-light-success badge-light-danger');
-
-                        // Update the LastUpdatedOn field assuming it’s in the response
-                        row.find('.js-updated-on').html(response.lastUpdatedOn);
-
-                        row.addClass('animate__animated animate__flash');
-
-                        // Show success message
-                        showSuccessMessage("The item status has been toggled successfully!");
-                    },
-                    error: function () {
-                        showErrorMessage("An error occurred while toggling the item status.");
-                    }
-                });
-            }
-        }
-    });
-});
-
-
-$('body').delegate('.js-delete', 'click', function () {
-    var btn = $(this); // Define btn using the clicked element
-    var Id = btn.data('id'); // Get the ID
-    var url = btn.data('url'); // Get the dynamic URL
-
-    bootbox.confirm({
-        message: 'Are you sure you want to delete this item?',
-        buttons: {
-            confirm: {
-                label: 'Yes',
-                className: 'btn-danger'
-            },
-            cancel: {
-                label: 'No',
-                className: 'btn-success'
-            }
-        },
-        callback: function (result) {
-            if (result) {
-                $.ajax({
-                    url: url,
-                    type: 'POST',
-                    data: { id: Id },
-                    headers: {
-                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            btn.closest('tr').remove(); // Remove the row from the DataTable
-                            showSuccessMessage("The item has been deleted successfully!");
-
-                        } else {
-                            console.error("Error Message:", response.message);
-                            console.error("Detailed Error:", response.errorMessage);
-                            showErrorMessage(response.message || "An error occurred while deleting the item.");
-                        }
-                    },
-                    error: function (xhr, status, error) {
-                        console.error("AJAX error:", error);
-                        showErrorMessage("An error occurred while processing your request.");
-                    }
-                });
-            }
-        }
-    });
-});
-
-// Function to check network status
-function checkNetworkStatus() {
-    if (!navigator.onLine) {
-        $('#submitBtn').prop('disabled', true); // Disable submit button if offline
-    } else {
-        $('#submitBtn').prop('disabled', false); // Enable submit button if online
-    }
-}
-
-// Event listeners for online and offline events
-window.addEventListener('load', checkNetworkStatus);
-window.addEventListener('online', checkNetworkStatus);
-window.addEventListener('offline', checkNetworkStatus);
-
-// Function to show loading animation
-function showLoading() {
-    $('#submitBtn').prop('disabled', true); // Disable the button
-    $('#submitBtn .loading-indicator').show(); // Show loading indicator
-    $('#submitBtn i').hide(); // Hide the icon
-}
-
-// Function to hide loading animation
-function hideLoading() {
-    $('#submitBtn').prop('disabled', false); // Enable the button
-    $('#submitBtn .loading-indicator').hide(); // Hide loading indicator
-    $('#submitBtn i').show(); // Show the icon
+function disableSubmitButton(btn) {
+    $(btn).attr('disabled', 'disabled').attr('data-kt-indicator', 'on');
 }
 
 function onModalBegin() {
-    showLoading(); // Call to show loading when the modal begins
+    disableSubmitButton($('#Modal').find(':submit'));
 }
 
 function onModalSuccess(row) {
@@ -298,82 +40,287 @@ function onModalSuccess(row) {
     if (updatedRow !== undefined) {
         datatable.row(updatedRow).remove().draw();
         updatedRow = undefined;
-    }
+    } 
 
     var newRow = $(row);
     datatable.row.add(newRow).draw();
-
-    KTMenu.init();
-    KTMenu.initHandlers();
 }
 
 function onModalComplete() {
-    hideLoading(); // Call to hide loading when the modal is complete
+    $('body :submit').removeAttr('disabled').removeAttr('data-kt-indicator');
 }
 
-
-
-
-// Define a named function for handling the modal rendering
-function attachModalEvent() {
-    $('.js-render-modal').on('click', function (e) {
-        e.preventDefault();
-        var title = $(this).data('title');
-        var actionUrl = $(this).attr('href'); // Get the action URL from the link
-
-        // Set the modal title
-        $('#copyModalLabel').text(title);
-
-        // Load the form into the modal body
-        $.ajax({
-            url: actionUrl,
-            type: 'GET',
-            success: function (data) {
-                $('#copyModal .modal-body').html(data);
-                $('#copyModal').modal('show');
-            },
-            error: function (xhr, status, error) {
-                // Handle errors here
-                console.error(error);
-            }
-        });
+//Select2
+function applySelect2() {
+    $('.js-select2').select2();
+    $('.js-select2').on('select2:select', function (e) {
+        $('form').not('#SignOut').validate().element('#' + $(this).attr('id'));
     });
 }
 
+//DataTables
+var headers = $('th');
+$.each(headers, function (i) {
+    if (!$(this).hasClass('js-no-export'))
+        exportedCols.push(i);
+});
 
-
-//Handle Confirm
-$('body').delegate('.js-confirm', 'click', function () {
-    var btn = $(this); 
-
-    bootbox.confirm({
-        message: btn.data('message'),  
-        buttons: {
-            confirm: {
-                label: 'Yes',           
-                className: 'btn-success' 
-            },
-            cancel: {
-                label: 'No',          
-                className: 'btn-secondary' 
+// Class definition
+var KTDatatables = function () {
+    // Private functions
+    var initDatatable = function () {
+        // Init datatable --- more info on datatables: https://datatables.net/manual/
+        datatable = $(table).DataTable({
+            'info': false,
+            'pageLength': 10,
+            'drawCallback': function () {
+                KTMenu.createInstances();
             }
-        },
-        callback: function (result) {
-            if (result) {
-                // If user confirms, send POST request to unlock the user
-                $.post({
-                    url: btn.data('url'), 
-                    data: {
-                        '__RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() 
-                    },
-                    success: function () {
-                        showSuccessMessage("User has been unlocked successfully!");
-                    },
-                    error: function () {
-                        showErrorMessage("Failed to unlock the user. Please try again.");
+        });
+    }
+
+    // Hook export buttons
+    var exportButtons = () => {
+        const documentTitle = $('.js-datatables').data('document-title');
+        var buttons = new $.fn.dataTable.Buttons(table, {
+            buttons: [
+                {
+                    extend: 'copyHtml5',
+                    title: documentTitle,
+                    exportOptions: {
+                        columns: exportedCols
                     }
-                });
+                },
+                {
+                    extend: 'excelHtml5',
+                    title: documentTitle,
+                    exportOptions: {
+                        columns: exportedCols
+                    }
+                },
+                {
+                    extend: 'csvHtml5',
+                    title: documentTitle,
+                    exportOptions: {
+                        columns: exportedCols
+                    }
+                },
+                {
+                    extend: 'pdfHtml5',
+                    title: documentTitle,
+                    exportOptions: {
+                        columns: exportedCols
+                    },
+                    customize: function (doc) {
+                        pdfMake.fonts = {
+                            Arial: {
+                                normal: 'arial',
+                                bold: 'arial',
+                                italics: 'arial',
+                                bolditalics: 'arial'
+                            }
+                        }
+                        doc.defaultStyle.font = 'Arial';
+                    }
+                }
+            ]
+        }).container().appendTo($('#kt_datatable_example_buttons'));
+
+        // Hook dropdown menu click event to datatable export buttons
+        const exportButtons = document.querySelectorAll('#kt_datatable_example_export_menu [data-kt-export]');
+        exportButtons.forEach(exportButton => {
+            exportButton.addEventListener('click', e => {
+                e.preventDefault();
+
+                // Get clicked export value
+                const exportValue = e.target.getAttribute('data-kt-export');
+                const target = document.querySelector('.dt-buttons .buttons-' + exportValue);
+
+                // Trigger click event on hidden datatable export buttons
+                target.click();
+            });
+        });
+    }
+
+    // Search Datatable --- official docs reference: https://datatables.net/reference/api/search()
+    var handleSearchDatatable = () => {
+        const filterSearch = document.querySelector('[data-kt-filter="search"]');
+        filterSearch.addEventListener('keyup', function (e) {
+            datatable.search(e.target.value).draw();
+        });
+    }
+
+    // Public methods
+    return {
+        init: function () {
+            table = document.querySelector('.js-datatables');
+
+            if (!table) {
+                return;
             }
+
+            initDatatable();
+            exportButtons();
+            handleSearchDatatable();
         }
+    };
+}();
+
+$(document).ready(function () {
+    //Disable submit button
+    $('form').not('#SignOut').not('.js-excluded-validation').on('submit', function () {
+        if ($('.js-tinymce').length > 0) {
+            $('.js-tinymce').each(function () {
+                var input = $(this);
+
+                var content = tinyMCE.get(input.attr('id')).getContent();
+                input.val(content);
+            });
+        }
+
+        var isValid = $(this).valid();
+        if (isValid) disableSubmitButton($(this).find(':submit')); 
+    });
+
+    //TinyMCE
+    if ($('.js-tinymce').length > 0) {
+        var options = { selector: ".js-tinymce", height: "430" };
+
+        if (KTThemeMode.getMode() === "dark") {
+            options["skin"] = "oxide-dark";
+            options["content_css"] = "dark";
+        }
+
+        tinymce.init(options);
+    }
+
+    //Select2
+    applySelect2();
+
+    //Datepicker
+    $('.js-datepicker').daterangepicker({
+        singleDatePicker: true,
+        autoApply: true,
+        drops: 'up',
+        maxDate: new Date()
+    });
+
+    //SweetAlert
+    var message = $('#Message').text();
+    if (message !== '') {
+        showSuccessMessage(message);
+    }
+
+    //DataTables
+    KTUtil.onDOMContentLoaded(function () {
+        KTDatatables.init();
+    });
+
+    //Handle bootstrap modal
+    $('body').delegate('.js-render-modal', 'click', function () {
+        var btn = $(this);
+        var modal = $('#Modal');
+
+        modal.find('#ModalLabel').text(btn.data('title'));
+
+        if (btn.data('update') !== undefined) {
+            updatedRow = btn.parents('tr');
+        }
+
+        $.get({
+            url: btn.data('url'),
+            success: function (form) {
+                modal.find('.modal-body').html(form);
+                $.validator.unobtrusive.parse(modal);
+                applySelect2();
+            },
+            error: function () {
+                showErrorMessage();
+            }
+        });
+
+        modal.modal('show');
+    });
+
+    //Handle Toggle Status
+    $('body').delegate('.js-toggle-status', 'click', function () {
+        var btn = $(this);
+
+        bootbox.confirm({
+            message: "Are you sure that you need to toggle this item status?",
+            buttons: {
+                confirm: {
+                    label: 'Yes',
+                    className: 'btn-danger'
+                },
+                cancel: {
+                    label: 'No',
+                    className: 'btn-secondary'
+                }
+            },
+            callback: function (result) {
+                if (result) {
+                    $.post({
+                        url: btn.data('url'),
+                        data: {
+                            '__RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                        },
+                        success: function (lastUpdatedOn) {
+                            var row = btn.parents('tr');
+                            var status = row.find('.js-status');
+                            var newStatus = status.text().trim() === 'Deleted' ? 'Available' : 'Deleted';
+                            status.text(newStatus).toggleClass('badge-light-success badge-light-danger');
+                            row.find('.js-updated-on').html(lastUpdatedOn);
+                            row.addClass('animate__animated animate__flash');
+
+                            showSuccessMessage();
+                        },
+                        error: function () {
+                            showErrorMessage();
+                        }
+                    });
+                }
+            }
+        });
+    });
+
+    //Handle Confirm
+    $('body').delegate('.js-confirm', 'click', function () {
+        var btn = $(this);
+
+        bootbox.confirm({
+            message: btn.data('message'),
+            buttons: {
+                confirm: {
+                    label: 'Yes',
+                    className: 'btn-success'
+                },
+                cancel: {
+                    label: 'No',
+                    className: 'btn-secondary'
+                }
+            },
+            callback: function (result) {
+                if (result) {
+                    $.post({
+                        url: btn.data('url'),
+                        data: {
+                            '__RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                        },
+                        success: function () {
+                            showSuccessMessage();
+                        },
+                        error: function () {
+                            showErrorMessage();
+                        }
+                    });
+                }
+            }
+        });
+    });
+
+    //Hanlde signout
+    $('.js-signout').on('click', function () {
+        $('#SignOut').submit();
     });
 });

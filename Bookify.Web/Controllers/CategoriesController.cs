@@ -1,119 +1,86 @@
 ﻿namespace Bookify.Web.Controllers
 {
     [Authorize(Roles = AppRoles.Archive)]
-
     public class CategoriesController : Controller
     {
-        private readonly ICategoriesRepo _categoriesRepo;
         private readonly IMapper _mapper;
+        private readonly IValidator<CategoryFormViewModel> _validator;
+        private readonly ICategoryService _categoryService;
 
-        public CategoriesController(ICategoriesRepo categoriesRepo, IMapper mapper)
+        public CategoriesController(IMapper mapper, IValidator<CategoryFormViewModel> validator, ICategoryService categoryService)
         {
-            _categoriesRepo = categoriesRepo;
             _mapper = mapper;
+            _validator = validator;
+            _categoryService = categoryService;
         }
 
-        // GET: Categories
-        public async Task<IActionResult> Index()
+        [HttpGet]
+        public IActionResult Index()
         {
-            var categories = await _categoriesRepo.GetAllCategoriesAsync();
-            var categoryViewModels = _mapper.Map<IEnumerable<CategoryViewModel>>(categories);
-            return View(categoryViewModels);
+            var categories = _categoryService.GetAll();
+
+            return View(_mapper.Map<IEnumerable<CategoryViewModel>>(categories));
         }
 
-        // GET: Categories/Create
+        [HttpGet]
+        [AjaxOnly]
         public IActionResult Create()
         {
-            return View("AddCategory");
+            return PartialView("_Form");
         }
 
-        // GET: Categories/Edit/{id}
-        public async Task<IActionResult> Edit(int id)
-        {
-            var category = await _categoriesRepo.GetCategoryByIdAsync(id);
-            if (category == null) return NotFound();
-
-            var model = _mapper.Map<CategoryViewModel>(category);
-            return View("EditCategory", model);
-        }
-
-        // POST: Categories/Add
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddCategory(CategoryViewModel model)
+        public IActionResult Create(CategoryFormViewModel model)
         {
-            if (!ModelState.IsValid) return View("AddCategory", model);
+            var validationResult = _validator.Validate(model);
 
-            var newCategory = _mapper.Map<Category>(model);
-            newCategory.CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            await _categoriesRepo.AddCategoryAsync(newCategory);
+            if (!validationResult.IsValid)
+                return BadRequest();
 
+            var category = _categoryService.Add(model.Name, User.GetUserId());
 
-            TempData["SuccessMessage"] = "Category added successfully!";
-            return RedirectToAction(nameof(Index));
+            return PartialView("_CategoryRow", _mapper.Map<CategoryViewModel>(category));
         }
 
-        // POST: Categories/Update
+        [HttpGet]
+        [AjaxOnly]
+        public IActionResult Edit(int id)
+        {
+            var category = _categoryService.GetById(id);
+
+            if (category is null)
+                return NotFound();
+
+            return PartialView("_Form", _mapper.Map<CategoryFormViewModel>(category));
+        }
+
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateCategory(CategoryViewModel model)
+        public IActionResult Edit(CategoryFormViewModel model)
         {
-            if (!ModelState.IsValid) return View("EditCategory", model);
+            var validationResult = _validator.Validate(model);
 
-            var existingCategory = await _categoriesRepo.GetCategoryByIdAsync(model.Id);
-            if (existingCategory == null) return NotFound();
+            if (!validationResult.IsValid)
+                return BadRequest();
 
-            _mapper.Map(model, existingCategory);
-            existingCategory.LastUpdatedOn = DateTime.Now;
-            existingCategory.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var category = _categoryService.Update(model.Id, model.Name, User.GetUserId());
 
-            await _categoriesRepo.UpdateCategoryAsync(existingCategory);
-
-            TempData["SuccessMessage"] = "Category updated successfully!";
-            return RedirectToAction(nameof(Index));
+            //You split code as Authors Controller
+            return category is null
+                ? NotFound()
+                : PartialView("_CategoryRow", _mapper.Map<CategoryViewModel>(category));
         }
 
-        // POST: Categories/Delete/{id}
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
+        public IActionResult ToggleStatus(int id)
         {
-            var existingCategory = await _categoriesRepo.GetCategoryByIdAsync(id);
-            if (existingCategory == null) return Json(new { success = false, message = "Category not found." });
+            var category = _categoryService.ToggleStatus(id, User.GetUserId());
 
-            await _categoriesRepo.DeleteCategoryAsync(id);
-            return Json(new { success = true });
+            return category is null ? NotFound() : Ok(category.LastUpdatedOn.ToString());
         }
 
-        // POST: Categories/ToggleStatus/{id}
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleStatus(int id)
+        public IActionResult AllowItem(CategoryFormViewModel model)
         {
-            var existingCategory = await _categoriesRepo.GetCategoryByIdAsync(id);
-            if (existingCategory == null) return NotFound();
-
-            existingCategory.IsDeleted = !existingCategory.IsDeleted;
-            existingCategory.LastUpdatedOn = DateTime.Now;
-            existingCategory.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            await _categoriesRepo.UpdateCategoryAsync(existingCategory);
-
-            return Json(new
-            {
-                success = true,
-                lastUpdatedOn = existingCategory.LastUpdatedOn.ToString()
-            });
-        }
-
-        // Check if category name is unique
-        [AcceptVerbs("Get", "Post")]
-        public async Task<IActionResult> IsCategoryNameUnique(string name, int id)
-        {
-            var isNameTaken = await _categoriesRepo.AnyAsync(c => c.Name == name && c.Id != id);
-            if (isNameTaken) return Json(string.Format(Errors.Duplicated, name));
-
-            return Json(true);
+            return Json(_categoryService.AllowCategory(model.Id, model.Name));
         }
     }
 }

@@ -22,10 +22,10 @@
         {
             <tr>
                 <td>@book.Title</td>
-                <td>@book.Author!.Name</td>
-                <td>@(string.Join(", ", book.Categories!.Select(c => c.Text)))</td>
+                <td>@book.Author</td>
+                <td>@(string.Join(", ", book.Categories))</td>
                 <td>@book.Publisher</td>
-                <td>@book.PublishDate.ToString("d MMM, yyyy")</td>
+                <td>@book.PublishingDate.ToString("d MMM, yyyy")</td>
                 <td>@book.Hall</td>
                 <td>@(book.IsAvailableForRental ? "Yes" : "No")</td>
                 <td>@(book.IsDeleted ? "Deleted" : "Available")</td>

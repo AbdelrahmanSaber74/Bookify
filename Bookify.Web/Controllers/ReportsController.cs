@@ -1,455 +1,292 @@
-﻿namespace Bookify.Web.Controllers
+﻿using ClosedXML.Excel;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using OpenHtmlToPdf;
+using System.Net.Mime;
+using ViewToHTML.Services;
+
+namespace Bookify.Web.Controllers
 {
     [Authorize(Roles = AppRoles.Admin)]
     public class ReportsController : Controller
     {
-        private readonly IBookRepo _bookRepo;
-        private readonly IRentalRepo _rentalRepo;
-        private readonly IRentalCopyRepo _rentalCopyRepo;
-        private readonly IAuthorRepo _authorRepo;
-        private readonly ICategoriesRepo _categoriesRepo;
+        private readonly IApplicationDbContext _context;
+        private readonly IWebHostEnvironment _webHost;
         private readonly IMapper _mapper;
         private readonly IViewRendererService _viewRendererService;
+        private readonly IAuthorService _authorService;
+        private readonly ICategoryService _categoryService;
+        private readonly IBookService _bookService;
+        private readonly IRentalService _rentalService;
 
-        public ReportsController(IBookRepo bookRepo, IAuthorRepo authorRepo, ICategoriesRepo categoriesRepo, IMapper mapper, IViewRendererService viewRendererService, IRentalCopyRepo rentalCopyRepo, IRentalRepo rentalRepo)
+        private readonly string _logoPath;
+        private readonly int _sheetStartRow = 5;
+
+        public ReportsController(IApplicationDbContext context,
+            IMapper mapper,
+            IWebHostEnvironment webHost,
+            IViewRendererService viewRendererService,
+            IAuthorService authorService,
+            ICategoryService categoryService,
+            IBookService bookService,
+            IRentalService rentalService)
         {
-            _bookRepo = bookRepo;
-            _authorRepo = authorRepo;
-            _categoriesRepo = categoriesRepo;
+            _context = context;
             _mapper = mapper;
+            _webHost = webHost;
             _viewRendererService = viewRendererService;
-            _rentalCopyRepo = rentalCopyRepo;
-            _rentalRepo = rentalRepo;
+
+            _logoPath = $"{_webHost.WebRootPath}/assets/images/Logo.png";
+            _authorService = authorService;
+            _categoryService = categoryService;
+            _bookService = bookService;
+            _rentalService = rentalService;
         }
 
-        // Index Action
+
         public IActionResult Index()
         {
             return View();
         }
 
-
         #region Books
-
-        [HttpGet]
-        public async Task<IActionResult> Books(IList<int> SelectedAuthors, IList<int> SelectedCategories, int? pageNumber)
+        public IActionResult Books(IList<int> selectedAuthors, IList<int> selectedCategories,
+            int? pageNumber)
         {
-            var books = (await _bookRepo.GetBooksWithDetailsAsync()).AsQueryable();
-            var categories = await _categoriesRepo.GetAllCategoriesAsync();
-            var authors = await _authorRepo.GetAllAuthorsAsync();
+            var authors = _authorService.GetActiveAuthors();
+            var categories = _categoryService.GetActiveCategories();
 
-            // Filter books by selected authors if any
-            if (SelectedAuthors != null && SelectedAuthors.Any())
+            var viewModel = new BooksReportViewModel
             {
-                books = books.Where(b => SelectedAuthors.Contains(b.AuthorId));
-            }
-
-            // Filter books by selected categories if any
-            if (SelectedCategories != null && SelectedCategories.Any())
-            {
-                books = books.Where(b => b.Categories.Any(c => SelectedCategories.Contains(c.CategoryId)));
-            }
-
-            var model = new BooksReportViewModel
-            {
-                Categories = _mapper.Map<IEnumerable<SelectListItem>>(categories),
                 Authors = _mapper.Map<IEnumerable<SelectListItem>>(authors),
+                Categories = _mapper.Map<IEnumerable<SelectListItem>>(categories)
             };
 
-            if (pageNumber.HasValue)
-            {
-                model.Books = PaginatedList<Book>.Create(books, pageNumber.Value, (int)ReportsConfigurations.PageSize);
-            }
+            if (pageNumber is not null)
+                viewModel.Books = _bookService.GetPaginatedList(selectedAuthors, selectedCategories, pageNumber ?? 0, (int)ReportsConfigurations.PageSize);
 
-            return View(model);
+            return View(viewModel);
         }
 
-        public async Task<IActionResult> ExportBooksToExcel(IList<int>? Authors, IList<int>? categories)
+        public async Task<IActionResult> ExportBooksToExcel(string authors, string categories)
         {
-            var books = (await _bookRepo.GetBooksWithDetailsAsync()).AsQueryable();
+            var query = _bookService.GetQuerbaleRawData(authors, categories);
 
-            // Filter books by selected authors if provided
-            if (Authors != null && Authors.Any())
-            {
-                books = books.Where(b => Authors.Contains(b.AuthorId));
-            }
+            var books = _mapper.ProjectTo<BookViewModel>(query).ToList();
 
-            // Filter books by selected categories if provided
-            if (categories != null && categories.Any())
-            {
-                books = books.Where(b => b.Categories.Any(c => categories.Contains(c.CategoryId)));
-            }
+            using var workbook = new XLWorkbook();
 
-            // Convert to list for iteration
-            var filteredBooks = books.ToList();
+            var sheet = workbook.AddWorksheet("Books");
 
-            using var workBook = new XLWorkbook();
-            var sheet = workBook.AddWorksheet("Books");
+            sheet.AddLocalImage(_logoPath);
 
-
-            // Set header row with formatting
-            var headerRow = sheet.Row(1);
-            headerRow.Style.Font.Bold = true; // Make the font bold
-            headerRow.Style.Fill.BackgroundColor = XLColor.LightGray; // Set background color
-            headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center; // Center alignment
-
-
-            var headerCells = new[]
-                    {
-                        "Title", "Author", "Categories", "Publisher",
-                        "Publishing Date", "Hall", "Available for Rental", "Status"
-                    };
+            var headerCells = new string[] { "Title", "Author", "Categories", "Publisher",
+                "Publishing Date", "Hall", "Available for rental", "Status" };
 
             sheet.AddHeader(headerCells);
 
-            // Populate rows with book data
-            for (int i = 0; i < filteredBooks.Count; i++)
+            for (int i = 0; i < books.Count; i++)
             {
-                var book = filteredBooks[i];
-                sheet.Cell(i + 2, 1).SetValue(book.Title);
-                sheet.Cell(i + 2, 2).SetValue(book.Author?.Name ?? "Unknown");
-                sheet.Cell(i + 2, 3).SetValue(string.Join(", ", book.Categories.Select(c => c.Category.Name)));
-                sheet.Cell(i + 2, 4).SetValue(book.Publisher ?? "Unknown");
-                sheet.Cell(i + 2, 5).SetValue(book.PublishingDate.ToShortDateString() ?? "N/A");
-                sheet.Cell(i + 2, 6).SetValue(book.Hall ?? "N/A");
-                sheet.Cell(i + 2, 7).SetValue(book.IsAvailableForRental ? "Yes" : "No");
-                sheet.Cell(i + 2, 8).SetValue(book.IsDeleted ? "Deleted" : "Available");
+                sheet.Cell(i + _sheetStartRow, 1).SetValue(books[i].Title);
+                sheet.Cell(i + _sheetStartRow, 2).SetValue(books[i].Author);
+                sheet.Cell(i + _sheetStartRow, 3).SetValue(string.Join(", ", books[i].Categories));
+                sheet.Cell(i + _sheetStartRow, 4).SetValue(books[i].Publisher);
+                sheet.Cell(i + _sheetStartRow, 5).SetValue(books[i].PublishingDate.ToString("d MMM, dddd"));
+                sheet.Cell(i + _sheetStartRow, 6).SetValue(books[i].Hall);
+                sheet.Cell(i + _sheetStartRow, 7).SetValue(books[i].IsAvailableForRental ? "Yes" : "No");
+                sheet.Cell(i + _sheetStartRow, 8).SetValue(books[i].IsDeleted ? "Deleted" : "Available");
             }
 
             sheet.Format();
+            sheet.AddTable(books.Count, headerCells.Length);
+            sheet.ShowGridLines = false;
 
-            // Save the workbook to a memory stream
-            var stream = new MemoryStream();
-            workBook.SaveAs(stream);
-            stream.Seek(0, SeekOrigin.Begin);
+            await using var stream = new MemoryStream();
 
-            // Return the file as a downloadable response
-            var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            var fileName = "Books.xlsx";
-            return File(stream, contentType, fileName);
+            workbook.SaveAs(stream);
+
+            return File(stream.ToArray(), MediaTypeNames.Application.Octet, "Books.xlsx");
         }
 
-
-        public async Task<IActionResult> ExportBooksToPDF(IList<int>? Authors, IList<int>? categories)
+        public async Task<IActionResult> ExportBooksToPDF(string authors, string categories)
         {
-            var books = (await _bookRepo.GetBooksWithDetailsAsync()).AsQueryable();
+            var query = _bookService.GetQuerbaleRawData(authors, categories);
 
-            // Filter books by selected authors if provided
-            if (Authors != null && Authors.Any())
-            {
-                books = books.Where(b => Authors.Contains(b.AuthorId));
-            }
+            var books = _mapper.ProjectTo<BookViewModel>(query).ToList();
 
-            // Filter books by selected categories if provided
-            if (categories != null && categories.Any())
-            {
-                books = books.Where(b => b.Categories.Any(c => categories.Contains(c.CategoryId)));
-            }
+            var templatePath = "~/Views/Reports/BooksTemplate.cshtml";
+            var html = await _viewRendererService.RenderViewToStringAsync(ControllerContext, templatePath, books);
 
-            // Convert to list for iteration
-            var filteredBooks = _mapper.Map<IEnumerable<BookViewModel>>(books.ToList());
+            var pdf = Pdf
+                .From(html)
+                .EncodedWith("Utf-8")
+                .OfSize(PaperSize.A4)
+                .WithMargins(1.Centimeters())
+                .Landscape()
+                .Content();
 
-            var templetePAth = "~/Views/Reports/BooksTemplate.cshtml";
-            var html = await _viewRendererService.RenderViewToStringAsync(ControllerContext, templetePAth, filteredBooks);
-
-            var pdf = Pdf.From(html).Content();
-
-            // Return the file as a downloadable response
-            var contentType = "application/pdf";
-            var fileName = "Books.pdf";
-            return File(pdf, contentType, fileName);
+            return File(pdf.ToArray(), MediaTypeNames.Application.Octet, "Books.pdf");
         }
-
         #endregion
 
         #region Rentals
-
-        [HttpGet]
-        public async Task<IActionResult> Rentals(int? pageNumber, string? duration)
+        public IActionResult Rentals(string duration, int? pageNumber)
         {
-            var rentalCopies = (await _rentalCopyRepo.GetAllAsync()).AsQueryable();
-
-            var model = new RentalsReportViewModel
-            {
-                Duration = duration
-            };
+            var viewModel = new RentalsReportViewModel { Duration = duration };
 
             if (!string.IsNullOrEmpty(duration))
             {
-                var dateRange = duration.Split(" - ");
-
-                if (dateRange.Length == 2)
+                if (!DateTime.TryParse(duration.Split(" - ")[0], out DateTime from))
                 {
-                    if (!DateTime.TryParse(dateRange[0], out DateTime startDate))
-                    {
-                        ModelState.AddModelError("Duration", Errors.InvalidStartDate);
-                        return View(model);
-                    }
-
-                    if (!DateTime.TryParse(dateRange[1], out DateTime endDate))
-                    {
-                        ModelState.AddModelError("Duration", Errors.InvalidEndDate);
-                        return View(model);
-                    }
-
-                    rentalCopies = rentalCopies.Where(copy => copy.RentalDate >= startDate && copy.RentalDate <= endDate)
-                                               .OrderBy(r => r.RentalDate);
+                    ModelState.AddModelError("Duration", Errors.InvalidStartDate);
+                    return View(viewModel);
                 }
-                else
+
+                if (!DateTime.TryParse(duration.Split(" - ")[1], out DateTime to))
                 {
-                    // Invalid duration format, add a model state error
-                    ModelState.AddModelError("Duration", "The date range format is invalid.");
-                    return View(model);
+                    ModelState.AddModelError("Duration", Errors.InvalidEndDate);
+                    return View(viewModel);
                 }
+
+                if (pageNumber is not null)
+                    viewModel.Rentals = _rentalService.GetPaginatedList(from, to, pageNumber ?? 0, (int)ReportsConfigurations.PageSize);
             }
 
+            ModelState.Clear();
 
-            if (pageNumber.HasValue)
-            {
-                model.Rentals = PaginatedList<RentalCopy>.Create(rentalCopies, pageNumber.Value, (int)ReportsConfigurations.PageSize);
-            }
-
-            return View(model);
+            return View(viewModel);
         }
 
-
-
-        public async Task<IActionResult> ExportRentalsToExcel(string? duration)
+        public async Task<IActionResult> ExportRentalsToExcel(string duration)
         {
-            var rentalCopies = (await _rentalCopyRepo.GetAllAsync()).AsQueryable();
+            var query = _rentalService.GetQuerbaleRawData(duration);
 
-            if (!string.IsNullOrEmpty(duration))
+            var rentals = _mapper.ProjectTo<RentalCopiesViewModel>(query).ToList();
+
+            using var workbook = new XLWorkbook();
+
+            var sheet = workbook.AddWorksheet("Rentals");
+
+            sheet.AddLocalImage(_logoPath);
+
+            var headerCells = new string[] { "Subscriber ID", "Subscriber Name", "Subscriber Phone", "Book Title",
+                "Book Author", "SerialNumber", "Rental Date", "End Date", "Return Date", "Extended On" };
+
+            sheet.AddHeader(headerCells);
+
+            for (int i = 0; i < rentals.Count; i++)
             {
-                var dateRange = duration.Split(" - ");
-
-                if (dateRange.Length == 2)
-                {
-                    if (!DateTime.TryParse(dateRange[0], out DateTime startDate))
-                    {
-                        return BadRequest("Invalid start date.");
-                    }
-
-                    if (!DateTime.TryParse(dateRange[1], out DateTime endDate))
-                    {
-                        return BadRequest("Invalid end date.");
-                    }
-
-                    rentalCopies = rentalCopies.Where(copy => copy.RentalDate >= startDate && copy.RentalDate <= endDate)
-                                               .OrderBy(r => r.RentalDate);
-                }
-                else
-                {
-                    return BadRequest("Invalid duration format.");
-                }
+                sheet.Cell(i + _sheetStartRow, 1).SetValue(rentals[i].SubscriberId);
+                sheet.Cell(i + _sheetStartRow, 2).SetValue(rentals[i].SubscriberName);
+                sheet.Cell(i + _sheetStartRow, 3).SetValue(rentals[i].SubscriberMobile);
+                sheet.Cell(i + _sheetStartRow, 4).SetValue(rentals[i].BookTitle);
+                sheet.Cell(i + _sheetStartRow, 5).SetValue(rentals[i].BookAuthor);
+                sheet.Cell(i + _sheetStartRow, 6).SetValue(rentals[i].CopySerialNumber);
+                sheet.Cell(i + _sheetStartRow, 7).SetValue(rentals[i].RentalDate.ToString("d MMM, yyyy"));
+                sheet.Cell(i + _sheetStartRow, 8).SetValue(rentals[i].EndDate.ToString("d MMM, yyyy"));
+                sheet.Cell(i + _sheetStartRow, 9).SetValue(rentals[i].ReturnDate is null ? "-" : rentals[i].ReturnDate?.ToString("d MMM, yyyy"));
+                sheet.Cell(i + _sheetStartRow, 10).SetValue(rentals[i].ExtendedOn is null ? "-" : rentals[i].ExtendedOn?.ToString("d MMM, yyyy"));
             }
+            sheet.Format();
+            sheet.AddTable(rentals.Count, headerCells.Length);
+            sheet.ShowGridLines = false;
 
-            // Convert the filtered rental copies to a list
-            var filteredRentals = rentalCopies.ToList();
+            await using var stream = new MemoryStream();
 
-            using var workBook = new XLWorkbook();
-            var sheet = workBook.AddWorksheet("Rentals");
+            workbook.SaveAs(stream);
 
-            // Set header row with formatting
-            var headerRow = sheet.Row(1);
-            headerRow.Style.Font.Bold = true; // Make the font bold
-            headerRow.Style.Fill.BackgroundColor = XLColor.LightGray; // Set background color
-            headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center; // Center alignment
-
-            // Define header columns
-            var headerCells = new[]
-            {
-            "Subscriber ID", "Subscriber Name", "Mobile Number", "Book Title",
-            "Author", "Serial Number", "Rental Date", "End Date", "Return Date", "Extended On"
-            };
-
-            // Add the header cells to the sheet
-            for (int i = 0; i < headerCells.Length; i++)
-            {
-                sheet.Cell(1, i + 1).SetValue(headerCells[i]);
-            }
-
-            // Populate rows with rental data
-            for (int i = 0; i < filteredRentals.Count; i++)
-            {
-                var rental = filteredRentals[i];
-                var subscriber = rental.Rental?.Subscriber;
-                var bookCopy = rental.BookCopy;
-
-                sheet.Cell(i + 2, 1).SetValue(rental.Rental?.Subscriber?.Id.ToString() ?? "N/A");
-                sheet.Cell(i + 2, 2).SetValue($"{subscriber?.FirstName} {subscriber?.LastName}" ?? "N/A");
-                sheet.Cell(i + 2, 3).SetValue(subscriber?.MobileNumber ?? "N/A");
-                sheet.Cell(i + 2, 4).SetValue(bookCopy?.Book?.Title ?? "N/A");
-                sheet.Cell(i + 2, 5).SetValue(bookCopy?.Book?.Author?.Name ?? "N/A");
-                sheet.Cell(i + 2, 6).SetValue(bookCopy?.SerialNumber.ToString() ?? "N/A"); 
-                sheet.Cell(i + 2, 7).SetValue(rental.RentalDate.ToString("d MMM, yyyy"));
-                sheet.Cell(i + 2, 8).SetValue(rental.EndDate.ToString("d MMM, yyyy") ?? "N/A");
-                sheet.Cell(i + 2, 9).SetValue(rental.ReturnDate?.ToString("d MMM, yyyy") ?? "N/A");
-                sheet.Cell(i + 2, 10).SetValue(rental.ExtendedOn?.ToString("d MMM, yyyy") ?? "N/A");
-            }
-
-            // Apply formatting to the sheet
-            sheet.Columns().AdjustToContents();
-
-            // Save the workbook to a memory stream
-            var stream = new MemoryStream();
-            workBook.SaveAs(stream);
-            stream.Seek(0, SeekOrigin.Begin);
-
-            // Return the file as a downloadable response
-            var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            var fileName = "RentalsReport.xlsx";
-            return File(stream, contentType, fileName);
+            return File(stream.ToArray(), MediaTypeNames.Application.Octet, "Rentals.xlsx");
         }
 
-
-
-        public async Task<IActionResult> ExportRentalsToPDF(string? duration)
+        public async Task<IActionResult> ExportRentalsToPDF(string duration)
         {
+            var query = _rentalService.GetQuerbaleRawData(duration);
 
-            var rentalCopies = (await _rentalCopyRepo.GetAllAsync()).AsQueryable();
+            var rentals = _mapper.ProjectTo<RentalCopiesViewModel>(query).ToList();
 
-            if (!string.IsNullOrEmpty(duration))
-            {
-                var dateRange = duration.Split(" - ");
+            var templatePath = "~/Views/Reports/RentalsTemplate.cshtml";
+            var html = await _viewRendererService.RenderViewToStringAsync(ControllerContext, templatePath, rentals);
 
-                if (dateRange.Length == 2)
-                {
-                    if (!DateTime.TryParse(dateRange[0], out DateTime startDate))
-                    {
-                        return BadRequest("Invalid start date.");
-                    }
+            var pdf = Pdf
+                .From(html)
+                .EncodedWith("Utf-8")
+                .OfSize(PaperSize.A4)
+                .WithMargins(1.Centimeters())
+                .Landscape()
+                .Content();
 
-                    if (!DateTime.TryParse(dateRange[1], out DateTime endDate))
-                    {
-                        return BadRequest("Invalid end date.");
-                    }
-
-                    rentalCopies = rentalCopies.Where(copy => copy.RentalDate >= startDate && copy.RentalDate <= endDate)
-                                               .OrderBy(r => r.RentalDate);
-                }
-                else
-                {
-                    return BadRequest("Invalid duration format.");
-                }
-            }
-
-
-            // Convert to list for iteration
-            var filtereRentals = _mapper.Map<IEnumerable<RentalCopy>>(rentalCopies.ToList());
-
-            var templetePAth = "~/Views/Reports/RentalCopiesTemplate.cshtml";
-            var html = await _viewRendererService.RenderViewToStringAsync(ControllerContext, templetePAth, filtereRentals);
-
-            var pdf = Pdf.From(html).Content();
-
-            // Return the file as a downloadable response
-            var contentType = "application/pdf";
-            var fileName = "Rentals.pdf";
-            return File(pdf, contentType, fileName);
+            return File(pdf.ToArray(), MediaTypeNames.Application.Octet, "Rentals.pdf");
         }
-
-
         #endregion
 
         #region DelayedRentals
-
-        [HttpGet]
-        public async Task<IActionResult> DelayedRentals()
+        public IActionResult DelayedRentals()
         {
-            var delayedRentals = await _rentalRepo.GetDelayedRentalsAsync();
-            var model = _mapper.Map<IEnumerable<RentalCopyViewModel>>(delayedRentals);
-            
-            return View(model);
+            var query = _rentalService.GetQuerbaleDelayedRawData();
+
+            return View(_mapper.ProjectTo<RentalCopiesViewModel>(query).ToList());
         }
 
         public async Task<IActionResult> ExportDelayedRentalsToExcel()
         {
-            // Fetch delayed rentals from the repository
-            var delayedRentals = await _rentalRepo.GetDelayedRentalsAsync();
-            var rentalViewModels = _mapper.Map<IEnumerable<RentalCopyViewModel>>(delayedRentals);
+            var query = _rentalService.GetQuerbaleDelayedRawData();
 
-            // Create an Excel workbook and worksheet
-            using var workBook = new XLWorkbook();
-            var sheet = workBook.AddWorksheet("DelayedRentals");
+            var data = _mapper.ProjectTo<RentalCopiesViewModel>(query).ToList();
 
-            // Set header row style and alignment
-            var headerRow = sheet.Row(1);
-            headerRow.Style.Font.Bold = true;
-            headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
-            headerRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            using var workbook = new XLWorkbook();
 
-            // Define the headers for the Excel file
-            var headerCells = new[]
+            var sheet = workbook.AddWorksheet("Delayed Rentals");
+
+            sheet.AddLocalImage(_logoPath);
+
+            var headerCells = new string[] { "Subscriber ID", "Subscriber Name", "Subscriber Phone", "Book Title",
+                "Book Serial", "Rental Date", "End Date", "Extended On", "Delay in Days" };
+
+            sheet.AddHeader(headerCells);
+
+            for (int i = 0; i < data.Count; i++)
             {
-                "Subscriber ID", "Subscriber Name", "Subscriber Mobile",
-                "Book Title", "Serial Number", "Rental Date",
-                "End Date", "Extended On", "Delay in Days"
-            };
-
-            // Add headers to the worksheet
-            for (int i = 0; i < headerCells.Length; i++)
-            {
-                sheet.Cell(1, i + 1).Value = headerCells[i];
+                sheet.Cell(i + _sheetStartRow, 1).SetValue(data[i].SubscriberId);
+                sheet.Cell(i + _sheetStartRow, 2).SetValue(data[i].SubscriberName);
+                sheet.Cell(i + _sheetStartRow, 3).SetValue(data[i].CopySerialNumber);
+                sheet.Cell(i + _sheetStartRow, 4).SetValue(data[i].BookTitle);
+                sheet.Cell(i + _sheetStartRow, 5).SetValue(data[i].CopySerialNumber);
+                sheet.Cell(i + _sheetStartRow, 6).SetValue(data[i].RentalDate.ToString("d MMM, yyyy"));
+                sheet.Cell(i + _sheetStartRow, 7).SetValue(data[i].EndDate.ToString("d MMM, yyyy"));
+                sheet.Cell(i + _sheetStartRow, 8).SetValue(data[i].ExtendedOn is null ? "-" : data[i].ExtendedOn?.ToString("d MMM, yyyy"));
+                sheet.Cell(i + _sheetStartRow, 9).SetValue(data[i].DelayInDays);
             }
 
-            // Populate the sheet with rental data
-            for (int i = 0; i < rentalViewModels.Count(); i++)
-            {
-                var rental = rentalViewModels.ElementAt(i);
+            sheet.Format();
+            sheet.AddTable(data.Count, headerCells.Length);
+            sheet.ShowGridLines = false;
 
-                // Fill in the data for each rental row
-                sheet.Cell(i + 2, 1).Value = rental.Rental!.Subscriber!.Id;
-                sheet.Cell(i + 2, 2).Value = rental.Rental.Subscriber!.FullName;
-                sheet.Cell(i + 2, 3).Value = rental.Rental.Subscriber!.MobileNumber;
-                sheet.Cell(i + 2, 4).Value = rental.BookCopy!.BookTitle;
-                sheet.Cell(i + 2, 5).Value = rental.BookCopy.SerialNumber;
-                sheet.Cell(i + 2, 6).Value = rental.RentalDate.ToString("d MMM, yyyy");
-                sheet.Cell(i + 2, 7).Value = rental.EndDate.ToString("d MMM, yyyy");
-                sheet.Cell(i + 2, 8).Value = rental.ExtendedOn?.ToString("d MMM, yyyy");
-                sheet.Cell(i + 2, 9).Value = rental.DelayInDays;
-            }
+            await using var stream = new MemoryStream();
 
-            // Adjust column widths for readability
-            sheet.Columns().AdjustToContents();
+            workbook.SaveAs(stream);
 
-            // Save the workbook to a memory stream
-            var stream = new MemoryStream();
-            workBook.SaveAs(stream);
-
-            // Reset the stream position to the beginning
-            stream.Seek(0, SeekOrigin.Begin);
-
-            // Return the file as a downloadable response
-            var contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            var fileName = "DelayedRentals.xlsx";
-
-            // Do not dispose the stream until after it is written to the response
-            return File(stream, contentType, fileName);
+            return File(stream.ToArray(), MediaTypeNames.Application.Octet, "DelayedRentals.xlsx");
         }
 
-
-        public async Task<IActionResult> ExportDelayedRentalsToPDF(IList<int>? Authors, IList<int>? categories)
+        public async Task<IActionResult> ExportDelayedRentalsToPDF()
         {
-            var delayedRentals = await _rentalRepo.GetDelayedRentalsAsync();
-            var rentalViewModels = _mapper.Map<IEnumerable<RentalCopyViewModel>>(delayedRentals);
+
+            var query = _rentalService.GetQuerbaleDelayedRawData();
+
+            var data = _mapper.ProjectTo<RentalCopiesViewModel>(query).ToList();
 
             var templatePath = "~/Views/Reports/DelayedRentalsTemplate.cshtml";
-            var html = await _viewRendererService.RenderViewToStringAsync(ControllerContext, templatePath, rentalViewModels);
+            var html = await _viewRendererService.RenderViewToStringAsync(ControllerContext, templatePath, data);
 
-            var pdf = Pdf.From(html).Content();
+            var pdf = Pdf
+                .From(html)
+                .EncodedWith("Utf-8")
+                .OfSize(PaperSize.A4)
+                .WithMargins(1.Centimeters())
+                .Landscape()
+                .Content();
 
-            // Return the file as a downloadable response
-            var contentType = "application/pdf";
-            var fileName = "Books.pdf";
-            return File(pdf, contentType, fileName);
+            return File(pdf.ToArray(), MediaTypeNames.Application.Octet, "DelayedRentals.pdf");
         }
-
-
-
-
-
-
         #endregion
-
     }
 }

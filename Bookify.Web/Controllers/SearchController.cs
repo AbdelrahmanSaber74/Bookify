@@ -1,50 +1,52 @@
-﻿namespace Bookify.Web.Controllers
+﻿using HashidsNet;
+
+namespace Bookify.Web.Controllers
 {
     public class SearchController : Controller
     {
-        private readonly IDataProtector _dataProtector;
-        private readonly IBookRepo _bookRepo;
         private readonly IMapper _mapper;
+        private readonly IHashids _hashids;
+        private readonly IBookService _bookService;
 
+        public SearchController(IMapper mapper, IHashids hashids, IBookService bookService)
+        {
+            _mapper = mapper;
+            _hashids = hashids;
+            _bookService = bookService;
+        }
 
-		public SearchController(IDataProtectionProvider dataProtectionProvider, IBookRepo bookRepo, IMapper mapper)
-
-		{
-			_dataProtector = dataProtectionProvider.CreateProtector("MySecureKey");
-			_bookRepo = bookRepo;
-			_mapper = mapper;
-		}
-
-		public IActionResult Index()
+        public IActionResult Index()
         {
             return View();
         }
 
-        public async Task<IActionResult> Details(string bKey)
+        public IActionResult Find(string query)
         {
-            var bookId = int.Parse(_dataProtector.Unprotect(bKey));
-            var book = await _bookRepo.GetBookByIdWithDetailsAsync(bookId);
+            var books = _bookService.Search(query);
 
+            var data = _mapper.ProjectTo<BookSearchResultViewModel>(books).ToList();
 
-            var viewModel = _mapper.Map<BookViewModel>(book);
-          
+            data.ForEach(book =>
+            {
+                book.Key = _hashids.EncodeHex(book.Id.ToString());
+            });
 
-
-            return View(viewModel);  
-
+            return Ok(data);
         }
 
-		public async Task<IActionResult> Find(string query)
-		{
-            var books = await _bookRepo.FindBooks(query);
+        public IActionResult Details(string bKey)
+        {
+            var bookId = _hashids.DecodeHex(bKey);
 
-            foreach (var book in books)
-            {
-                book.Key = _dataProtector.Protect(book.Id.ToString() );
-            }
+            var query = _bookService.GetDetails();
 
-			return Ok(books);
+            var viewModel = _mapper.ProjectTo<BookViewModel>(query)
+                .SingleOrDefault(b => b.Id == int.Parse(bookId));
 
-		}
-	}
+            if (viewModel is null)
+                return NotFound();
+
+            return View(viewModel);
+        }
+    }
 }

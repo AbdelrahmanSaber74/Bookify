@@ -1,7 +1,7 @@
 ﻿@model DashboardViewModel
 
 @{
-	ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Dashboard";
 }
 
 <!--begin::Toolbar-->
@@ -102,7 +102,7 @@
 									<!--begin::Title-->
 									<h5 class="text-gray-800 text-hover-primary fs-3 fw-bold d-block mb-2">@book.Title</h5>
 									<!--end::Title-->
-									<span class="fw-bold fs-6 text-gray-400 d-block lh-1">@((book.Author != null && book.Author.Name != null) ? book.Author.Name : "Unknown Author")</span>
+									<span class="fw-bold fs-6 text-gray-400 d-block lh-1">@book.Author</span>
 								</div>
 								<!--end::Info-->
 							</div>
@@ -133,7 +133,7 @@
 				@foreach (var book in Model.TopBooks)
 				{
 					<!--begin::Item-->
-					<div class="d-flex flex-stack">
+					<div class="d-flex flex-stack" >
 						<!--begin::Symbol-->
 						<div class="symbol symbol-60px me-4">
 							<img src="@book.ImageThumbnailUrl" class="" alt="@book.Title" />
@@ -144,14 +144,14 @@
 							<!--begin:Author-->
 							<div class="flex-grow-1 me-2">
 								<h5 class="text-gray-800 text-hover-primary fs-5 fw-bolder">@book.Title</h5>
-								<span class="fw-bold fs-6 text-gray-400 d-block lh-1">@((book.Author != null && book.Author.Name != null) ? book.Author.Name : "Unknown Author")</span>
+								<span class="text-gray-400 fw-semibold d-block fs-6">@book.Author</span>
 							</div>
 							<!--end:Author-->
 						</div>
 						<!--end::Section-->
 					</div>
 					<!--end::Item-->
-					@if (book != Model.TopBooks.Last())
+					@if(book != Model.TopBooks.Last())
 					{
 						<!--begin::Separator-->
 						<div class="separator separator-dashed my-5"></div>
@@ -229,7 +229,7 @@
 			<div class="card-body py-4 px-0">
 				<!--begin::Chart-->
 				<div class="d-flex flex-center me-5 pt-2">
-					<div id="SubscribersPerCity" class="mh-400px"></div>
+					<canvas id="SubscribersPerCity" class="mh-400px"></canvas>
 				</div>
 				<!--end::Chart-->
 			</div>
@@ -240,8 +240,8 @@
 	<!--end::Col-->
 </div>
 <!--end::Row-->
+
 @section Scripts
 {
-
-    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+	<script src="~/js/dashboard.js" asp-append-version="true"></script>
 }

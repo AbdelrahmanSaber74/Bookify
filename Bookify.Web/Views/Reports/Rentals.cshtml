@@ -22,7 +22,7 @@
     </div>
 </div>
 
-@if (Model.Rentals != null)
+@if (Model.Rentals is not null)
 {
     <div class="card">
         <div class="card-header">
@@ -31,8 +31,8 @@
             </div>
             @if (Model.Rentals.Any())
             {
-                <div class="card-toolbar gap-3">
-                    <a class="btn btn-light-success" asp-action="ExportRentalsToExcel"
+                <div class="card-toolbar">
+                    <a class="btn btn-light-success me-2" asp-action="ExportRentalsToExcel"
                        asp-route-duration="@Context.Request.Query["Duration"]">
                         <i class="bi bi-file-earmark-excel-fill"></i>
                         Export to Excel
@@ -49,7 +49,7 @@
         <div class="card-body">
             @if (Model.Rentals.TotalPages > 1)
             {
-                <partial name="_Pagination" model="new PaginationViewModel { PageNumber = Model.Rentals.PageIndex, TotalPages = Model.Rentals.TotalPages }" />
+                <partial name="_Pagination" model="new PaginationViewModel { PageNumber = Model.Rentals.PageNumber, TotalPages = Model.Rentals.TotalPages }" />
             }
 
             @if (Model.Rentals.Any())
@@ -78,7 +78,7 @@
                                     <td>@($"{copy.Rental!.Subscriber!.FirstName} {copy.Rental!.Subscriber!.LastName}")</td>
                                     <td>@copy.Rental!.Subscriber!.MobileNumber</td>
                                     <td>@copy.BookCopy!.Book!.Title</td>
-                                    <td>@(copy.BookCopy?.Book?.Author?.Name ?? "Na")</td>
+                                    <td>@copy.BookCopy!.Book!.Author!.Name</td>
                                     <td>@copy.BookCopy!.SerialNumber</td>
                                     <td>@copy.RentalDate.ToString("d MMM, yyyy")</td>
                                     <td>@copy.EndDate.ToString("d MMM, yyyy")</td>

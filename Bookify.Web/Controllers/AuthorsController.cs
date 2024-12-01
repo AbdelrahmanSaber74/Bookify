@@ -3,140 +3,94 @@
     [Authorize(Roles = AppRoles.Archive)]
     public class AuthorsController : Controller
     {
-        private readonly IAuthorRepo _authorRepo;
         private readonly IMapper _mapper;
-        private readonly IValidator<AuthorViewModel> _validator;
+        private readonly IValidator<AuthorFormViewModel> _validator;
+        private readonly IAuthorService _authorService;
 
-		public AuthorsController(IAuthorRepo authorRepo, IMapper mapper, IValidator<AuthorViewModel> validator)
-		{
-			_authorRepo = authorRepo;
-			_mapper = mapper;
-			_validator = validator;
-		}
-
-		// GET: Authors
-		public async Task<IActionResult> Index()
+        public AuthorsController(
+            IMapper mapper,
+            IValidator<AuthorFormViewModel> validator,
+            IAuthorService authorService)
         {
-            var authors = await _authorRepo.GetAllAuthorsAsync();
-            var authorViewModels = _mapper.Map<IEnumerable<AuthorViewModel>>(authors);
-            return View(authorViewModels);
+            _mapper = mapper;
+            _validator = validator;
+            _authorService = authorService;
         }
 
-        // GET: Authors/Create
+        [HttpGet]
+        public IActionResult Index()
+        {
+            var authors = _authorService.GetAll();
+
+            var viewModel = _mapper.Map<IEnumerable<AuthorViewModel>>(authors);
+
+            return View(viewModel);
+        }
+
+        [HttpGet]
+        [AjaxOnly]
         public IActionResult Create()
         {
-            return View("AddAuthor");
+            return PartialView("_Form");
         }
 
-        // POST: Authors/Add
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddAuthor(AuthorViewModel model)
+        public IActionResult Create(AuthorFormViewModel model)
         {
-            var validationREsult = _validator.Validate(model);
+            var validationResult = _validator.Validate(model);
 
-            if (!ModelState.IsValid)
-            {
-                return View("AddAuthor", model);
-            }
+            if (!validationResult.IsValid)
+                return BadRequest();
 
-            var newAuthor = _mapper.Map<Author>(model);
-            newAuthor.CreatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            await _authorRepo.AddAuthorAsync(newAuthor);
+            var author = _authorService.Add(model.Name, User.GetUserId());
 
-            TempData["SuccessMessage"] = "Author added successfully!";
-            return RedirectToAction(nameof(Index));
+            return PartialView("_AuthorRow", _mapper.Map<AuthorViewModel>(author));
         }
 
-        // POST: Authors/Delete/{id}
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Delete(int id)
+        [HttpGet]
+        [AjaxOnly]
+        public IActionResult Edit(int id)
         {
-            var existingAuthor = await _authorRepo.GetAuthorByIdAsync(id);
-            if (existingAuthor == null)
-            {
-                return Json(new { success = false, message = "Author not found." });
-            }
+            var author = _authorService.GetById(id);
 
-            await _authorRepo.DeleteAuthorAsync(id);
-            return Json(new { success = true });
-        }
-
-        // POST: Authors/ToggleStatus/{id}
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleStatus(int id)
-        {
-            var existingAuthor = await _authorRepo.GetAuthorByIdAsync(id);
-            if (existingAuthor == null)
-            {
+            if (author is null)
                 return NotFound();
-            }
 
-            existingAuthor.IsDeleted = !existingAuthor.IsDeleted;
-            existingAuthor.LastUpdatedOn = DateTime.Now;
-            existingAuthor.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var viewModel = _mapper.Map<AuthorFormViewModel>(author);
 
-            await _authorRepo.UpdateAuthorAsync(existingAuthor);
-
-            return Json(new
-            {
-                success = true,
-                lastUpdatedOn = existingAuthor.LastUpdatedOn.ToString()
-            });
+            return PartialView("_Form", viewModel);
         }
 
-        // GET: Authors/Edit/{id}
-        public async Task<IActionResult> Edit(int id)
-        {
-            var author = await _authorRepo.GetAuthorByIdAsync(id);
-            if (author == null)
-            {
-                return NotFound();
-            }
-
-            var authorViewModel = _mapper.Map<AuthorViewModel>(author);
-            return View("EditAuthor", authorViewModel);
-        }
-
-        // POST: Authors/Update
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateAuthor(AuthorViewModel model)
+        public IActionResult Edit(AuthorFormViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                return View("EditAuthor", model);
-            }
+            var validationResult = _validator.Validate(model);
 
-            var existingAuthor = await _authorRepo.GetAuthorByIdAsync(model.Id);
-            if (existingAuthor == null)
-            {
+            if (!validationResult.IsValid)
+                return BadRequest();
+
+            var author = _authorService.Update(model.Id, model.Name, User.GetUserId());
+
+            if (author is null)
                 return NotFound();
-            }
 
-            _mapper.Map(model, existingAuthor);
-            existingAuthor.LastUpdatedOn = DateTime.Now;
-            existingAuthor.LastUpdatedById = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            await _authorRepo.UpdateAuthorAsync(existingAuthor);
-
-            TempData["SuccessMessage"] = "Author updated successfully!";
-            return RedirectToAction(nameof(Index));
+            return PartialView("_AuthorRow", _mapper.Map<AuthorViewModel>(author));
         }
 
-        // Check if author name is unique
-        [AcceptVerbs("Get", "Post")]
-        public async Task<IActionResult> IsAuthorNameUnique(string name, int id)
+        [HttpPost]
+        public IActionResult ToggleStatus(int id)
         {
-            var isNameTaken = await _authorRepo.AnyAsync(c => c.Name == name && c.Id != id);
-            if (isNameTaken)
-            {
-                return Json(string.Format(Errors.Duplicated, name));
-            }
+            var author = _authorService.ToggleStatus(id, User.GetUserId());
 
-            return Json(true);
+            if (author is null)
+                return NotFound();
+
+            return Ok(author.LastUpdatedOn.ToString());
+        }
+
+        public IActionResult AllowItem(AuthorFormViewModel model)
+        {
+            return Json(_authorService.AllowAuthor(model.Id, model.Name));
         }
     }
 }

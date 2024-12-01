@@ -1,48 +1,45 @@
-﻿namespace Bookify.Web.Controllers
+﻿using HashidsNet;
+using Microsoft.AspNetCore.WebUtilities;
+
+namespace Bookify.Web.Controllers
 {
-	public class HomeController : Controller
-	{
-		private readonly ILogger<HomeController> _logger;
-		private readonly IMapper _mapper;
-		private readonly IBookRepo _bookRepo;
-		private readonly IDataProtector _dataProtector;
+    public class HomeController : Controller
+    {
+        private readonly ILogger<HomeController> _logger;
+        private readonly IBookService _bookService;
+        private readonly IMapper _mapper;
+        private readonly IHashids _hashids;
 
-		public HomeController(ILogger<HomeController> logger, IMapper mapper, IBookRepo bookRepo , IDataProtectionProvider dataProtectionProvider)
-		{
-			_logger = logger;
-			_mapper = mapper;
-			_bookRepo = bookRepo;
-			_dataProtector = dataProtectionProvider.CreateProtector("MySecureKey");
-		}
-
-		public async Task<IActionResult> Index()
-		{
-
-			if (User.Identity!.IsAuthenticated)
-			{
-				return RedirectToAction("Index" , "Dashboard");
-			}
-
-
-			var books = await _bookRepo.LastAddedBooks();
-
-			var viewModel = _mapper.Map<IEnumerable<BookViewModel>>(books);
-
-            foreach (var book in viewModel)
-            {
-                book.Key = _dataProtector.Protect(book.Id.ToString());
-			}
-
-			return View(viewModel);
-		}
-
-        public IActionResult Error(int StatusCode = 500 )
+        public HomeController(ILogger<HomeController> logger,
+            IBookService bookService,
+            IMapper mapper,
+            IHashids hashids)
         {
-            return View(new ErrorViewModel{ErrorCode = StatusCode, ErrorDescription = ReasonPhrases.GetReasonPhrase(StatusCode) });
+            _logger = logger;
+            _bookService = bookService;
+            _mapper = mapper;
+            _hashids = hashids;
         }
 
+        public IActionResult Index()
+        {
+            if (User.Identity!.IsAuthenticated)
+                return RedirectToAction(nameof(Index), "Dashboard");
 
+            var lastAddedBooks = _bookService.GetLastAddedBooks(10);
 
+            var viewModel = _mapper.Map<IEnumerable<BookViewModel>>(lastAddedBooks);
 
+            foreach (var book in viewModel)
+                book.Key = _hashids.EncodeHex(book.Id.ToString());
+
+            return View(viewModel);
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error(int statusCode = 500)
+        {
+            return View(new ErrorViewModel { ErrorCode = statusCode, ErrorDescription = ReasonPhrases.GetReasonPhrase(statusCode) });
+        }
     }
 }

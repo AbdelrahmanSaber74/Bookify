@@ -23,7 +23,7 @@
                 'No book were found!',
                 '</div>'
             ].join('\n'),
-            suggestion: Handlebars.compile('<div class="py-2"><span>{{title}}</span><br/><span class="f-xs text-gray-400">by {{authorName}}</span></div>')
+            suggestion: Handlebars.compile('<div class="py-2"><span>{{title}}</span><br/><span class="f-xs text-gray-400">by {{author}}</span></div>')
         }
     }).on('typeahead:select', function (e, book) {
         window.location.replace(`/Search/Details?bKey=${book.key}`);

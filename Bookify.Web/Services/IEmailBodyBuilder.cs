@@ -2,6 +2,6 @@
 {
     public interface IEmailBodyBuilder
     {
-        Task<string> GetEmailBodyAsync(string template, Dictionary<string, string> placeholders);
+        string GetEmailBody(string template, Dictionary<string, string> placeholders);
     }
 }

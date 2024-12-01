@@ -1,17 +1,24 @@
 ﻿$(document).ready(function () {
-    $('#governorateSelect').change(function () {
+    $('#GovernorateId').on('change', function () {
         var governorateId = $(this).val();
-        $('#citySelect').empty().append('<option value="">Select an area...</option>'); // Clear current areas
-        if (governorateId) {
-            $.getJSON('/Subscribers/GetAreasByGovernorate', { governorateId: governorateId }, function (data) {
-                $.each(data, function (index, item) {
-                    $('#citySelect').append($('<option>').val(item.value).text(item.text));
-                });
+        var areaList = $('#AreaId');
+
+        areaList.empty();
+        areaList.append('<option></option>');
+
+        if (governorateId !== '') {
+            $.ajax({
+                url: '/Subscribers/GetAreas?governorateId=' + governorateId,
+                success: function (areas) {
+                    $.each(areas, function (i, area) {
+                        var item = $('<option></option>').attr("value", area.value).text(area.text);
+                        areaList.append(item);
+                    });
+                },
+                error: function () {
+                    showErrorMessage();
+                }
             });
         }
     });
-
-
-
 });
-

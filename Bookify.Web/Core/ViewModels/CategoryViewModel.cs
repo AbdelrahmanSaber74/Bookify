@@ -1,14 +1,15 @@
-namespace Bookify.Web.Core.ViewModels
+﻿namespace Bookify.Web.Core.ViewModels
 {
-    public class CategoryViewModel : BaseViewModel
+    public class CategoryViewModel
     {
         public int Id { get; set; }
 
-        [Display(Name = "Category")]
-        [Required(ErrorMessage = Errors.RequiredField)]
-        [StringLength(100, ErrorMessage = Errors.MaxLength)]
-        [Remote(action: "IsCategoryNameUnique", controller: "Categories", AdditionalFields = nameof(Id), ErrorMessage = Errors.Duplicated)]
-        [RegularExpression(RegexPatterns.CharactersOnly_Eng, ErrorMessage = Errors.OnlyEnglishLetters)]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
+
+        public bool IsDeleted { get; set; }
+
+        public DateTime CreatedOn { get; set; }
+
+        public DateTime? LastUpdatedOn { get; set; }
     }
 }

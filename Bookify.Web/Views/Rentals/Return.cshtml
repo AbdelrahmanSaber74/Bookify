@@ -60,13 +60,12 @@ else
                             {
                                 var copy = Model.Copies[i];
 
-
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center ps-3">
                                             <!--begin::Symbol-->
                                             <div class="symbol symbol-40px me-5">
-                                                <img src="@copy.BookCopy.Book.ImageThumbnailUrl" class="h-50 align-self-center" alt="@copy.BookCopy?.BookTitle">
+                                                <img src="@copy.BookCopy?.BookThumbnailUrl" class="h-50 align-self-center" alt="@copy.BookCopy?.BookTitle">
                                             </div>
                                             <!--end::Symbol-->
                                             <div class="d-flex align-items-center flex-row-fluid flex-wrap">

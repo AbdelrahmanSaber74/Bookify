@@ -1,14 +1,15 @@
-namespace Bookify.Web.Core.ViewModels
+﻿namespace Bookify.Web.Core.ViewModels
 {
-    public class AuthorViewModel : BaseViewModel
+    public class AuthorViewModel
     {
-
         public int Id { get; set; }
 
-        [Display(Name = "Author")]
-        [Required(ErrorMessage = Errors.RequiredField)]
-        [Remote(action: "IsAuthorNameUnique", controller: "Authors", AdditionalFields = nameof(Id), ErrorMessage = Errors.Duplicated)]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
 
+        public bool IsDeleted { get; set; }
+
+        public DateTime CreatedOn { get; set; }
+
+        public DateTime? LastUpdatedOn { get; set; }
     }
 }
