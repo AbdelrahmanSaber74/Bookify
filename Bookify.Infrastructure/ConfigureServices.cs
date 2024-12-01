@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Bookify.Infrastructure.Persistence;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Bookify.Infrastructure;
@@ -11,7 +12,9 @@ public static class ConfigureServices
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"),
                 builder => builder.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
-        
+        services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
         return services;
     }
 }
