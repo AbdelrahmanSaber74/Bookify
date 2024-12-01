@@ -1,7 +1,9 @@
-﻿namespace Bookify.Domain.Consts;
-public static class AppRoles
+﻿namespace Bookify.Domain.Consts
 {
-    public const string Admin = "Admin";
-    public const string Archive = "Archive";
-    public const string Reception = "Reception";
+    public static class AppRoles
+    {
+        public const string Admin = "Admin";
+        public const string Archive = "Archive";
+        public const string Reception = "Reception";
+    }
 }

@@ -2,7 +2,6 @@
 {
     public class Subscription
     {
-        private DateTime _endDate;
         public int Id { get; set; }
 
         public int SubscriberId { get; set; }
