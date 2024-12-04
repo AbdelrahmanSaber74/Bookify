@@ -49,6 +49,14 @@ Reports provide comprehensive insights into library operations and rentals, and 
 - **Database**: The system utilizes [Microsoft SQL Server](https://www.microsoft.com/en-us/sql-server) as the database for storing and managing all library-related data, ensuring data integrity and quick access.
 - **Frontend**: The frontend uses standard web technologies including [HTML](https://developer.mozilla.org/en-US/docs/Web/HTML), [CSS](https://developer.mozilla.org/en-US/docs/Web/CSS), [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript), and [Bootstrap](https://getbootstrap.com/), a popular front-end framework for building responsive and mobile-first websites. Bootstrap ensures that the system's user interface is both attractive and responsive, adapting seamlessly to various screen sizes and devices.
 
+---
+
+## Localization
+
+The system supports multiple languages, enhancing accessibility for diverse user bases. Add new languages using `.resx` files and configure language switching in the frontend.
+
+---
+
 ## Setup
 
 Follow the instructions below to set up the Library Management System on your local machine or server.
